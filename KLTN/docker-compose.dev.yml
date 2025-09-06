@@ -1,0 +1,41 @@
+version: '3.9'
+
+services:
+  db:
+    image: postgres:15
+    container_name: kltn_postgres_dev
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: ${DB_NAME}
+      POSTGRES_USER: ${DB_USER}
+      POSTGRES_PASSWORD: ${DB_PASSWORD}
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data_dev:/var/lib/postgresql/data
+    networks:
+      - kltn_network
+
+  web:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: kltn_icd10_dev
+    command: sh run.sh
+    volumes:
+      - .:/app           # ✅ mount code để hot reload trong dev
+      - /app/__pycache__ # tránh pycache copy về máy host
+    ports:
+      - "8000:8000"
+    depends_on:
+      - db
+    env_file:
+      - .env
+    networks:
+      - kltn_network
+
+volumes:
+  postgres_data_dev:
+
+networks:
+  kltn_network:
