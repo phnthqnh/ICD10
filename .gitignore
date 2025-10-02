@@ -64,3 +64,8 @@ Thumbs.db
 *.pgsql
 *.psql
 *.sql
+
+# Database samples
+ICD10.xls
+import_db.py
+NOTE.md

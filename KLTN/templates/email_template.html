@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Email Verification</title>
+  <style>
+    body {
+      background-color: #f4f4f46a;
+      font-family: Arial, sans-serif;
+      margin: 0;
+      padding: 0;
+    }
+    .container {
+      max-width: 600px;
+      margin: 40px auto;
+      background: #f4f4f46a;
+      border-radius: 8px;
+      overflow: hidden;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+    }
+    .header {
+      background: #192637;
+      padding: 10px;
+      text-align: center;
+    }
+    .header img {
+      height: 60px;
+    }
+    .content {
+      padding: 30px;
+      text-align: center;
+      color: #333333;
+    }
+    .content h1 {
+      font-size: 20px;
+      font-weight: bold;
+      margin-bottom: 20px;
+    }
+    .content p {
+      font-size: 15px;
+      margin-bottom: 25px;
+    }
+    .btn {
+      display: inline-block;
+      padding: 12px 25px;
+      font-size: 16px;
+      font-weight: bold;
+      color: #ffffff;
+      background: #0073bb;
+      border-radius: 6px;
+      text-decoration: none;
+    }
+    .footer {
+      font-size: 12px;
+      color: #888888;
+      text-align: center;
+      padding: 20px;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <!-- Header với logo -->
+    <div class="header">
+      <img src="cid:logo_image" alt="ICD10 Logo">
+    </div>
+    
+    <!-- Nội dung chính -->
+    <div class="content">
+      <h1>KÍCH HOẠT TÀI KHOẢN ICD10</h1>
+      <p>Xin chào {{ username|safe }},</p>
+      <p>Vui lòng nhấn nút bên dưới để kích hoạt tài khoản của bạn:</p>
+      <a href="{{ activation_link|safe }}" class="btn" style="color: #ffffff;">Kích hoạt tài khoản</a>
+      <p>Lưu ý: Liên kết kích hoạt chỉ có hiệu lực trong 2 phút.</p>
+    </div>
+    
+    <!-- Footer -->
+    <div class="footer">
+      Nếu bạn không yêu cầu điều này, hãy bỏ qua email này.
+    </div>
+  </div>
+</body>
+</html>

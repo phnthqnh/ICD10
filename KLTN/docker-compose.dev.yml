@@ -27,15 +27,36 @@ services:
       - /app/__pycache__ # tránh pycache copy về máy host
     ports:
       - "8000:8000"
+    environment:
+      REDIS_HOST: redis_icd10_dev
+      ENABLE_PYDEVD: true
     depends_on:
       - db
+      - redis_icd10_dev
+    restart: always
     env_file:
       - .env
     networks:
       - kltn_network
+  
+  redis_icd10_dev:
+    image: redis:7
+    container_name: redis_icd10_dev
+    ports:
+      - "6379:6379"
+    networks:
+      - kltn_network
+    volumes:
+      - redis_data_file_dev:/var/lib/redis
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
 
 volumes:
   postgres_data_dev:
+  redis_data_file_dev:
 
 networks:
   kltn_network:
