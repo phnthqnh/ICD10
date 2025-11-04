@@ -88,6 +88,8 @@ class User(AbstractBaseUser, PermissionsMixin):
         return self.username
 
     class Meta:
+        verbose_name = 'Người dùng'
+        verbose_name_plural = 'Người dùng'
         app_label = "ICD10"
         db_table = "user"
 

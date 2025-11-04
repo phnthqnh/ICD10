@@ -53,7 +53,7 @@ class SuccessCodes:
         "Re send email register to user!",
     )
     
-    # CHAPTERS
+    # ICD10
     GET_CHAPTERS = (
         "GET_CHAPTERS",
         "Get ICD-10 chapters successfully!",
@@ -72,6 +72,78 @@ class SuccessCodes:
     GET_DISEASES_CHILDREN = (
         "GET_DISEASES_CHILDREN",
         "Get ICD-10 diseases children successfully!",
+    )
+    
+    GET_DISEASE_CODE = (
+        "GET_DISEASE_CODE",
+        "Get ICD-10 diseases successfully!",
+    )
+    
+    GET_DISEASE_BY_CODE = (
+        "GET_DISEASE_BY_CODE",
+        "Get ICD-10 disease by code successfully!",
+    )
+    
+    SEARCH_DISEASES = (
+        "SEARCH_DISEASES",
+        "Search ICD-10 diseases successfully!",
+    )
+    
+    #FEEDBACKS
+    GET_FEEDBACKS_ICD10 = (
+        "GET_FEEDBACKS_ICD10",
+        "Get all ICD-10 feedbacks successfully!",
+    )
+    
+    GET_FEEDBACKS_CHATBOT = (
+        "GET_FEEDBACKS_CHATBOT",
+        "Get all chatbot feedbacks successfully!",
+    )
+    
+    SUBMIT_FEEDBACK_ICD10 = (
+        "SUBMIT_FEEDBACK_ICD10",
+        "Submit ICD-10 feedback successfully!",
+    )
+    
+    SUBMIT_FEEDBACK_CHATBOT = (
+        "SUBMIT_FEEDBACK_CHATBOT",
+        "Submit chatbot feedback successfully!",
+    )
+    
+    ACCEPT_FEEDBACK_ICD10 = (
+        "ACCEPT_FEEDBACK_ICD10",
+        "Accept ICD-10 feedback successfully!",
+    )
+    
+    ACCEPT_FEEDBACK_CHATBOT = (
+        "ACCEPT_FEEDBACK_CHATBOT",
+        "Accept chatbot feedback successfully!",
+    )
+    
+    REJECT_FEEDBACK_ICD10 = (
+        "REJECT_FEEDBACK_ICD10",
+        "Reject ICD-10 feedback successfully!",
+    )
+    
+    REJECT_FEEDBACK_CHATBOT = (
+        "REJECT_FEEDBACK_CHATBOT",
+        "Reject chatbot feedback successfully!",
+    )
+    
+    GET_USER_FEEDBACKS_ICD10 = (
+        "GET_USER_FEEDBACKS_ICD10",
+        "Get user ICD-10 feedbacks successfully!",
+    )
+     
+    GET_USER_FEEDBACKS_CHATBOT = (
+        "GET_USER_FEEDBACKS_CHATBOT",
+        "Get user chatbot feedbacks successfully!",
+    )
+    
+    # NOTIFICATIONS
+    GET_USER_NOTIFICATIONS = (
+        "GET_USER_NOTIFICATIONS",
+        "Get user notifications successfully!",
     )
     
     @classmethod
