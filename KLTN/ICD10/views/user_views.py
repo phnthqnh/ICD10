@@ -7,7 +7,7 @@ from libs.response_handle import AppResponse
 from constants.error_codes import ErrorCodes
 from constants.success_codes import SuccessCodes
 from django.http import HttpResponseRedirect
-from django.core import signing, mail
+from django.core import signing
 from constants.redis_keys import Rediskeys
 from ICD10.models.user import User
 from  ICD10.serializers.user_serializers import UserSerializer
@@ -23,10 +23,6 @@ from constants.error_codes import ErrorCodes
 from django.contrib.auth.password_validation import validate_password
 from django.core.exceptions import ValidationError
 from django.db import transaction
-from django.core.mail import EmailMultiAlternatives
-from django.template.loader import render_to_string
-from django.utils.html import strip_tags
-from email.mime.image import MIMEImage
 from django.views.decorators.cache import cache_page
 # # TEST
 # import pandas as pd
@@ -127,11 +123,6 @@ def get_user_block_time(key):
     time = RedisWrapper.ttl(key)
     return f"{time // 60}:{time % 60}" if time else None
 
-
-def generate_verification_token(user):
-    data = {"user_id": user.id, "email": user.email}
-    return signing.dumps(data, salt="email-verify")
-
 @api_view(["GET"])
 @permission_classes([AllowAny])
 @authentication_classes([])
@@ -151,27 +142,7 @@ def verify_email(request):
     except signing.BadSignature:
         # Redirect về trang thông báo lỗi
         return HttpResponseRedirect("http://localhost:8000/admin/login")
-    
-def send_activation_email(user, activation_link):
-    subject = "Kích hoạt tài khoản ICD10"
-    from_email = "noreply@icd10.com"
-    to = [user.email]
 
-    html_content = render_to_string('email_template.html', {'username': user.username,
-                                                        'activation_link': activation_link})
-    text_content = strip_tags(html_content)
-
-    msg = EmailMultiAlternatives(subject, text_content, from_email, to)
-    msg.attach_alternative(html_content, "text/html")
-
-    # attach logo
-    with open("templates/logo/logo.png", "rb") as f:  # nên dùng png thay vì svg
-        logo = MIMEImage(f.read(), _subtype="png")
-        logo.add_header('Content-ID', '<logo_image>')
-        logo.add_header('Content-Disposition', 'inline', filename="logo.png")
-        msg.attach(logo)
-
-    msg.send()
 
 @api_view(["POST"])
 @permission_classes([AllowAny])
@@ -194,11 +165,11 @@ def user_register(request):
         user.save()
 
         # Tạo token
-        token = generate_verification_token(user)
+        token = Utils.generate_verification_token(user)
         activation_url = os.getenv("activation_url")
         activation_link = f"{activation_url}?token={token}"
         # Gửi email
-        send_activation_email(
+        Utils.send_activation_email(
             user=user,
             activation_link=activation_link
         )
@@ -251,6 +222,7 @@ def change_password(request):
         return AppResponse.success(success_code=SuccessCodes.CHANGE_PASSWORD)
     except Exception as e:
         return AppResponse.error(error_code=ErrorCodes.CANNOT_CHANGE_PASSWORD,errors=str(e))
+    
 
 @api_view(["PUT"])
 @permission_classes([IsAuthenticated])
@@ -266,36 +238,13 @@ def verified_doctor(request, pk):
     if not file_obj:
         return AppResponse.error(ErrorCodes.VALIDATION_ERROR, errors="File is required")
 
-    s3 = boto3.client(
-        "s3",
-        aws_access_key_id=os.getenv("AWS_ACCESS_KEY_ID"),
-        aws_secret_access_key=os.getenv("AWS_SECRET_ACCESS_KEY"),
-        region_name=os.getenv("AWS_S3_REGION_NAME"),
-    )
-
-    file_name = f"verification/{uuid.uuid4()}_{file_obj.name}"
-    try:
-        # Upload file lên S3 (private, mặc định không ACL)
-        s3.upload_fileobj(
-            file_obj,
-            os.getenv("AWS_STORAGE_BUCKET_NAME"),
-            file_name,
-        )
-    except Exception as e:
-        return AppResponse.error(ErrorCodes.INTERNAL_SERVER_ERROR, errors=str(e))
-
-    # Tạo presigned URL (ví dụ sống 1h = 3600s)
-    presigned_url = s3.generate_presigned_url(
-        'get_object',
-        Params={
-            'Bucket': os.getenv("AWS_STORAGE_BUCKET_NAME"),
-            'Key': file_name
-        },
-        ExpiresIn=3600
-    )
-
+    file_name, presigned_url = Utils.save_file_to_s3(file_obj, "verification")
+    if not file_name or not presigned_url:
+        return AppResponse.error(ErrorCodes.INTERNAL_SERVER_ERROR, errors="Failed to upload file")
+    
     # Lưu key file vào DB (không nên lưu presigned URL vì hết hạn)
     user.verification_file = file_name
+    user.role = 1  # Doctor role
     user.is_verified_doctor = False  # chờ admin xác thực
 
     serializer = UserSerializer(

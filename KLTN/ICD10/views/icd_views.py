@@ -14,7 +14,11 @@ from constants.success_codes import SuccessCodes
 from utils.utils import Utils
 from ICD10.models.user import User
 from django.views.decorators.cache import cache_page
-
+from django.db.models import Q
+import requests
+import logging
+# Khởi tạo logger
+logger = logging.getLogger(__name__)
 
 @api_view(['GET'])
 # @permission_classes([IsAuthenticated])
@@ -156,3 +160,118 @@ def get_diseases_children(request, pk):
         
     except Exception as e:
         return AppResponse.error(ErrorCodes.UNKNOWN_ERROR, errors=str(e))
+    
+@api_view(['GET'])
+def get_disease_code(request):
+    try:
+        # 1. Lấy dữ liệu từ cache
+        cached_disease = RedisWrapper.get(Constants.CACHE_KEY_DISEASES_CODE)
+        if cached_disease:
+            return AppResponse.success(
+                SuccessCodes.GET_DISEASE_CODE,
+                data={
+                    "diseases": cached_disease,
+                    "total": len(cached_disease)
+                }
+            )
+        # 2. Nếu chưa có cache -> query DB
+        diseases = ICDDisease.objects.all()
+        diseases_data = Utils.serialize_queryset(diseases, fields=["code"])
+        
+        # 3. Lưu vào cache (ví dụ 15 phút)
+        RedisWrapper.save(Constants.CACHE_KEY_DISEASES_CODE, diseases_data, expire_time=60*1)
+        # len of data
+        data_length = len(diseases_data)
+        return AppResponse.success(
+            SuccessCodes.GET_DISEASE_CODE,
+            data={
+                "diseases": diseases_data,
+                "total": data_length
+            }
+        )
+        
+    except Exception as e:
+        return AppResponse.error(ErrorCodes.UNKNOWN_ERROR, errors=str(e))
+
+
+@api_view(['GET'])
+def get_disease_by_code(request, code):
+    try:
+        # 1. Lấy dữ liệu từ cache
+        cached_disease = RedisWrapper.get(f"{Constants.CACHE_KEY_DISEASES_BY_CODE}_{code}")
+        if cached_disease:
+            return AppResponse.success(
+                SuccessCodes.GET_DISEASE_BY_CODE,
+                data=cached_disease
+            )
+        # 2. Nếu chưa có cache -> query DB
+        disease = ICDDisease.objects.filter(code=code).first()
+        disease_extra = DiseaseExtraInfo.objects.filter(disease=disease).first()
+        if not disease:
+            return AppResponse.error(ErrorCodes.NOT_FOUND, errors="Disease not found")
+        
+        disease_data = Utils.serialize_queryset([disease], fields=["code", "title_en", "title_vi"])
+        disease_data[0]["description"] = disease_extra.description
+        disease_data[0]["symptoms"] = disease_extra.symptoms
+        disease_data[0]["image_url"] = disease_extra.image_url
+        disease_data[0]["wikipedia_url"] = disease_extra.wikipedia_url
+        if disease.parent:
+            parent_data = Utils.serialize_queryset([disease.parent], fields=["code", "title_en", "title_vi"])
+            disease_data[0]["parent"] = parent_data[0]
+        else:
+            disease_data[0]["parent"] = None
+        
+        # 3. Lưu vào cache (ví dụ 15 phút)
+        RedisWrapper.save(f"{Constants.CACHE_KEY_DISEASES_BY_CODE}_{code}", disease_data[0], expire_time=60*1)
+        return AppResponse.success(
+            SuccessCodes.GET_DISEASE_BY_CODE,
+            data=disease_data[0]
+        )
+        
+    except Exception as e:
+        return AppResponse.error(ErrorCodes.UNKNOWN_ERROR, errors=str(e))
+    
+    
+
+
+# api search diseases by query string
+@api_view(["GET"])
+def search_diseases(request):
+    query = request.GET.get("q", "").strip()
+    if not query:
+        return AppResponse.error(ErrorCodes.INVALID_REQUEST, errors="Query parameter 'q' is required.")
+    try:
+        # Search in ICDDisease and related DiseaseExtraInfo
+        diseases = ICDDisease.objects.filter(
+            Q(title_en__icontains=query) |
+            Q(title_vi__icontains=query) |
+            Q(code__icontains=query) |
+            Q(extra_info__description__icontains=query) |
+            Q(extra_info__symptoms__icontains=query)
+        ).distinct()
+
+        if not diseases:
+            return AppResponse.error(ErrorCodes.NOT_FOUND, errors="No diseases found matching the query.")
+
+        diseases_data = []
+        for disease in diseases:
+            disease_data = Utils.serialize_queryset([disease])[0]
+            # Add extra info if available
+            extra_info = DiseaseExtraInfo.objects.filter(disease=disease).first()
+            if extra_info:
+                disease_data['description'] = extra_info.description
+                disease_data['symptoms'] = extra_info.symptoms
+                disease_data['image_url'] = extra_info.image_url
+                disease_data['wikipedia_url'] = extra_info.wikipedia_url
+            diseases_data.append(disease_data)
+
+        return AppResponse.success(
+            SuccessCodes.SEARCH_DISEASES,
+            data={
+                "diseases": diseases_data,
+                "total": len(diseases_data)
+            }
+        )
+    except Exception as e:
+        return AppResponse.error(ErrorCodes.UNKNOWN_ERROR, errors=str(e))
+    
