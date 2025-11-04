@@ -47,7 +47,6 @@ Thumbs.db
 
 # Env files and secrets
 *.env
-.env*
 
 # Jupyter notebooks
 .ipynb_checkpoints/
@@ -65,7 +64,21 @@ Thumbs.db
 *.psql
 *.sql
 
-# Database samples
+# Unfold
+static/
+
+# File private to project
 ICD10.xls
 import_db.py
 NOTE.md
+disease_dataset.json
+disease_symptoms.json
+search_disease.py
+import_disease_wiki.py
+load_icd10_embeddings_to_redis.py
+summarize_symptoms.py
+icd10_codes.npy
+icd10_index_vi.faiss
+icd10_texts_vi.npy
+
+node_modules/
