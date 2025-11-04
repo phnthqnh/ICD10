@@ -12,8 +12,12 @@ https://docs.djangoproject.com/en/5.2/ref/settings/
 
 from datetime import timedelta
 import os
+from dotenv import load_dotenv
+# Load file .env
+load_dotenv()
 from decouple import config
 from pathlib import Path
+from .admin_config import UNFOLD
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -23,14 +27,15 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 # See https://docs.djangoproject.com/en/5.2/howto/deployment/checklist/
 
 # SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = 'django-insecure-ecnmj-%j%q$u7#qn31xy_rzb82iwy-1s84q$53xpq9wez3%&i3'
+SECRET_KEY = os.getenv("SECRET_KEY")
 
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-ALLOWED_HOSTS = []
+ALLOWED_HOSTS = ["127.0.0.1", "localhost"]
 
-
+# email config
+ACTIVATION_URL = os.getenv("activation_url")
 EMAIL_BACKEND = config('EMAIL_BACKEND')
 EMAIL_HOST = config('EMAIL_HOST')
 EMAIL_PORT = config('EMAIL_PORT', cast=int)
@@ -42,12 +47,20 @@ DEFAULT_FROM_EMAIL = config('DEFAULT_FROM_EMAIL')
 # Application definition
 
 INSTALLED_APPS = [
+    "unfold",
+    "unfold.contrib.filters", 
+    "unfold.contrib.forms", 
+    "unfold.contrib.inlines",  
+    "unfold.contrib.import_export",  
+    "unfold.contrib.guardian",  
+    "unfold.contrib.simple_history",  
     'django.contrib.admin',
     'django.contrib.auth',
     'django.contrib.contenttypes',
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
+    'channels',
     'ICD10',
     'rest_framework',
     'corsheaders',
@@ -82,6 +95,16 @@ CACHES = {
     }
 }
 
+ASGI_APPLICATION = 'KLTN.asgi.application'
+
+CHANNEL_LAYERS = {
+    "default": {
+        "BACKEND": "channels_redis.core.RedisChannelLayer",
+        "CONFIG": {
+            "hosts": [("redis_icd10_dev", 6379)],
+        },
+    }
+}
 
 SIMPLE_JWT = {
     'ACCESS_TOKEN_LIFETIME': timedelta(minutes=60),
@@ -93,6 +116,7 @@ SIMPLE_JWT = {
 
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
+    "whitenoise.middleware.WhiteNoiseMiddleware",
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
@@ -130,6 +154,10 @@ WSGI_APPLICATION = 'KLTN.wsgi.application'
 #         'NAME': BASE_DIR / 'db.sqlite3',
 #     }
 # }
+
+# AI API
+GEMINI_API_KEY = os.getenv("GEMINI_API_KEY")
+
 
 DATABASES = {
     'default': {
@@ -177,9 +205,105 @@ USE_TZ = True
 # Static files (CSS, JavaScript, Images)
 # https://docs.djangoproject.com/en/5.2/howto/static-files/
 
+STATICFILES_STORAGE = "whitenoise.storage.CompressedManifestStaticFilesStorage"
+
 STATIC_URL = 'static/'
 
 # Default primary key field type
 # https://docs.djangoproject.com/en/5.2/ref/settings/#default-auto-field
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
+
+# Static files (CSS, JavaScript, Images)
+STATIC_URL = '/static/'
+STATIC_ROOT = os.path.join(BASE_DIR, 'staticfiles')
+STATICFILES_DIRS = [
+    os.path.join(BASE_DIR, 'static')
+]
+from django.templatetags.static import static
+
+UNFOLD = {
+    "SITE_HEADER": "ICD10 Admin",
+    "SITE_TITLE": "ICD10 Management",
+    "SITE_SYMBOL": "🧬",
+    "SHOW_HISTORY": True,
+    "SHOW_VIEW_ON_SITE": False,
+    "SITE_LOGO": lambda request: static("logo.svg"),
+    "BORDER_RADIUS": "8px",
+    "STYLES": [
+        lambda request: static("css/styles.css"),
+    ],
+    "CUSTOM_JS": ["js/admin_notifications.js"],
+    "COLORS": {
+        "primary": {
+            "50": "#E3E8ED",
+            "100": "#96CAF4",
+            "200": "#5FA6E0",
+            "300": "#598CB6",
+            "400": "#316F9F",
+            "500": "#4E7593",
+            "600": "#305E81",
+            "700": "#183856",  # ✅ Màu chủ đạo bạn muốn
+            "800": "#132E44",
+            "900": "#0E2433",
+            "950": "#091A22",
+        },
+        # màu nền (base) có thể giữ nguyên hoặc đổi nhẹ cho phù hợp
+        "base": {
+            "50": "#F9FAFB",
+            "100": "#F3F4F6",
+            "200": "#E5E7EB",
+            "300": "#D1D5DB",
+            "400": "#9CA3AF",
+            "500": "#6B7280",
+            "600": "#4B5563",
+            "700": "#374151",
+            "800": "#1F2937",
+            "900": "#111827",
+            "950": "#0B0F14",
+        },
+        "font": {
+            "subtle-light": "var(--color-base-500)",  # text-base-500
+            "subtle-dark": "var(--color-base-400)",  # text-base-400
+            "default-light": "var(--color-base-600)",  # text-base-600
+            "default-dark": "var(--color-base-300)",  # text-base-300
+            "important-light": "var(--color-base-900)",  # text-base-900
+            "important-dark": "var(--color-base-100)",  # text-base-100
+        },
+    },
+}
+
+# UNFOLD = {
+#     **UNFOLD,
+# }
+
+# # Admin site configuration
+# JAZZMIN_SETTINGS = None
+# ADMIN_SITE_TITLE = UNFOLD["SITE_TITLE"]
+# ADMIN_SITE_HEADER = UNFOLD["SITE_HEADER"]
+# ADMIN_INDEX_TITLE = UNFOLD["SITE_SUBHEADER"]
+
+
+
+# LOGGING = {
+#     'version': 1,
+#     'disable_existing_loggers': False,
+#     'formatters': {
+#         'verbose': {
+#             'format': '{levelname} {asctime} [{name}] {message}',
+#             'style': '{',
+#         },
+#     },
+#     'handlers': {
+#         'console': {
+#             'class': 'logging.StreamHandler',
+#             'formatter': 'verbose',
+#         },
+#     },
+#     'loggers': {
+#         '': {
+#             'handlers': ['console'],
+#             'level': 'INFO',
+#         },
+#     },
+# }

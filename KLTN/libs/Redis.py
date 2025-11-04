@@ -49,3 +49,22 @@ class RedisWrapper:
         except Exception as e:
             logger.error(f"Redis ttl error: {e}")
             return -1
+        
+    @staticmethod
+    def pipeline(transaction: bool = False):
+        try:
+            return cache.client.get_client().pipeline(transaction=transaction)
+        except Exception as e:
+            logger.error(f"Redis pipeline error: {e}")
+            return None
+
+    @staticmethod
+    def hgetall(key: str):
+        """Lấy toàn bộ hash key từ Redis (trả về dict {field: value})"""
+        try:
+            client = cache.client.get_client()
+            raw = client.hgetall(key)
+            return {k.decode(): v.decode() for k, v in raw.items()}
+        except Exception as e:
+            logger.error(f"Redis hgetall error: {e}")
+            return {}
