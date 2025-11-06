@@ -5,11 +5,14 @@ from asgiref.sync import sync_to_async
 import json
 from ICD10.models.chatbot import ChatSession, ChatMessage
 from ICD10.models.user import User
+from ICD10.models.notification import Notification
 from ICD10.services.chat_services import GeminiChatService
 import logging
 from urllib.parse import parse_qs
 from rest_framework_simplejwt.tokens import AccessToken
 from django.contrib.auth.models import AnonymousUser
+from django.utils import timezone
+from django.utils.timezone import localtime
 
 logger = logging.getLogger(__name__)
 
@@ -148,20 +151,66 @@ class NotificationConsumer(AsyncWebsocketConsumer):
             await self.close()
             return
 
-        # Group cho từng user
-        await self.channel_layer.group_add(f"user_{user.id}", self.channel_name)
-        # Nếu là admin, thêm vào nhóm chung
-        if user.is_superuser:
-            await self.channel_layer.group_add("admin_notifications", self.channel_name)
+        # Lưu room_group_name cho user
+        self.room_group_name = f"user_{self.scope['user'].id}"
+        
+        # Join vào group của user
+        await self.channel_layer.group_add(
+            self.room_group_name,
+            self.channel_name
+        )
+        
+        # Nếu là admin, thêm vào group admin
+        if self.scope["user"].is_superuser:
+            await self.channel_layer.group_add(
+                "admin_notifications", 
+                self.channel_name
+            )
             
         await self.accept()
-        # await self.send_json({"type": "system", "message": "✅ Connected to Notification Channel"})
+        
+        # Gửi data ban đầu
+        await self.send_initial_data()
+        
+    async def send_initial_data(self):
+        """Gửi notifications data khi user kết nối"""
+        notifications = await self.get_notifications()
+        await self.send_json({
+            'type': 'notifications_data',
+            'notifications': notifications,
+            'unread_count': await self.get_unread_count()
+        })
 
     async def disconnect(self, code):
         user = self.scope["user"]
         await self.channel_layer.group_discard(f"user_{user.id}", self.channel_name)
         if user.is_superuser:
             await self.channel_layer.group_discard("admin_notifications", self.channel_name)
+        # await self.channel_layer.group_discard(
+        #     self.room_group_name,
+        #     self.channel_name
+        # )
+        
+    @database_sync_to_async
+    def get_notifications(self):
+        return [{
+            'id': notif.id,
+            'title': notif.title,
+            'message': notif.message,
+            # 'created_at': notif.created_at.strftime("%d/%m/%Y %H:%M"),
+            'created_at': localtime(notif.created_at).strftime("%d/%m/%Y %H:%M"),
+            'is_read': notif.is_read
+        } for notif in Notification.objects.filter(
+            recipient=self.scope["user"]
+        ).order_by('-created_at')[:5]]
+
+    @database_sync_to_async
+    def get_unread_count(self):
+        return Notification.objects.filter(
+            recipient=self.scope["user"],
+            is_read=False
+        ).count()
+
 
     @database_sync_to_async
     def get_user_from_token(self, token):
@@ -185,12 +234,19 @@ class NotificationConsumer(AsyncWebsocketConsumer):
         """
         Nhận thông báo từ group và gửi về client
         """
+        notifications = await self.get_notifications()
+        unread_count = await self.get_unread_count()
         await self.send(text_data=json.dumps({
-            "type": "notification",
+            "type": "new_notification",
             "event": event["event"],
             "message": event["message"],
-            "feedback_id": event.get("feedback_id"),
+            "notifications": notifications,
+            "unread_count": unread_count
         }))
         
     async def send_json(self, content):
-        await self.send(text_data=json.dumps(content))
+        """Gửi JSON response với error handling"""
+        try:
+            await self.send(text_data=json.dumps(content))
+        except Exception as e:
+            logger.error(f"Error sending notification: {str(e)}")

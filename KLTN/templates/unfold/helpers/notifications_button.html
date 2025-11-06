@@ -1,0 +1,79 @@
+{% load i18n %}
+
+<div class="relative" x-data="{ 
+    openMyButton: false,
+    unreadCount: 0,
+    notifications: [],
+    socket: null,
+    initializeWebSocket() {
+        const protocol = window.location.protocol === 'https:' ? 'wss://' : 'ws://';
+        this.socket = new WebSocket(protocol + window.location.host + '/ws/notifications/');
+        
+        this.socket.onmessage = (event) => {
+            const data = JSON.parse(event.data);
+            if (data.type === 'notifications_data') {
+                this.notifications = data.notifications;
+                this.unreadCount = data.unread_count;
+            } else if (data.type === 'new_notification') {
+                this.notifications = data.notifications;
+                this.unreadCount = data.unread_count;
+                toast_(data.notification.message, 'info', data.notification.title);
+            }
+        };
+
+        this.socket.onclose = () => {
+            // Reconnect after 1s
+            setTimeout(() => this.initializeWebSocket(), 1000);
+        };
+    }
+}" x-init="initializeWebSocket()">
+    <a class="block cursor-pointer h-[18px] hover:text-base-700 dark:hover:text-base-200 relative" 
+       @click="openMyButton = !openMyButton">
+        <span class="material-symbols-outlined">notifications</span>
+        <!-- Badge hiển thị số notification chưa đọc -->
+        <span x-show="unreadCount > 0"
+              x-text="unreadCount"
+              class="absolute -top-2 -right-2 bg-red-500 text-white text-[10px] rounded-full h-4 w-4 flex items-center justify-center">
+        </span>
+    </a>
+
+    <nav class="absolute bg-white border border-base-200 flex flex-col leading-none py-1 -right-2 rounded-default shadow-lg top-7 w-96 z-50 dark:bg-base-800 dark:border-base-700" 
+         x-cloak x-show="openMyButton" 
+         x-transition 
+         x-on:click.outside="openMyButton = false">
+        <!-- Nội dung dropdown menu -->
+        <!-- Header -->
+        <div class="border-b border-base-200 flex items-center justify-between px-4 py-3 dark:border-base-700">
+            <span class="font-medium">Thông báo</span>
+            <span x-text="unreadCount + ' chưa đọc'" class="text-sm text-gray-500"></span>
+        </div>
+
+        <!-- Notification List -->
+        <div class="max-h-96 overflow-y-auto">
+            <template x-if="notifications.length > 0">
+                <template x-for="notif in notifications" :key="notif.created_at">
+                    <a :href="`/admin/ICD10/notification/${notif.id}/change/`"
+                        class="block px-4 py-3 hover:bg-gray-50 dark:hover:bg-base-700 no-underline" 
+                         :class="{ 'bg-blue-50 dark:bg-base-700': !notif.is_read }">
+                        <div class="text-sm font-medium" x-text="notif.title"></div>
+                        <div class="text-sm text-gray-600 dark:text-gray-300" x-text="notif.message"></div>
+                        <div class="text-xs text-gray-400 mt-1" x-text="notif.created_at"></div>
+                    </a>
+                </template>
+            </template>
+            <template x-if="notifications.length === 0">
+                <div class="px-4 py-3 text-center text-gray-500">
+                    Không có thông báo nào
+                </div>
+            </template>
+        </div>
+
+        <!-- Footer -->
+        <div class="border-t border-base-200 p-2 text-center dark:border-base-700">
+            <a href="/admin/ICD10/notification/" class="text-sm text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300">
+                Xem tất cả thông báo
+            </a>
+        </div>
+    </nav>
+</div>
+

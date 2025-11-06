@@ -14,9 +14,9 @@ def notify_admin_new_feedback(sender, instance, created, **kwargs):
         for admin in admins:
             Notification.objects.create(
                 recipient=admin,
-                title="Phản hồi ICD-10 mới",
+                title="Phản hồi về ICD-10",
                 message=f"{instance.user.username} đã gửi phản hồi cho {instance.disease.code}",
-                url=f"/admin/ICD10/feedback_icd10/{instance.id}/change/",
+                url=f"http://127.0.0.1:8000/admin/ICD10/feedback_icd10/{instance.id}/change/",
                 notif_type='feedback'
             )
         # Gửi realtime websocket
@@ -27,7 +27,7 @@ def notify_admin_new_feedback(sender, instance, created, **kwargs):
                 "type": "send_notification",
                 "event": "new_feedback",
                 "message": f"{instance.user.username} đã gửi phản hồi cho {instance.disease.code}",
-                "url": f"/admin/ICD10/feedback_icd10/{instance.id}/change/"
+                "url": f"http://127.0.0.1:8000/admin/ICD10/feedback_icd10/{instance.id}/change/"
             },
         )
         
@@ -39,9 +39,9 @@ def notify_admin_new_feedback(sender, instance, created, **kwargs):
         for admin in admins:
             Notification.objects.create(
                 recipient=admin,
-                title="Phản hồi Chatbot mới",
+                title="Phản hồi về Chatbot",
                 message=f"{instance.user.username} đã gửi phản hồi cho tin nhắn {instance.chat_message.id}",
-                url=f"/admin/ICD10/feedback_chatbot/{instance.id}/change/",
+                url=f"http://127.0.0.1:8000/admin/ICD10/feedback_chatbot/{instance.id}/change/",
                 notif_type='feedback'
             )
         # Gửi realtime websocket
@@ -52,7 +52,7 @@ def notify_admin_new_feedback(sender, instance, created, **kwargs):
                 "type": "send_notification",
                 "event": "new_feedback",
                 "message": f"{instance.user.username} đã gửi phản hồi cho {instance.disease.code}",
-                "url": f"/admin/ICD10/feedback_icd10/{instance.id}/change/"
+                "url": f"http://127.0.0.1:8000/admin/ICD10/feedback_icd10/{instance.id}/change/"
             },
         )
 
@@ -70,7 +70,7 @@ def notify_admin_verify_request(sender, instance, created, **kwargs):
                 recipient=admin,
                 title="Yêu cầu xác minh bác sĩ mới",
                 message=f"🩺 {instance.username} vừa gửi yêu cầu xác minh bác sĩ",
-                url=f"/admin/ICD10/user/{instance.id}/change/",
+                url=f"http://127.0.0.1:8000/admin/ICD10/user/{instance.id}/change/",
                 notif_type='verify'
             )
         # Gửi realtime websocket
@@ -81,6 +81,6 @@ def notify_admin_verify_request(sender, instance, created, **kwargs):
                 "type": "send_notification",
                 "event": "verify_request",
                 "message": f"🩺 {instance.username} vừa gửi yêu cầu xác minh bác sĩ",
-                "url": f"/admin/ICD10/user/{instance.id}/change/"
+                "url": f"http://127.0.0.1:8000/admin/ICD10/user/{instance.id}/change/"
             },
         )

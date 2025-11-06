@@ -12,7 +12,7 @@ class Notification(models.Model):
     )
     title = models.CharField(max_length=255)
     message = models.TextField()
-    url = models.CharField(max_length=255, null=True, blank=True)
+    url = models.URLField(max_length=255, null=True, blank=True)
     notif_type = models.CharField(max_length=20, choices=Constants.NOTIFICATION_TYPE_CHOICES, default='system')
     is_read = models.BooleanField(default=False)
     created_at = models.DateTimeField(auto_now_add=True)
