@@ -10,7 +10,7 @@ from django.http import HttpResponseRedirect
 from django.core import signing
 from constants.redis_keys import Rediskeys
 from ICD10.models.user import User
-from  ICD10.serializers.user_serializers import UserSerializer
+from  ICD10.serializers.user_serializers import UserSerializer, PasswordResetRequestSerializer, PasswordResetConfirmSerializer
 from utils.utils import Utils
 from permissions.permisstions import IsAdmin
 from libs.Redis import RedisWrapper
@@ -24,13 +24,10 @@ from django.contrib.auth.password_validation import validate_password
 from django.core.exceptions import ValidationError
 from django.db import transaction
 from django.views.decorators.cache import cache_page
-# # TEST
-# import pandas as pd
-# from datetime import date
-# from datetime import datetime
-# from django.conf import settings
-# import os
-
+from rest_framework_simplejwt.tokens import RefreshToken
+from django.contrib.auth.tokens import PasswordResetTokenGenerator
+from django.utils.encoding import force_bytes, force_str
+from django.utils.http import urlsafe_base64_encode, urlsafe_base64_decode
 
 @api_view(["POST"])
 @authentication_classes([])
@@ -226,11 +223,9 @@ def change_password(request):
 
 @api_view(["PUT"])
 @permission_classes([IsAuthenticated])
-def verified_doctor(request, pk):
+def verified_doctor(request):
     try:
-        user = User.objects.get(id=pk)
-        if request.user.id != user.id:
-            return AppResponse.error(ErrorCodes.PERMISSION_DENIED)
+        user = User.objects.get(id=request.user.id)
     except User.DoesNotExist:
         return AppResponse.error(ErrorCodes.USER_NOT_FOUND)
 
@@ -308,3 +303,65 @@ def approve_doctor_verification(request, pk):
     RedisWrapper.remove(Constants.CACHE_KEY_WAITING_USERS)
 
     return AppResponse.success(SuccessCodes.VERIFIED_DOCTOR, data=UserSerializer(user).data)
+
+@api_view(['POST'])
+@permission_classes([IsAuthenticated])
+def logout(request):
+    try:
+        refresh_token = request.data["refresh_token"]
+        token = RefreshToken(refresh_token)
+        token.blacklist()
+
+        return AppResponse.success(SuccessCodes.LOGOUT)
+    except KeyError:
+        return AppResponse.error(ErrorCodes.REFRESH_TOKEN_REQUIRED)
+    except Exception as e:
+        return AppResponse.error(ErrorCodes.INTERNAL_SERVER_ERROR, errors=str(e))
+
+@api_view(['POST'])
+@permission_classes([IsAuthenticated])
+def request_password_reset(request):
+    serializer = PasswordResetRequestSerializer(data=request.data)
+    if serializer.is_valid():
+        email = request.user.email
+        username = request.user.username
+        try:
+            user = User.objects.get(email=email)
+        except User.DoesNotExist:
+            return AppResponse.error(ErrorCodes.USER_NOT_FOUND)
+
+        uid = urlsafe_base64_encode(force_bytes(user.pk))
+        token = token_generator.make_token(user)
+        reset_url = os.getenv("reset_link")
+        reset_link = f"{reset_url}{uid}/{token}"
+
+        # Gửi email
+        Utils.email_reset_password(
+            user=user,
+            reset_link=reset_link
+        )
+
+        return AppResponse.success(SuccessCodes.PASSWORD_RESET_EMAIL_SENT)
+    return AppResponse.error(ErrorCodes.VALIDATION_ERROR, errors=serializer.errors)
+
+token_generator = PasswordResetTokenGenerator()
+@api_view(['POST'])
+def reset_password_confirm(request, uid, token):
+    serializer = PasswordResetConfirmSerializer(data=request.data)
+    if serializer.is_valid():
+        new_password = serializer.validated_data['new_password']
+
+        try:
+            uid_decoded = force_str(urlsafe_base64_decode(uid))
+            user = User.objects.get(pk=uid_decoded)
+        except (User.DoesNotExist, ValueError, TypeError):
+            return AppResponse.error(ErrorCodes.USER_NOT_FOUND)
+
+        if token_generator.check_token(user, token):
+            user.set_password(new_password)
+            user.save()
+            return AppResponse.success(SuccessCodes.PASSWORD_RESET_SUCCESS)
+        else:
+            return AppResponse.error(ErrorCodes.INVALID_TOKEN)
+
+    return AppResponse.error(ErrorCodes.VALIDATION_ERROR, errors=serializer.errors)

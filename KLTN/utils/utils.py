@@ -192,6 +192,28 @@ class Utils:
         msg.send()
         
     @staticmethod
+    def email_reset_password(user, reset_link):
+        subject = "Đặt lại mật khẩu ICD10"
+        from_email = "noreply@icd10.com"
+        to = [user.email]
+        
+        html_content = render_to_string('reset_password_email_template.html', {'username': user.username,
+                                                            'reset_link': reset_link})
+        text_content = strip_tags(html_content)
+
+        msg = EmailMultiAlternatives(subject, text_content, from_email, to)
+        msg.attach_alternative(html_content, "text/html")
+        
+        # attach logo
+        with open("templates/logo/logo.png", "rb") as f:  # nên dùng png thay vì svg
+            logo = MIMEImage(f.read(), _subtype="png")
+            logo.add_header('Content-ID', '<logo_image>')
+            logo.add_header('Content-Disposition', 'inline', filename="logo.png")
+            msg.attach(logo)
+
+        msg.send()
+        
+    @staticmethod
     def admin_send_activation_email(user, password, activation_link):
         subject = "Kích hoạt tài khoản ICD10"
         from_email = "noreply@icd10.com"

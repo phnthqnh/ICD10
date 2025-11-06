@@ -5,8 +5,11 @@ urlpatterns = [
     # user endpoints
     path("register/", user_views.user_register, name="user-register"),
     path("login/", user_views.login, name="user-login"),
+    path("logout/", user_views.logout, name="user-logout"),
+    path("reset-password/", user_views.request_password_reset, name="reset-password"),
+    path("password-confirm/<uid>/<token>/", user_views.reset_password_confirm, name="reset-password"),
     path("verify-email/", user_views.verify_email, name="verify-email"),
-    path("verified_doctor/<int:pk>/", user_views.verified_doctor, name="verified-doctor"),
+    path("verified_doctor/", user_views.verified_doctor, name="verified-doctor"),
     path("list_verification/", user_views.get_users_waiting_verification, name="list-verification"),
     path("approve_verification/<int:pk>/", user_views.approve_doctor_verification, name="approve-verification"),
     # icd10 endpoints
@@ -35,5 +38,6 @@ urlpatterns = [
     path("feedbacks/chatbot/reject/<int:pk>/", feedback_views.reject_feedback_chatbot, name="reject-feedback-chatbot"),
     # notification endpoints
     path("notifications/unread_count/", notification_views.unread_notifications, name="unread-notifications"),
+    path("notifications/", notification_views.unread_notis, name="notifications"),
     path("notifications/user/", notification_views.user_notifications, name="user-notifications"),
 ]

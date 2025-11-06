@@ -8,7 +8,7 @@ from ICD10.models.notification import *
 from django.db import models
 from unfold.admin import ModelAdmin
 from unfold.contrib.forms.widgets import ArrayWidget, WysiwygWidget
-from .forms import UserCreationForm, UserChangeForm
+from .forms import UserCreationForm, UserChangeForm, CustomPasswordChangeForm
 from utils.utils import Utils
 from django.conf import settings
 from channels.layers import get_channel_layer
@@ -18,6 +18,7 @@ from asgiref.sync import async_to_sync
 class UserAdmin(ModelAdmin):
     add_form = UserCreationForm
     form = UserChangeForm
+    change_password_form = CustomPasswordChangeForm
     model = User
 
     list_display = ("username", "email", "role", "status", "is_verified_doctor", "is_superuser")
@@ -37,7 +38,7 @@ class UserAdmin(ModelAdmin):
     add_fieldsets = (
         (None, {
             "classes": ("wide",),
-            "fields": ("username", "email", "password1", "password2", "role", "status", "is_staff", "is_superuser"),
+            "fields": ("username", "email", "role", "status", "is_staff", "is_superuser"),
         }),
     )
 
@@ -50,6 +51,21 @@ class UserAdmin(ModelAdmin):
             defaults["form"] = self.form
         defaults.update(kwargs)
         return super().get_form(request, obj, **defaults)
+    
+    def get_fieldsets(self, request, obj=None):
+        if not obj:
+            return self.add_fieldsets
+        
+        # Custom fieldsets cho change password form
+        if request.path.endswith('password'):
+            return [
+                ('Thay đổi mật khẩu', {
+                    'description': 'Để đảm bảo an toàn, hãy nhập mật khẩu cũ của bạn trước khi đặt mật khẩu mới.',
+                    'fields': ('old_password', 'new_password1', 'new_password2'),
+                }),
+            ]
+            
+        return super().get_fieldsets(request, obj)
     
     def save_model(self, request, obj, form, change):
         # nếu is_verified_doctor = true thì role = 2

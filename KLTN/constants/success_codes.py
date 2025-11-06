@@ -19,6 +19,8 @@ class SuccessCodes:
     CHANGE_PASSWORD = ("CHANGE_PASSWORD", "Change Password successfully!")
     ADMIN_INFOR = ("ADMIN_INFOR", "admin_infor")
     VERIFIED_DOCTOR = ("VERIFIED_DOCTOR", "User verified doctor successfully!")
+    PASSWORD_RESET_EMAIL_SENT = ("PASSWORD_RESET_EMAIL_SENT", "Password reset email sent successfully!")
+    PASSWORD_RESET_SUCCESS = ("PASSWORD_RESET_SUCCESS", "Password has been reset successfully!")
     
     # Admin
     LIST_VERIFICATION = ("LIST_VERIFICATION", "List users waiting for verification successfully!")

@@ -138,4 +138,16 @@ class UserSerializer(serializers.ModelSerializer):
             return Validator.validate_email(value)
         return value
     
-    
+
+class PasswordResetRequestSerializer(serializers.Serializer):
+    # email = serializers.EmailField()
+    # username = serializers.CharField()
+
+    def validate_email(self, value):
+        if not User.objects.filter(email=value).exists():
+            raise serializers.ValidationError("Không tìm thấy người dùng với email này.")
+        return value
+
+class PasswordResetConfirmSerializer(serializers.Serializer):
+    # new_password = serializers.CharField(min_length=8, write_only=True)
+    new_password = serializers.CharField(max_length=50, write_only=True)
