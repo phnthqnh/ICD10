@@ -175,15 +175,15 @@ DATABASES = {
 # https://docs.djangoproject.com/en/5.2/ref/settings/#auth-password-validators
 
 AUTH_PASSWORD_VALIDATORS = [
-    {
-        'NAME': 'django.contrib.auth.password_validation.UserAttributeSimilarityValidator',
-    },
+    # {
+    #     'NAME': 'django.contrib.auth.password_validation.UserAttributeSimilarityValidator',
+    # },
     {
         'NAME': 'django.contrib.auth.password_validation.MinimumLengthValidator',
     },
-    {
-        'NAME': 'django.contrib.auth.password_validation.CommonPasswordValidator',
-    },
+    # {
+    #     'NAME': 'django.contrib.auth.password_validation.CommonPasswordValidator',
+    # },
     {
         'NAME': 'django.contrib.auth.password_validation.NumericPasswordValidator',
     },
@@ -195,7 +195,7 @@ AUTH_PASSWORD_VALIDATORS = [
 
 LANGUAGE_CODE = 'en-us'
 
-TIME_ZONE = 'UTC'
+TIME_ZONE = 'Asia/Ho_Chi_Minh'
 
 USE_I18N = True
 
@@ -220,68 +220,67 @@ STATIC_ROOT = os.path.join(BASE_DIR, 'staticfiles')
 STATICFILES_DIRS = [
     os.path.join(BASE_DIR, 'static')
 ]
-from django.templatetags.static import static
-
-UNFOLD = {
-    "SITE_HEADER": "ICD10 Admin",
-    "SITE_TITLE": "ICD10 Management",
-    "SITE_SYMBOL": "🧬",
-    "SHOW_HISTORY": True,
-    "SHOW_VIEW_ON_SITE": False,
-    "SITE_LOGO": lambda request: static("logo.svg"),
-    "BORDER_RADIUS": "8px",
-    "STYLES": [
-        lambda request: static("css/styles.css"),
-    ],
-    "CUSTOM_JS": ["js/admin_notifications.js"],
-    "COLORS": {
-        "primary": {
-            "50": "#E3E8ED",
-            "100": "#96CAF4",
-            "200": "#5FA6E0",
-            "300": "#598CB6",
-            "400": "#316F9F",
-            "500": "#4E7593",
-            "600": "#305E81",
-            "700": "#183856",  # ✅ Màu chủ đạo bạn muốn
-            "800": "#132E44",
-            "900": "#0E2433",
-            "950": "#091A22",
-        },
-        # màu nền (base) có thể giữ nguyên hoặc đổi nhẹ cho phù hợp
-        "base": {
-            "50": "#F9FAFB",
-            "100": "#F3F4F6",
-            "200": "#E5E7EB",
-            "300": "#D1D5DB",
-            "400": "#9CA3AF",
-            "500": "#6B7280",
-            "600": "#4B5563",
-            "700": "#374151",
-            "800": "#1F2937",
-            "900": "#111827",
-            "950": "#0B0F14",
-        },
-        "font": {
-            "subtle-light": "var(--color-base-500)",  # text-base-500
-            "subtle-dark": "var(--color-base-400)",  # text-base-400
-            "default-light": "var(--color-base-600)",  # text-base-600
-            "default-dark": "var(--color-base-300)",  # text-base-300
-            "important-light": "var(--color-base-900)",  # text-base-900
-            "important-dark": "var(--color-base-100)",  # text-base-100
-        },
-    },
-}
 
 # UNFOLD = {
-#     **UNFOLD,
+#     "SITE_HEADER": "ICD10 Admin",
+#     "SITE_TITLE": "ICD10 Management",
+#     "SITE_SYMBOL": "🧬",
+#     "SHOW_HISTORY": True,
+#     "SHOW_VIEW_ON_SITE": False,
+#     "SITE_LOGO": lambda request: static("logo.svg"),
+#     "BORDER_RADIUS": "8px",
+#     "STYLES": [
+#         lambda request: static("css/styles.css"),
+#     ],
+#     "CUSTOM_JS": ["js/admin_notifications.js"],
+#     "COLORS": {
+#         "primary": {
+#             "50": "#E3E8ED",
+#             "100": "#96CAF4",
+#             "200": "#5FA6E0",
+#             "300": "#598CB6",
+#             "400": "#316F9F",
+#             "500": "#4E7593",
+#             "600": "#305E81",
+#             "700": "#183856",  # ✅ Màu chủ đạo bạn muốn
+#             "800": "#132E44",
+#             "900": "#0E2433",
+#             "950": "#091A22",
+#         },
+#         # màu nền (base) có thể giữ nguyên hoặc đổi nhẹ cho phù hợp
+#         "base": {
+#             "50": "#F9FAFB",
+#             "100": "#F3F4F6",
+#             "200": "#E5E7EB",
+#             "300": "#D1D5DB",
+#             "400": "#9CA3AF",
+#             "500": "#6B7280",
+#             "600": "#4B5563",
+#             "700": "#374151",
+#             "800": "#1F2937",
+#             "900": "#111827",
+#             "950": "#0B0F14",
+#         },
+#         "font": {
+#             "subtle-light": "var(--color-base-500)",  # text-base-500
+#             "subtle-dark": "var(--color-base-400)",  # text-base-400
+#             "default-light": "var(--color-base-600)",  # text-base-600
+#             "default-dark": "var(--color-base-300)",  # text-base-300
+#             "important-light": "var(--color-base-900)",  # text-base-900
+#             "important-dark": "var(--color-base-100)",  # text-base-100
+#         },
+#     },
 # }
 
-# # Admin site configuration
-# JAZZMIN_SETTINGS = None
-# ADMIN_SITE_TITLE = UNFOLD["SITE_TITLE"]
-# ADMIN_SITE_HEADER = UNFOLD["SITE_HEADER"]
-# ADMIN_INDEX_TITLE = UNFOLD["SITE_SUBHEADER"]
+UNFOLD = {
+    **UNFOLD,
+}
+
+# Admin site configuration
+JAZZMIN_SETTINGS = None
+ADMIN_SITE_TITLE = UNFOLD["SITE_TITLE"]
+ADMIN_SITE_HEADER = UNFOLD["SITE_HEADER"]
+ADMIN_INDEX_TITLE = UNFOLD["SITE_SUBHEADER"]
 
 
 
