@@ -140,7 +140,7 @@ class UserSerializer(serializers.ModelSerializer):
     
 
 class PasswordResetRequestSerializer(serializers.Serializer):
-    # email = serializers.EmailField()
+    email = serializers.EmailField()
     # username = serializers.CharField()
 
     def validate_email(self, value):
@@ -149,5 +149,6 @@ class PasswordResetRequestSerializer(serializers.Serializer):
         return value
 
 class PasswordResetConfirmSerializer(serializers.Serializer):
-    # new_password = serializers.CharField(min_length=8, write_only=True)
-    new_password = serializers.CharField(max_length=50, write_only=True)
+    email = serializers.EmailField()
+    otp = serializers.CharField(max_length=6)
+    new_password = serializers.CharField(min_length=8, write_only=True)

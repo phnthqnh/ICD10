@@ -9,6 +9,7 @@ class SuccessCodes:
     GET_USER = ("GET_USER", "Get user successfully!")
     LOGOUT = ("AU_S_002", "Loogut successfully!")
     REGISTER = ("AU_S_003", "Register successfully!")
+    RESEND_VERIFICATION = ("RESEND_VERIFICATION", "Resend verification successfully!")
     ADMIN_CREATE_USER = ("CREATE_USER", "Register user successfully!")
     UPDATE_USER_PROFILE = ("UPDATE_USER_PROFILE", "Update User profile successfully!")
     LIST_USER = ("LIST_USER", "users")
@@ -21,6 +22,7 @@ class SuccessCodes:
     VERIFIED_DOCTOR = ("VERIFIED_DOCTOR", "User verified doctor successfully!")
     PASSWORD_RESET_EMAIL_SENT = ("PASSWORD_RESET_EMAIL_SENT", "Password reset email sent successfully!")
     PASSWORD_RESET_SUCCESS = ("PASSWORD_RESET_SUCCESS", "Password has been reset successfully!")
+    GET_USER_PROFILE = ("GET_USER_PROFILE", "Get user profile successfully!")
     
     # Admin
     LIST_VERIFICATION = ("LIST_VERIFICATION", "List users waiting for verification successfully!")

@@ -1,4 +1,4 @@
-import os
+import os, random
 import boto3, uuid
 from rest_framework.permissions import AllowAny,IsAuthenticated
 from constants.constants import Constants
@@ -10,7 +10,7 @@ from django.http import HttpResponseRedirect
 from django.core import signing
 from constants.redis_keys import Rediskeys
 from ICD10.models.user import User
-from  ICD10.serializers.user_serializers import UserSerializer, PasswordResetRequestSerializer, PasswordResetConfirmSerializer
+from ICD10.serializers.user_serializers import UserSerializer, PasswordResetRequestSerializer, PasswordResetConfirmSerializer
 from utils.utils import Utils
 from permissions.permisstions import IsAdmin
 from libs.Redis import RedisWrapper
@@ -128,23 +128,40 @@ def verify_email(request):
     if not token:
         return AppResponse.error(ErrorCodes.TOKEN_REQUIRED)
     try:
-        data = signing.loads(token, salt="email-verify", max_age=60*2)  # 5 minutes
+        data = signing.loads(token, salt="email-verify", max_age=60*2)  # 2 minutes
         user = User.objects.get(id=data["user_id"], email=data["email"])
         user.email_verified = True
         user.status = 1  # Active
         user.save()
 
         # Redirect về trang thông báo thành công
-        return HttpResponseRedirect("http://localhost:8000/admin/login")
+        return HttpResponseRedirect("http://localhost:4200/sign-in")
     except signing.BadSignature:
         # Redirect về trang thông báo lỗi
-        return HttpResponseRedirect("http://localhost:8000/admin/login")
+        return HttpResponseRedirect("http://localhost:4200/not-verify-email")
 
 
 @api_view(["POST"])
 @permission_classes([AllowAny])
 @authentication_classes([])
 def user_register(request):
+    email = request.data.get("email")
+    existing_user = User.objects.filter(email=email).first()
+    # 🔁 Nếu người dùng đã tồn tại nhưng chưa kích hoạt
+    if existing_user and existing_user.status == 3:
+        token = Utils.generate_verification_token(existing_user)
+        activation_url = os.getenv("activation_url")
+        activation_link = f"{activation_url}?token={token}"
+
+        Utils.send_activation_email(
+            user=existing_user,
+            activation_link=activation_link
+        )
+
+        return AppResponse.success(
+            SuccessCodes.RESEND_VERIFICATION,
+            data={"email": email, "message": "Email kích hoạt mới đã được gửi."}
+        )
     
     serializer = UserSerializer(
         data=request.data,
@@ -318,50 +335,121 @@ def logout(request):
     except Exception as e:
         return AppResponse.error(ErrorCodes.INTERNAL_SERVER_ERROR, errors=str(e))
 
+# @api_view(['POST'])
+# @permission_classes([IsAuthenticated])
+# def request_password_reset(request):
+#     serializer = PasswordResetRequestSerializer(data=request.data)
+#     if serializer.is_valid():
+#         email = request.user.email
+#         username = request.user.username
+#         try:
+#             user = User.objects.get(email=email)
+#         except User.DoesNotExist:
+#             return AppResponse.error(ErrorCodes.USER_NOT_FOUND)
+
+#         uid = urlsafe_base64_encode(force_bytes(user.pk))
+#         token = token_generator.make_token(user)
+#         reset_url = os.getenv("reset_link")
+#         reset_link = f"{reset_url}{uid}/{token}"
+
+#         # Gửi email
+#         Utils.email_reset_password(
+#             user=user,
+#             reset_link=reset_link
+#         )
+
+#         return AppResponse.success(SuccessCodes.PASSWORD_RESET_EMAIL_SENT)
+#     return AppResponse.error(ErrorCodes.VALIDATION_ERROR, errors=serializer.errors)
+
+# token_generator = PasswordResetTokenGenerator()
+# @api_view(['POST'])
+# def reset_password_confirm(request, uid, token):
+#     serializer = PasswordResetConfirmSerializer(data=request.data)
+#     if serializer.is_valid():
+#         new_password = serializer.validated_data['new_password']
+
+#         try:
+#             uid_decoded = force_str(urlsafe_base64_decode(uid))
+#             user = User.objects.get(pk=uid_decoded)
+#         except (User.DoesNotExist, ValueError, TypeError):
+#             return AppResponse.error(ErrorCodes.USER_NOT_FOUND)
+
+#         if token_generator.check_token(user, token):
+#             user.set_password(new_password)
+#             user.save()
+#             return AppResponse.success(SuccessCodes.PASSWORD_RESET_SUCCESS)
+#         else:
+#             return AppResponse.error(ErrorCodes.INVALID_TOKEN)
+
+#     return AppResponse.error(ErrorCodes.VALIDATION_ERROR, errors=serializer.errors)
+
+
 @api_view(['POST'])
-@permission_classes([IsAuthenticated])
+@permission_classes([AllowAny])
+@authentication_classes([])
 def request_password_reset(request):
     serializer = PasswordResetRequestSerializer(data=request.data)
-    if serializer.is_valid():
-        email = request.user.email
-        username = request.user.username
-        try:
-            user = User.objects.get(email=email)
-        except User.DoesNotExist:
-            return AppResponse.error(ErrorCodes.USER_NOT_FOUND)
+    if not serializer.is_valid():
+        return AppResponse.error(ErrorCodes.VALIDATION_ERROR, errors=serializer.errors)
 
-        uid = urlsafe_base64_encode(force_bytes(user.pk))
-        token = token_generator.make_token(user)
-        reset_url = os.getenv("reset_link")
-        reset_link = f"{reset_url}{uid}/{token}"
+    email = serializer.validated_data['email']
+    try:
+        user = User.objects.get(email=email)
+    except User.DoesNotExist:
+        return AppResponse.error(ErrorCodes.USER_NOT_FOUND)
 
-        # Gửi email
-        Utils.email_reset_password(
-            user=user,
-            reset_link=reset_link
-        )
+    # --- Sinh mã OTP 6 chữ số ---
+    otp = str(random.randint(100000, 999999))
 
-        return AppResponse.success(SuccessCodes.PASSWORD_RESET_EMAIL_SENT)
-    return AppResponse.error(ErrorCodes.VALIDATION_ERROR, errors=serializer.errors)
+    # --- Lưu OTP vào cache (hoặc Redis) trong 5 phút ---
+    cache_key = f"password_reset_otp_{email}"
+    RedisWrapper.save(cache_key, otp, expire_time=5 * 60)  # 5 phút
 
-token_generator = PasswordResetTokenGenerator()
+    # --- Gửi email ---
+    Utils.email_reset_password(user=user, otp=otp)
+
+    return AppResponse.success(SuccessCodes.PASSWORD_RESET_EMAIL_SENT)
+
+
+
 @api_view(['POST'])
-def reset_password_confirm(request, uid, token):
+@permission_classes([AllowAny])
+@authentication_classes([])
+def reset_password_confirm(request):
     serializer = PasswordResetConfirmSerializer(data=request.data)
-    if serializer.is_valid():
-        new_password = serializer.validated_data['new_password']
+    if not serializer.is_valid():
+        return AppResponse.error(ErrorCodes.VALIDATION_ERROR, errors=serializer.errors)
 
-        try:
-            uid_decoded = force_str(urlsafe_base64_decode(uid))
-            user = User.objects.get(pk=uid_decoded)
-        except (User.DoesNotExist, ValueError, TypeError):
-            return AppResponse.error(ErrorCodes.USER_NOT_FOUND)
+    email = serializer.validated_data['email']
+    otp = serializer.validated_data['otp']
+    new_password = serializer.validated_data['new_password']
 
-        if token_generator.check_token(user, token):
-            user.set_password(new_password)
-            user.save()
-            return AppResponse.success(SuccessCodes.PASSWORD_RESET_SUCCESS)
-        else:
-            return AppResponse.error(ErrorCodes.INVALID_TOKEN)
+    # --- Kiểm tra mã OTP ---
+    cache_key = f"password_reset_otp_{email}"
+    saved_otp = RedisWrapper.get(cache_key)
+    print("saved_otp", saved_otp)
+    if not saved_otp:
+        return AppResponse.error(ErrorCodes.OTP_EXPIRED, errors="OTP đã hết hạn hoặc không tồn tại.")
 
-    return AppResponse.error(ErrorCodes.VALIDATION_ERROR, errors=serializer.errors)
+    if str(otp).strip() != str(saved_otp).strip():
+        return AppResponse.error(ErrorCodes.OTP_INVALID, errors="Mã OTP không chính xác.")
+
+    # --- Cập nhật mật khẩu ---
+    try:
+        user = User.objects.get(email=email)
+    except User.DoesNotExist:
+        return AppResponse.error(ErrorCodes.USER_NOT_FOUND)
+
+    user.set_password(new_password)
+    user.save()
+
+    # --- Xóa OTP khỏi cache ---
+    RedisWrapper.remove(cache_key)
+
+    return AppResponse.success(SuccessCodes.PASSWORD_RESET_SUCCESS)
+
+
+@api_view(['GET'])
+@permission_classes([IsAuthenticated])
+def get_user_profile(request):
+    return AppResponse.success(SuccessCodes.GET_USER_PROFILE, data=UserSerializer(request.user).data)

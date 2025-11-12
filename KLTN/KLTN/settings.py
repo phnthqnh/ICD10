@@ -106,6 +106,53 @@ CHANNEL_LAYERS = {
     }
 }
 
+# Channels CORS
+CHANNEL_LAYERS_CORS_ORIGINS = [
+    "http://localhost:4200",
+    "http://127.0.0.1:4200",
+]
+
+# CORS settings
+CORS_ALLOW_ALL_ORIGINS = False  # Đặt True chỉ khi development
+CORS_ALLOWED_ORIGINS = [
+    "http://localhost:4200",  # React default port
+    "http://127.0.0.1:4200",
+    # Thêm domain của frontend production khi deploy
+]
+
+# Cho phép credentials (cookies, authorization headers)
+CORS_ALLOW_CREDENTIALS = True
+
+# Cho phép các methods 
+CORS_ALLOW_METHODS = [
+    'DELETE',
+    'GET',
+    'OPTIONS',
+    'PATCH',
+    'POST',
+    'PUT',
+]
+
+# Cho phép các headers
+CORS_ALLOW_HEADERS = [
+    'accept',
+    'accept-encoding',
+    'authorization',
+    'content-type',
+    'dnt',
+    'origin',
+    'user-agent',
+    'x-csrftoken',
+    'x-requested-with',
+]
+
+# CSRF settings nếu cần
+CSRF_TRUSTED_ORIGINS = [
+    "http://localhost:4200",
+    "http://127.0.0.1:4200",
+    # Thêm domain của frontend production
+]
+
 SIMPLE_JWT = {
     'ACCESS_TOKEN_LIFETIME': timedelta(minutes=60),
     'REFRESH_TOKEN_LIFETIME': timedelta(days=1),
@@ -115,6 +162,7 @@ SIMPLE_JWT = {
 }
 
 MIDDLEWARE = [
+    'corsheaders.middleware.CorsMiddleware',  # Thêm dòng này lên đầu
     'django.middleware.security.SecurityMiddleware',
     "whitenoise.middleware.WhiteNoiseMiddleware",
     'django.contrib.sessions.middleware.SessionMiddleware',

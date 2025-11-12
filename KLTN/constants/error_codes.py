@@ -283,7 +283,11 @@ class ErrorCodes:
         "Error consuming Kafka message",
         StatusCodes.INTERNAL_SERVER_ERROR,
     )
-
+    
+    # OTP
+    OTP_EXPIRED = ("OTP_EXPIRED", "OTP expired", StatusCodes.UNAUTHORIZED)
+    OTP_INVALID = ("OTP_INVALID", "Invalid OTP", StatusCodes.UNAUTHORIZED)
+    
     # JWT / Token
     TOKEN_EXPIRED = ("AU_E_003", "Token expired", StatusCodes.UNAUTHORIZED)
     INVALID_TOKEN = ("AU_E_002", "Invalid token", StatusCodes.UNAUTHORIZED)
