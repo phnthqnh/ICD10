@@ -15,19 +15,23 @@ class BlockSerializer(serializers.ModelSerializer):
 
 class DiseaseSerializer(serializers.ModelSerializer):
     # block = BlockSerializer(read_only=True)
-    parent = serializers.SerializerMethodField()
+    # parent = serializers.SerializerMethodField()
+    is_leaf = serializers.SerializerMethodField()
 
     class Meta:
         model = ICDDisease
-        fields = '__all__'
+        fields = ['id', 'code', 'title_vi', 'is_leaf']
 
-    def get_parent(self, obj):
-        if obj.parent:
-            return {
-                "code": obj.parent.code,
-                "title": obj.parent.title
-            }
-        return None
+    # def get_parent(self, obj):
+    #     if obj.parent:
+    #         return {
+    #             "code": obj.parent.code,
+    #             "title": obj.parent.title
+    #         }
+    #     return None
+    
+    def get_is_leaf(self, obj):
+        return not ICDDisease.objects.filter(parent=obj).exists()
     
 
 class DiseaseExtraInfoSerializer(serializers.ModelSerializer):

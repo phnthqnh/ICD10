@@ -15,5 +15,5 @@ export const uriConfig = {
     API_GET_ICD10_DISEASES_BY_BLOCK: (id: number) => 
         baseUrl + `/api/childs/block/${id}/`,
     API_GET_ICD10_DISEASES_CHILDREN: (id: number) =>
-        baseUrl + `/api/childs/disease/${id}/`,
+        baseUrl + `/api/childs/diseases/${id}/`,
 }

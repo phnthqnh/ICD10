@@ -12,6 +12,7 @@ from permissions.permisstions import IsAdmin, IsUser
 from constants.error_codes import ErrorCodes
 from constants.success_codes import SuccessCodes
 from utils.utils import Utils
+from ICD10.serializers.icd10_serializers import *
 from ICD10.models.user import User
 from django.views.decorators.cache import cache_page
 from django.db.models import Q
@@ -109,7 +110,9 @@ def get_diseases_by_block(request, pk):
             return AppResponse.error(ErrorCodes.NOT_FOUND, errors="Block not found")
         
         diseases = ICDDisease.objects.filter(block=block, parent__isnull=True).all()
-        diseases_data = Utils.serialize_queryset(diseases)
+        diseases_data = DiseaseSerializer(diseases, many=True).data
+        # thêm trường is_leaf vào data
+        
         
         # 3. Lưu vào cache (ví dụ 15 phút)
         RedisWrapper.save(f"{Constants.CACHE_KEY_DISEASES}_{pk}", diseases_data, expire_time=60*1)
@@ -145,7 +148,7 @@ def get_diseases_children(request, pk):
         if not subdisease:
             return AppResponse.error(ErrorCodes.NOT_FOUND, errors="Subdisease not found")
 
-        subdisease_data = Utils.serialize_queryset(subdisease)
+        subdisease_data = DiseaseSerializer(subdisease, many=True).data
         
         # 3. Lưu vào cache (ví dụ 15 phút)
         RedisWrapper.save(f"{Constants.CACHE_KEY_DISEASES_CHILDREN}_{pk}", subdisease_data, expire_time=60*1)
@@ -210,7 +213,7 @@ def get_disease_by_code(request, code):
         if not disease:
             return AppResponse.error(ErrorCodes.NOT_FOUND, errors="Disease not found")
         
-        disease_data = Utils.serialize_queryset([disease], fields=["code", "title_en", "title_vi"])
+        disease_data = Utils.serialize_extrainfo_queryset([disease], fields=["code", "title_en", "title_vi"])
         disease_data[0]["description"] = disease_extra.description
         disease_data[0]["symptoms"] = disease_extra.symptoms
         disease_data[0]["image_url"] = disease_extra.image_url

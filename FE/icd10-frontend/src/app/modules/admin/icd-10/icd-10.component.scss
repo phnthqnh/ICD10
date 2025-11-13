@@ -1,0 +1,38 @@
+.icd-tree {
+    max-height: calc(100vh - 120px);
+    min-height: 100%;
+    overflow-y: auto;
+    border: 1px solid #ccc;
+    border-radius: 16px;
+    padding: 8px;
+}
+
+.icd-search {
+    background-color: white;
+    border-radius: 16px;
+    border: 1px solid #ccc;
+    display: flex;
+    align-items: center;
+    padding: 8px 12px;
+    margin-bottom: 16px;
+}
+
+.flex {
+    display: flex;
+}
+
+.w-1\/2 {
+    width: 50%;
+}
+
+.border-r {
+    border-right: 1px solid #ccc;
+}
+
+.p-4 {
+    padding: 1rem;
+}
+
+.p-6 {
+    padding: 1.5rem;
+}

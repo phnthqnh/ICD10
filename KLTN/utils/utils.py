@@ -97,7 +97,26 @@ class Utils:
         Mặc định: ["code", "title_en", "title_vi"]
         """
         if fields is None:
-            fields = ["code", "title_en", "title_vi", "description", "symptoms", "image_url", "wikipedia_url"]
+            fields = ["id", "code", "title_en", "title_vi"]
+
+        data = []
+        for obj in queryset:
+            item = {}
+            for field in fields:
+                # getattr để lấy từ object (model instance)
+                # nếu dùng .values() thì không cần getattr
+                item[field] = getattr(obj, field, None)
+            data.append(item)
+        return data
+    
+    @staticmethod
+    def serialize_extrainfo_queryset(queryset, fields=None):
+        """
+        Chuyển queryset hoặc list object thành list dict chỉ chứa các field cần thiết.
+        Mặc định: ["code", "title_en", "title_vi"]
+        """
+        if fields is None:
+            fields = ["id", "code", "title_en", "title_vi", "description", "symptoms", "image_url", "wikipedia_url"]
 
         data = []
         for obj in queryset:
@@ -192,13 +211,13 @@ class Utils:
         msg.send()
         
     @staticmethod
-    def email_reset_password(user, reset_link):
+    def email_reset_password(user, otp):
         subject = "Đặt lại mật khẩu ICD10"
         from_email = "noreply@icd10.com"
         to = [user.email]
         
         html_content = render_to_string('reset_password_email_template.html', {'username': user.username,
-                                                            'reset_link': reset_link})
+                                                            'otp': otp})
         text_content = strip_tags(html_content)
 
         msg = EmailMultiAlternatives(subject, text_content, from_email, to)

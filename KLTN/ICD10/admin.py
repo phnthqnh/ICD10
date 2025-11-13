@@ -138,6 +138,7 @@ class ICDDiseaseAdmin(ModelAdmin):
     ordering = ("code",)
     list_filter = ("block", "parent")
     list_per_page = 20
+    autocomplete_fields= ('parent',)
     readonly_fields = ("updated_at",)
     
     inlines = [DiseaseExtraInfoInline]
