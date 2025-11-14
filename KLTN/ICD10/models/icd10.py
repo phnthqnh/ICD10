@@ -5,22 +5,23 @@ class ICDChapter(models.Model):
     """
     Chương lớn trong ICD-10 (ví dụ: I: Certain infectious and parasitic diseases)
     """
+    chapter = models.CharField(max_length=10, unique=True)
     code = models.CharField(max_length=10, unique=True)  # VD: "I"
     title_en = models.CharField(max_length=255)             # VD: "Certain infectious and parasitic diseases"
     title_vi = models.CharField(max_length=255)
     description = models.TextField(blank=True, null=True)
 
     def __str__(self):
-        return f"{self.code} - {self.title_vi}"
+        return f"{self.chapter} - {self.code} - {self.title_vi}"
 
     class Meta:
         verbose_name = 'Chương'
         verbose_name_plural = 'Chương'
         app_label = "ICD10"
         db_table = "icd_chapter"
-        ordering = ["code"]
+        ordering = ["chapter"]
         indexes = [
-            models.Index(fields=["code"], name="icd_chapter_codeS_idx"),
+            models.Index(fields=["chapter"], name="icd_chapter_codeS_idx"),
         ]
 
 

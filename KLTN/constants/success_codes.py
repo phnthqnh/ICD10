@@ -93,6 +93,21 @@ class SuccessCodes:
         "Search ICD-10 diseases successfully!",
     )
     
+    GET_DATA_CHAPTER = (
+        "GET_DATA_CHAPTER",
+        "Get ICD-10 data chapter successfully!",
+    )
+    
+    GET_DATA_BLOCK = (
+        "GET_DATA_BLOCK",
+        "Get ICD-10 data block successfully!",
+    )
+    
+    GET_DATA_DISEASE = (
+        "GET_DATA_DISEASE",
+        "Get ICD-10 data disease successfully!",
+    )
+    
     #FEEDBACKS
     GET_FEEDBACKS_ICD10 = (
         "GET_FEEDBACKS_ICD10",

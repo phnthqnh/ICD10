@@ -4,7 +4,7 @@ from ICD10.models.icd10 import *
 class ChapterSerializer(serializers.ModelSerializer):
     class Meta:
         model = ICDChapter
-        fields = '__all__'
+        fields = ['id', 'chapter', 'code', 'title_vi']
 
 class BlockSerializer(serializers.ModelSerializer):
     chapter = ChapterSerializer(read_only=True)

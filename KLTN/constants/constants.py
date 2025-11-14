@@ -71,6 +71,9 @@ class Constants:
     CACHE_KEY_DISEASES = "icd10_diseases"
     CACHE_KEY_DISEASES_CODE = "icd10_disease_code"
     CACHE_KEY_DISEASES_CHILDREN = "icd10_subdiseases"
+    CACHE_DATA_CHAPTER = "icd10_data_chapter"
+    CACHE_DATA_BLOCK = "icd10_data_block"
+    CACHE_DATA_DISEASE = "icd10_data_disease"
     
     # ICD10
     CACHE_KEY_DISEASES_BY_CODE = "CACHE_KEY_DISEASES_BY_CODE_{}"  # Thêm định dạng cho mã bệnh
