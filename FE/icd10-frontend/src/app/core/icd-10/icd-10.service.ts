@@ -29,11 +29,12 @@ export class Icd10Service
     {
         return this._httpClient.get<any>(uriConfig.API_GET_ICD10_CHAPTERS)
             .pipe(
-                switchMap((res) => {
-                    const chapters = res.data?.chapters ?? [];
-                    this._chapter.next(chapters);
-                    return this._chapter.asObservable();
-                })
+                // switchMap((res) => {
+                //     const chapters = res.data?.chapters ?? [];
+                //     this._chapter.next(chapters);
+                //     return this._chapter.asObservable();
+                // })
+                map((res) => res.data?.chapters ?? [])
             )
     }
 
@@ -46,12 +47,12 @@ export class Icd10Service
     {
         return this._httpClient.get<any>(uriConfig.API_GET_ICD10_BLOCKS_BY_CHAPTER(id))
             .pipe(
-                switchMap((res) => {
-                    const blocks = res.data?.blocks ?? [];
-                    this._block.next(blocks);
-                    return this._block.asObservable();
-                })
-            
+                // switchMap((res) => {
+                //     const blocks = res.data?.blocks ?? [];
+                //     this._block.next(blocks);
+                //     return this._block.asObservable();
+                // })
+                map((res) => res.data?.blocks ?? [])
             )
     }
 
@@ -64,11 +65,12 @@ export class Icd10Service
     {
         return this._httpClient.get<any>(uriConfig.API_GET_ICD10_DISEASES_BY_BLOCK(id))
             .pipe(
-                switchMap((res) => {
-                    const diseases = res.data?.diseases ?? [];
-                    this._disease.next(diseases);
-                    return this._disease.asObservable();
-                })
+                // switchMap((res) => {
+                //     const diseases = res.data?.diseases ?? [];
+                //     this._disease.next(diseases);
+                //     return this._disease.asObservable();
+                // })
+                map((res) => res.data?.diseases ?? [])
             )
     }
 
@@ -81,11 +83,51 @@ export class Icd10Service
     {
         return this._httpClient.get<any>(uriConfig.API_GET_ICD10_DISEASES_CHILDREN(id))
             .pipe(
-                switchMap((res) => {
-                    const diseases = res.data?.diseases ?? [];
-                    this._disease.next(diseases);
-                    return this._disease.asObservable();
-                })
+                // switchMap((res) => {
+                //     const diseases = res.data?.diseases ?? [];
+                //     this._disease.next(diseases);
+                //     return this._disease.asObservable();
+                // })
+                map((res) => res.data?.diseases ?? [])
+            )
+    }
+
+    /**
+     * get data chapter
+     *
+     * 
+     */
+    getDataChapter(id: number): Observable<any>
+    {
+        return this._httpClient.get<any>(uriConfig.API_GET_ICD10_DATA_CHAPTER(id))
+            .pipe(
+                map((res) => res?.data ?? [])
+            )
+    }
+
+    /**
+     * get data block
+     *
+     * 
+     */
+    getDataBlock(id: number): Observable<any>
+    {
+        return this._httpClient.get<any>(uriConfig.API_GET_ICD10_DATA_CHAPTER(id))
+            .pipe(
+                map((res) => res?.data ?? [])
+            )
+    }
+
+    /**
+     * get data disease
+     *
+     * 
+     */
+    getDataDisease(id: number): Observable<any>
+    {
+        return this._httpClient.get<any>(uriConfig.API_GET_ICD10_DATA_DISEASE(id))
+            .pipe(
+                map((res) => res?.data ?? [])
             )
     }
 }

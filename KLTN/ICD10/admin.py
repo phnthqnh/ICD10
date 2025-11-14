@@ -104,9 +104,9 @@ class UserAdmin(ModelAdmin):
 
 @admin.register(ICDChapter)
 class ICDChapterAdmin(ModelAdmin):
-    list_display = ("code", "title_vi", "description")
-    search_fields = ("code", "title_vi")
-    ordering = ("code",)
+    list_display = ("chapter", "code", "title_vi")
+    search_fields = ("chapter", "code", "title_vi")
+    ordering = ("chapter",)
     list_per_page = 20
     
 @admin.register(ICDBlock)

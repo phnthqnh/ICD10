@@ -25,6 +25,7 @@ export interface Block {
 
 export interface Chapter {
     id: number;
+    chapter: string;
     code: string;
     title_vi: string;
     description: string;
@@ -44,4 +45,16 @@ export interface FlatNode {
   title_vi: string;
   level: number;
   data: ICDNode;
+}
+
+export class DynamicFlatNode {
+    constructor(
+        public id: number,
+        public chapter: string | null,
+        public code: string,
+        public title_vi: string,
+        public level: number,
+        public expandable: boolean,
+        public isLoading = false
+    ) {}
 }

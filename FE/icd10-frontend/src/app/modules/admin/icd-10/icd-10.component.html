@@ -1,7 +1,8 @@
 <div class="flex h-[calc(100vh-100px)]">
-    <!-- Cột trái: Mục lục ICD10 -->
-    <div class="w-1/2 border-r border-gray-300 overflow-y-auto p-4">
-        <div class="w-full mb-4 icd-search" appearance="outline">
+
+    <!-- LEFT: Tree -->
+    <div class="w-1/2 border-r p-4">
+        <div class="w-full mb-4 icd-search">
             <mat-icon class="me-2" [svgIcon]="'heroicons_solid:magnifying-glass'"></mat-icon>
             <input 
                 matInput 
@@ -9,51 +10,71 @@
                 placeholder="Nhập từ khóa để tìm kiếm..." 
             />
             <button *ngIf="searchTerm" matSuffix mat-icon-button (click)="searchTerm=''">
-                <mat-icon>close</mat-icon>
+                <mat-icon [svgIcon]="'heroicons_solid:x-mark'"></mat-icon>
             </button>
         </div>
-
-        <!-- Tree ICD10 -->
         <mat-tree [dataSource]="dataSource" [treeControl]="treeControl" class="icd-tree">
-            <!-- Node có children (expandable) -->
-            <mat-tree-node *matTreeNodeDef="let node; when: hasChild" matTreeNodePadding>
-                <li class="flex items-center py-1 cursor-pointer hover:bg-gray-100 rounded-lg">
-                    <button mat-icon-button (click)="expandNode(node)">
-                        <mat-icon *ngIf="treeControl.isExpanded(node)">expand_more</mat-icon>
-                        <mat-icon *ngIf="!treeControl.isExpanded(node)">chevron_right</mat-icon>
-                    </button>
-                    <span class="text-gray-800 ml-2" (click)="showDetail(node.data)">
-                        {{ node.code }}: {{ node.title_vi }}
-                    </span>
-                </li>
-            </mat-tree-node>
 
-            <!-- Leaf node (không có children) -->
+            <!-- Node lá (không có con) -->
             <mat-tree-node *matTreeNodeDef="let node" matTreeNodePadding>
-                <li class="flex items-center py-1 cursor-pointer hover:bg-gray-100 rounded-lg">
-                    <button mat-icon-button disabled></button>
-                    <span class="text-gray-700 ml-2" (click)="showDetail(node.data)">
-                        {{ node.code }}: {{ node.title_vi }}
-                    </span>
-                </li>
+                <!-- <button mat-icon-button disabled></button> -->
+                <span (click)="showDetail(node)" class="cursor-pointer">
+                    {{node.code}}: {{node.title_vi}}
+                </span>
             </mat-tree-node>
+
+            <!-- Node có con (expandable) -->
+            <mat-tree-node *matTreeNodeDef="let node; when: hasChild" matTreeNodePadding>
+                <button mat-icon-button [matTreeNodeToggle]="node.expandable">
+                    <mat-icon>
+                        {{treeControl.isExpanded(node) ? 'expand_more' : 'chevron_right'}}
+                    </mat-icon>
+                </button>
+                <span *ngIf="node.level === 0" (click)="showDetail(node)" class="cursor-pointer font-semibold">
+                    {{node.chapter}}: {{node.title_vi}}
+                </span>
+                <span *ngIf="node.level !== 0" (click)="showDetail(node)" class="cursor-pointer font-semibold">
+                    {{node.code}}: {{node.title_vi}}
+                </span>
+            </mat-tree-node>
+
         </mat-tree>
+
     </div>
 
-    <!-- Cột phải: View chi tiết -->
-    <div class="w-1/2 overflow-y-auto p-6">
-        <ng-container *ngIf="selectedDisease; else noSelection">
-            <h2>Chi tiết</h2>
-            <h2 class="text-2xl font-bold text-blue-700 mb-2">
-                {{ selectedDisease.code }} - {{ selectedDisease.title_vi }}
-            </h2>
-            <p class="text-gray-700 mb-4">Loại: {{ selectedDisease.level }}</p>
-        </ng-container>
+    <!-- RIGHT: Detail -->
+    <div class="w-1/2 p-4">
+        <div class="detail">
+            <ng-container *ngIf="selected; else noSel">
+                <h2 class="text-lg text-blue-600 font-bold">
+                    CHƯƠNG {{selected.chapter.chapter}}
+                </h2>
+                <h2 class="text-lg text-blue-600 font-bold">
+                    {{selected.chapter.title_vi}} ({{selected.chapter.code}})
+                </h2>
+                <p>Chương này chứa</p>
+                <ul>
+                    <li *ngFor="let item of selected.children">
+                        {{item.code}}: {{item.title_vi}}
+                    </li>
+                </ul>
+            </ng-container>
 
-        <ng-template #noSelection>
-            <div class="text-gray-400 italic text-center mt-20">
-                Chọn một mục trong danh sách bên trái để xem chi tiết.
-            </div>
-        </ng-template>
+            <ng-template #noSel>
+                <h1 class="font-semibold text-[24px] mb-2">
+                    Phân loại quốc tế về bệnh tật và các vấn đề sức khỏe liên quan – Phiên bản lần thứ 10 (ICD-10)
+                </h1>
+
+                <p class="mb-2">
+                    Bạn có thể duyệt hệ thống phân loại bằng cách sử dụng <strong>cấu trúc phân cấp ở khung bên trái</strong>,
+                    hoặc áp dụng <strong>tính năng tìm kiếm</strong> để nhanh chóng tra cứu mã bệnh và mô tả chi tiết.
+                </p>
+
+                <p class="text-gray-500 italic">
+                    Thông tin chi tiết hơn về cách sử dụng trình duyệt ICD-10 trực tuyến có sẵn trong tài liệu hướng dẫn sử dụng.
+                </p>
+            </ng-template>
+        </div>
     </div>
+
 </div>
