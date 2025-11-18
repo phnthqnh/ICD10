@@ -143,4 +143,19 @@ export class Icd10Service
                 map((res) => res?.data ?? [])
             )
     }
+
+    /**
+     * search ICD
+     * 
+     * 
+     */
+
+    searchICD(query: string): Observable<any>
+    {
+        return this._httpClient.get<any>(uriConfig.API_ICD10_SEARCH, {
+            params: { q: query }
+        }).pipe(
+            map((res) => res ?? [])
+        )
+    }
 }

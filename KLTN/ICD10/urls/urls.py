@@ -25,6 +25,7 @@ urlpatterns = [
     path("diseases_code/", icd_views.get_disease_code, name="disease-code"),
     path("disease/<str:code>/", icd_views.get_disease_by_code, name="disease-by-code"),
     path("search_diseases/", icd_views.search_diseases, name="search-diseases"),
+    path("autocomplete", icd_views.autocomplete_diseases, name="autocomplete-diseases"),
     path("chat_with_ai/", chatbot_views.chat_with_ai, name="chat-with-ai"),
     # path("blocks/<str:block_code>/", icd_views.BlockDetailView.as_view(), name="block-detail"),
     # path("diseases/<str:disease_code>/", icd_views.DiseaseDetailView.as_view(), name="disease-detail"),

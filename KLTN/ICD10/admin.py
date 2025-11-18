@@ -200,7 +200,7 @@ class FeedbackICD10Admin(ModelAdmin):
         
         channel_layer = get_channel_layer()
         
-        if object.status == 3:
+        if obj.status == 3:
             return
         
         target_name = None

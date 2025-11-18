@@ -22,7 +22,7 @@ export class ICD10DataSource {
     initialize() {
         this.icdService.getChapters().subscribe(chapters => {
             const treeNodes = chapters.map(c =>
-                new DynamicFlatNode(c.id, c.chapter, c.code, c.title_vi, 0, true)
+                new DynamicFlatNode(c.id, c.chapter, c.code, c.title_vi, c.is_leaf, c.level, true)
             );
 
             this.dataChange.next(treeNodes);
@@ -49,8 +49,8 @@ export class ICD10DataSource {
         node.isLoading = true;
 
         let request: Observable<any[]>;
-
         if (node.level === 0)
+
             request = this.icdService.getBlocksByChapter(node.id);
         else if (node.level === 1)
             request = this.icdService.getDiseasesByBlock(node.id);
@@ -58,12 +58,13 @@ export class ICD10DataSource {
             request = this.icdService.getDiseasesByDiseaseParent(node.id);
 
         request.subscribe(res => {
-            const children = res.map(item =>
+            const children = res.map(item => 
                 new DynamicFlatNode(
                     item.id,
                     null,
                     item.code,
                     item.title_vi,
+                    item.is_leaf,
                     node.level + 1,
                     node.level < 2        // disease_child = level 3 => expandable = false
                 )

@@ -16,7 +16,7 @@ from ICD10.serializers.icd10_serializers import *
 from ICD10.models.user import User
 from django.views.decorators.cache import cache_page
 from django.db.models import Q
-import requests
+import re
 import logging
 # Khởi tạo logger
 logger = logging.getLogger(__name__)
@@ -37,7 +37,8 @@ def get_icd10_chapters(request):
             )
         # 2. Nếu chưa có cache -> query DB
         chapters = ICDChapter.objects.all()
-        chapters_data = Utils.serialize_queryset(chapters, fields=["id", "chapter", "code", "title_en", "title_vi"])
+        # chapters_data = Utils.serialize_queryset(chapters, fields=["id", "chapter", "code", "title_en", "title_vi"])
+        chapters_data = ChapterSerializer(chapters, many=True).data
         
         # 3. Lưu vào cache (ví dụ 15 phút)
         RedisWrapper.save(Constants.CACHE_KEY_CHAPTERS, chapters_data, expire_time=60*1)
@@ -74,7 +75,8 @@ def get_blocks_by_chapter(request, pk):
             return AppResponse.error(ErrorCodes.NOT_FOUND, errors="Chapter not found")
         
         blocks = ICDBlock.objects.filter(chapter=chapter)
-        blocks_data = Utils.serialize_queryset(blocks)
+        # blocks_data = Utils.serialize_queryset(blocks)
+        blocks_data = BlockDataSerializer(blocks, many=True).data
 
         # 3. Lưu vào cache (ví dụ 15 phút)
         RedisWrapper.save(f"{Constants.CACHE_KEY_BLOCKS}_{pk}", blocks_data, expire_time=60*1)
@@ -110,7 +112,8 @@ def get_diseases_by_block(request, pk):
             return AppResponse.error(ErrorCodes.NOT_FOUND, errors="Block not found")
         
         diseases = ICDDisease.objects.filter(block=block, parent__isnull=True).all()
-        diseases_data = Utils.serialize_queryset(diseases)
+        # diseases_data = Utils.serialize_queryset(diseases)
+        diseases_data = DiseaseDataSerializer(diseases, many=True).data
         # thêm trường is_leaf vào data
         
         
@@ -148,7 +151,8 @@ def get_diseases_children(request, pk):
         if not subdisease:
             return AppResponse.error(ErrorCodes.NOT_FOUND, errors="Subdisease not found")
 
-        subdisease_data = Utils.serialize_queryset(subdisease)
+        # subdisease_data = Utils.serialize_queryset(subdisease)
+        subdisease_data = DiseaseDataSerializer(subdisease, many=True).data
         
         # 3. Lưu vào cache (ví dụ 15 phút)
         RedisWrapper.save(f"{Constants.CACHE_KEY_DISEASES_CHILDREN}_{pk}", subdisease_data, expire_time=60*1)
@@ -277,6 +281,37 @@ def search_diseases(request):
         )
     except Exception as e:
         return AppResponse.error(ErrorCodes.UNKNOWN_ERROR, errors=str(e))
+    
+@api_view(["GET"])
+def autocomplete_diseases(request):
+    query = request.GET.get("q", "").strip()
+    if not query:
+        return Response({"suggestions": []})
+    # Escape regex để không bị lỗi ký tự đặc biệt
+    escaped_query = re.escape(query)
+    
+    # Tìm chính xác từ/cụm trong câu
+    # \b không hoạt động tốt với tiếng Việt → dùng lookaround
+    pattern = rf"(?<!\w){escaped_query}(?!\w)"
+    diseases = (
+        ICDDisease.objects.filter(
+            Q(code__icontains=query) |
+            Q(title_vi__iregex=pattern)
+        )
+        .order_by("code")
+    )
+
+    data = [
+        {
+            "id": d.id,
+            "code": d.code,
+            "title_vi": d.title_vi
+        }
+        for d in diseases
+    ]
+
+    return Response({"suggestions": data})
+
     
 @api_view(['GET'])
 # @permission_classes([IsAuthenticated])

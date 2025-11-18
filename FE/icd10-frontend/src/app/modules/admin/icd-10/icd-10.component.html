@@ -3,7 +3,34 @@
     <!-- LEFT: Tree -->
     <div class="w-1/2 border-r p-4">
         <div class="w-full mb-4 icd-search">
-            <mat-icon class="me-2" [svgIcon]="'heroicons_solid:magnifying-glass'"></mat-icon>
+            <div class="flex items-center w-full h-full bg-white">
+                <mat-icon class="me-2" [svgIcon]="'heroicons_solid:magnifying-glass'"></mat-icon>
+                <input type="text"
+                    class="flex-1 border-0 outline-none bg-transparent text-gray-700 text-base placeholder-gray-400"
+                    placeholder="Nhập từ khóa để tìm kiếm..." 
+                    [(ngModel)]="searchTerm"
+                    (ngModelChange)="onSearchChange()" />
+                <!-- Nút X -->
+                <button *ngIf="searchTerm" 
+                    type="button" 
+                    (click)="searchTerm=''; suggestions=[]"
+                    class="p-1 flex items-center justify-center rounded hover:bg-gray-200 transition">
+                    <mat-icon [svgIcon]="'heroicons_outline:x-mark'" class="text-primary"></mat-icon>
+                </button>
+            </div>
+            <!-- 🔽 GỢI Ý TÌM KIẾM (dropdown) -->
+            <div *ngIf="suggestions.length"
+                class="absolute left-0 right-0 mt-1 bg-white border rounded shadow-lg z-50 max-h-64 overflow-y-auto">
+
+                <div *ngFor="let item of suggestions"
+                    class="px-3 py-2 hover:bg-gray-100 cursor-pointer flex gap-2"
+                    (click)="selectSuggestion(item)">
+
+                    <span class="font-semibold text-primary">{{ item.code }}</span>
+                    <span>{{ item.title_vi }}</span>
+                </div>
+            </div>
+            <!-- <mat-icon class="me-2" [svgIcon]="'heroicons_solid:magnifying-glass'"></mat-icon>
             <input 
                 matInput 
                 [(ngModel)]="searchTerm" 
@@ -11,7 +38,7 @@
             />
             <button *ngIf="searchTerm" matSuffix mat-icon-button (click)="searchTerm=''">
                 <mat-icon [svgIcon]="'heroicons_solid:x-mark'"></mat-icon>
-            </button>
+            </button> -->
         </div>
         <mat-tree [dataSource]="dataSource" [treeControl]="treeControl" class="icd-tree">
 
@@ -25,15 +52,18 @@
 
             <!-- Node có con (expandable) -->
             <mat-tree-node *matTreeNodeDef="let node; when: hasChild" matTreeNodePadding>
-                <button mat-icon-button [matTreeNodeToggle]="node.expandable">
+                <button *ngIf="!node.is_leaf" mat-icon-button [matTreeNodeToggle]="node.expandable">
                     <mat-icon>
                         {{treeControl.isExpanded(node) ? 'expand_more' : 'chevron_right'}}
                     </mat-icon>
                 </button>
-                <span *ngIf="node.level === 0" (click)="showDetail(node.id, node.level)" class="cursor-pointer font-semibold hover:text-primary-400">
+                <button *ngIf="node.is_leaf" mat-icon-button disabled></button>
+                <span *ngIf="node.level === 0" (click)="showDetail(node.id, node.level)"
+                    class="cursor-pointer font-semibold hover:text-primary-400">
                     {{node.chapter}}: {{node.title_vi}}
                 </span>
-                <span *ngIf="node.level !== 0" (click)="showDetail(node.id, node.level)" class="cursor-pointer font-semibold hover:text-primary-400">
+                <span *ngIf="node.level !== 0" (click)="showDetail(node.id, node.level)"
+                    class="cursor-pointer font-semibold hover:text-primary-400">
                     {{node.code}}: {{node.title_vi}}
                 </span>
             </mat-tree-node>
@@ -55,8 +85,10 @@
                     </h2>
                     <p class="mt-3 text-primary-600 text-xl font-semibold">Chương này bao gồm các khối sau:</p>
                     <ul class="ml-6">
-                        <li *ngFor="let item of selected.children" class="grid grid-cols-[80px_1fr] gap-4 py-2 hover:text-primary-400">
-                            <span class="font-semibold cursor-pointer underline" (click)="showDetail(item.id, 1)">{{ item.code }}</span>
+                        <li *ngFor="let item of selected.children"
+                            class="grid grid-cols-[80px_1fr] gap-4 py-2 hover:text-primary-400">
+                            <span class="font-semibold cursor-pointer underline" (click)="showDetail(item.id, 1)">{{
+                                item.code }}</span>
                             <span>{{ item.title_vi }}</span>
                         </li>
                     </ul>
@@ -68,11 +100,14 @@
                     <h2 class="text-2xl text-primary-600 font-bold uppercase">
                         {{selected.block.chapter.title_vi}} ({{selected.block.chapter.code}})
                     </h2>
-                    <p class="my-3 pb-2 border-b-2 text-primary-600 text-xl font-semibold">{{selected.block.code}}: {{selected.block.title_vi}}</p>
+                    <p class="my-3 pb-2 border-b-2 text-primary-600 text-xl font-semibold">{{selected.block.code}}:
+                        {{selected.block.title_vi}}</p>
                     <p class="mt-3 text-primary-600 text-xl font-semibold">Nhóm này bao gồm:</p>
                     <ul class="ml-6">
-                        <li *ngFor="let item of selected.children" class="grid grid-cols-[50px_1fr] gap-4 py-2 hover:text-primary-400">
-                            <span class="font-semibold cursor-pointer underline" (click)="showDetail(item.id, 2)">{{ item.code }}</span>
+                        <li *ngFor="let item of selected.children"
+                            class="grid grid-cols-[50px_1fr] gap-4 py-2 hover:text-primary-400">
+                            <span class="font-semibold cursor-pointer underline" (click)="showDetail(item.id, 2)">{{
+                                item.code }}</span>
                             <span>{{ item.title_vi }}</span>
                         </li>
                     </ul>
@@ -84,11 +119,15 @@
                     <h2 class="text-2xl text-primary-600 font-bold uppercase">
                         {{selected.disease.block.chapter.title_vi}} ({{selected.disease.block.chapter.code}})
                     </h2>
-                    <p class="my-3 pb-2 border-b-2 text-primary-600 text-xl font-semibold">{{selected.disease.block.code}}: {{selected.disease.block.title_vi}}</p>
-                    <p class="my-3 pb-2 border-b-2 text-primary-600 text-xl font-semibold">{{selected.disease.code}}: {{selected.disease.title_vi}}</p>
+                    <p class="my-3 pb-2 border-b-2 text-primary-600 text-xl font-semibold">
+                        {{selected.disease.block.code}}: {{selected.disease.block.title_vi}}</p>
+                    <p class="my-3 pb-2 border-b-2 text-primary-600 text-xl font-semibold">{{selected.disease.code}}:
+                        {{selected.disease.title_vi}}</p>
                     <ul class="ml-6">
-                        <li *ngFor="let item of selected.children" class="grid grid-cols-[50px_1fr] gap-4 py-2 hover:text-primary-400">
-                            <span class="font-semibold cursor-pointer underline" (click)="showDetail(item.id, 3)">{{ item.code }}</span>
+                        <li *ngFor="let item of selected.children"
+                            class="grid grid-cols-[50px_1fr] gap-4 py-2 hover:text-primary-400">
+                            <span class="font-semibold cursor-pointer underline" (click)="showDetail(item.id, 3)">{{
+                                item.code }}</span>
                             <span>{{ item.title_vi }}</span>
                         </li>
                     </ul>
@@ -98,10 +137,13 @@
                         CHƯƠNG {{selected.disease_parent.block.chapter.chapter}}
                     </h2>
                     <h2 class="text-2xl text-primary-600 font-bold uppercase">
-                        {{selected.disease_parent.block.chapter.title_vi}} ({{selected.disease_parent.block.chapter.code}})
+                        {{selected.disease_parent.block.chapter.title_vi}}
+                        ({{selected.disease_parent.block.chapter.code}})
                     </h2>
-                    <p class="my-3 pb-2 border-b-2 text-primary-600 text-xl font-semibold">{{selected.disease_parent.block.code}}: {{selected.disease_parent.block.title_vi}}</p>
-                    <p class="my-3 pb-2 border-b-2 text-primary-600 text-xl font-semibold">{{selected.disease_parent.code}}: {{selected.disease_parent.title_vi}}</p>
+                    <p class="my-3 pb-2 border-b-2 text-primary-600 text-xl font-semibold">
+                        {{selected.disease_parent.block.code}}: {{selected.disease_parent.block.title_vi}}</p>
+                    <p class="my-3 pb-2 border-b-2 text-primary-600 text-xl font-semibold">
+                        {{selected.disease_parent.code}}: {{selected.disease_parent.title_vi}}</p>
                     <div class="grid grid-cols-[50px_1fr] gap-4 py-2">
                         <span class="font-semibold">{{ selected.disease.code }}</span>
                         <span>{{ selected.disease.title_vi }}</span>
@@ -109,7 +151,8 @@
                     <p class="my-3 text-center font-semibold bg-gray-300">Các bệnh khác cùng loại</p>
                     <ul class="ml-6">
                         <li *ngFor="let item of selected.children" class="grid grid-cols-[50px_1fr] gap-4 py-2">
-                            <span class="font-semibold cursor-pointer underline" (click)="showDetail(item.id, 3)">{{ item.code }}</span>
+                            <span class="font-semibold cursor-pointer underline" (click)="showDetail(item.id, 3)">{{
+                                item.code }}</span>
                             <span>{{ item.title_vi }}</span>
                         </li>
                     </ul>
@@ -118,17 +161,14 @@
                     <button class="w-12 h-12 flex items-center justify-center
                         bg-gray-100 opacity-25 rounded-full p-3 
                         shadow-lg hover:bg-gray-200 hover:opacity-100 transition"
-                        (click)="openFeedbackPopup(selected)"
-                    >
+                        (click)="openFeedbackPopup(selected)">
                         <mat-icon class="scale-125" svgIcon="heroicons_solid:chat-bubble-bottom-center-text"></mat-icon>
                     </button>
                     <!-- Tooltip FEEDBACK -->
-                    <div
-                        class="absolute left-1/2 -translate-x-1/2 bottom-full mb-2
+                    <div class="absolute left-1/2 -translate-x-1/2 bottom-full mb-2
                             bg-gray-700 text-white text-xs px-2 py-1 rounded 
                             opacity-0 group-hover:opacity-100 
-                            transition pointer-events-none whitespace-nowrap"
-                    >
+                            transition pointer-events-none whitespace-nowrap">
                         Góp ý
                     </div>
                 </div>
@@ -140,20 +180,21 @@
                 </h1>
 
                 <p class="mb-2">
-                    Bạn có thể duyệt hệ thống phân loại bằng cách sử dụng <strong>cấu trúc phân cấp ở khung bên trái</strong>,
+                    Bạn có thể duyệt hệ thống phân loại bằng cách sử dụng <strong>cấu trúc phân cấp ở khung bên
+                        trái</strong>,
                     hoặc áp dụng <strong>tính năng tìm kiếm</strong> để nhanh chóng tra cứu mã bệnh và mô tả chi tiết.
                 </p>
 
                 <p class="text-gray-500 italic">
-                    Thông tin chi tiết hơn về cách sử dụng trình duyệt ICD-10 trực tuyến có sẵn trong tài liệu hướng dẫn sử dụng.
+                    Thông tin chi tiết hơn về cách sử dụng trình duyệt ICD-10 trực tuyến có sẵn trong tài liệu hướng dẫn
+                    sử dụng.
                 </p>
             </ng-template>
         </div>
     </div>
 </div>
 
-<div *ngIf="showFeedbackPopup"
-     class="fixed inset-0 bg-black/40 flex items-center justify-center z-[100]">
+<div *ngIf="showFeedbackPopup" class="fixed inset-0 bg-black/40 flex items-center justify-center z-[100]">
 
     <div class="w-[800px] bg-white rounded-lg shadow-lg max-h-[90vh] overflow-hidden">
 
@@ -175,9 +216,8 @@
                     <label class="font-medium flex items-center gap-1 mb-1">
                         <mat-icon svgIcon="heroicons_solid:code-bracket-square"></mat-icon> Mã
                     </label>
-                    <input class="w-full border rounded px-3 py-2 mb-3" 
-                        placeholder="Góp ý về mã bệnh"
-                       [(ngModel)]="feedBack.code">
+                    <input class="w-full border rounded px-3 py-2 mb-3" placeholder="Góp ý về mã bệnh"
+                        [(ngModel)]="feedBack.code">
                 </div>
 
                 <!-- Model -->
@@ -185,9 +225,8 @@
                     <label class="font-medium flex items-center gap-1 mb-1">
                         <mat-icon svgIcon="heroicons_solid:tag"></mat-icon> Tiêu đề
                     </label>
-                    <input class="w-full border rounded px-3 py-2 mb-3" 
-                        placeholder="Góp ý về tiêu đề"
-                       [(ngModel)]="feedBack.title_vi">
+                    <input class="w-full border rounded px-3 py-2 mb-3" placeholder="Góp ý về tiêu đề"
+                        [(ngModel)]="feedBack.title_vi">
                 </div>
             </div>
 
@@ -196,11 +235,9 @@
                 <label class="font-medium flex items-center gap-1 mb-1">
                     <mat-icon svgIcon="heroicons_solid:chat-bubble-left-right"></mat-icon> Lý do góp ý
                 </label>
-                <textarea class="w-full border rounded px-3 py-2 resize-y" rows="4"
-                        required
-                        placeholder="Nhập lý do góp ý..."
-                        [(ngModel)]="feedBack.reason"></textarea>
-                
+                <textarea class="w-full border rounded px-3 py-2 resize-y" rows="4" required
+                    placeholder="Nhập lý do góp ý..." [(ngModel)]="feedBack.reason"></textarea>
+
             </div>
 
         </div>
@@ -208,12 +245,12 @@
         <!-- FOOTER -->
         <div class="flex justify-end gap-3 px-6 py-3 bg-gray-100 rounded-b-lg">
             <button class="px-5 py-2 bg-gray-200 rounded-lg hover:bg-gray-300 flex items-center gap-2"
-                    (click)="closeFeedbackPopup()">
+                (click)="closeFeedbackPopup()">
                 <mat-icon svgIcon="heroicons_solid:x-mark" class="scale-90"></mat-icon> Hủy
             </button>
 
             <button class="px-5 py-2 bg-primary-400 text-white rounded-lg hover:bg-primary-600 flex items-center gap-2"
-                    (click)="submitFeedback()">
+                (click)="submitFeedback()">
                 <mat-icon svgIcon="heroicons_solid:paper-airplane" class="scale-90 text-white"></mat-icon> Gửi
             </button>
         </div>

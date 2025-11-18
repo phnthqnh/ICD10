@@ -42,6 +42,8 @@ export class Icd10Component implements OnInit {
     );
 
     searchTerm: string = '';
+    suggestions: any[] = [];
+    typingTimer: any;
 
     dataSource!: ICD10DataSource;
     selected: any = null;
@@ -76,35 +78,30 @@ export class Icd10Component implements OnInit {
 
         if (level === 0) {
             this._icdService.getDataChapter(id).subscribe(res => {
-                console.log('data', res);
                 this.selected = res
             });
         }
 
         if (level === 1) {
             this._icdService.getDataBlock(id).subscribe(res => {
-                console.log('data', res);
                 this.selected = res
             });
         }
 
         if (level === 2) {
             this._icdService.getDataDisease(id).subscribe(res => {
-                console.log('data', res);
                 this.selected = res
             });
         }
 
         if (level === 3) {
             this._icdService.getDataDiseaseChild(id).subscribe(res => {
-                console.log('data', res);
                 this.selected = res
             });
         }
     }
 
     openFeedbackPopup(selected: any) {
-        console.log('selected', selected);
         this.showFeedbackPopup = true;
         if (selected.chapter) {
             this.feedBack = {
@@ -146,7 +143,6 @@ export class Icd10Component implements OnInit {
                 reason: ''
             };
         }
-        console.log('feedback', this.feedBack);
     }
 
     closeFeedbackPopup() {
@@ -163,7 +159,6 @@ export class Icd10Component implements OnInit {
     }
 
     submitFeedback() {
-        console.log('feedback', this.feedBack);
         if (!this.feedBack.reason || this.feedBack.reason.trim() === '') {
             this._alertService.showAlert({
                     title: "Thất bại",
@@ -174,7 +169,6 @@ export class Icd10Component implements OnInit {
         }
         this._feedbackService.submitFeedback(this.feedBack).subscribe(
             (res) => {
-            console.log('submit feedback response', res);
             this._alertService.showAlert({
                     title: "Thàng công",
                     message: "Gửi góp ý thành công!",
@@ -183,12 +177,43 @@ export class Icd10Component implements OnInit {
             this.closeFeedbackPopup();
         },
         (error) => {
-            console.error('submit feedback error', error);
             this._alertService.showAlert({
                     title: "Thất bại",
                     message: "Gửi góp ý thất bại. Vui lòng thử lại.",
                     type: 'error'
                 });
         });
+    }
+
+    generateSuggestions() {
+        if (!this.searchTerm.trim()) {
+            this.suggestions = [];
+            return;
+        }
+
+        const term = this.searchTerm.toLowerCase();
+        console.log('term', term);
+        // 👉 Bạn cần thay "fullList" bằng mảng chứa tất cả dữ liệu ICD của bạn
+        this.suggestions = this._icdService.searchICD(term).pipe(
+            map((res) => { 
+                console.log('res', res);
+                return res?.suggestions ?? [] 
+            })
+        ) as any;
+        }
+
+        selectSuggestion(item: any) {
+            this.searchTerm = `${item.code} ${item.title_vi}`;
+            this.suggestions = [];
+            this.showDetail(item.id, item.level);
+        }
+
+    onSearchChange() {
+        clearTimeout(this.typingTimer);
+
+        // Đợi 1 giây kể từ khi người dùng dừng nhập
+        this.typingTimer = setTimeout(() => {
+            this.generateSuggestions();
+        }, 1000);
     }
 }

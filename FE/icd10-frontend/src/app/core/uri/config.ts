@@ -24,6 +24,7 @@ export const uriConfig = {
         baseUrl + `/api/data/disease/${id}/`,
     API_GET_ICD10_DATA_DISEASE_CHILD: (id: number) =>
         baseUrl + `/api/data/disease_child/${id}/`,
+    API_ICD10_SEARCH: baseUrl + '/api/autocomplete',
     API_FEEDBACK_ICD10_SUBMIT: baseUrl + '/api/feedbacks/icd10/submit/',
     API_FEEDBACK_ICD10_LIST: baseUrl + '/api/feedbacks/icd10/user/',
 }
