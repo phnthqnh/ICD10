@@ -22,4 +22,8 @@ export const uriConfig = {
         baseUrl + `/api/data/block/${id}/`,
     API_GET_ICD10_DATA_DISEASE: (id: number) =>
         baseUrl + `/api/data/disease/${id}/`,
+    API_GET_ICD10_DATA_DISEASE_CHILD: (id: number) =>
+        baseUrl + `/api/data/disease_child/${id}/`,
+    API_FEEDBACK_ICD10_SUBMIT: baseUrl + '/api/feedbacks/icd10/submit/',
+    API_FEEDBACK_ICD10_LIST: baseUrl + '/api/feedbacks/icd10/user/',
 }

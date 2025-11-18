@@ -112,7 +112,7 @@ export class Icd10Service
      */
     getDataBlock(id: number): Observable<any>
     {
-        return this._httpClient.get<any>(uriConfig.API_GET_ICD10_DATA_CHAPTER(id))
+        return this._httpClient.get<any>(uriConfig.API_GET_ICD10_DATA_BLOCK(id))
             .pipe(
                 map((res) => res?.data ?? [])
             )
@@ -126,6 +126,19 @@ export class Icd10Service
     getDataDisease(id: number): Observable<any>
     {
         return this._httpClient.get<any>(uriConfig.API_GET_ICD10_DATA_DISEASE(id))
+            .pipe(
+                map((res) => res?.data ?? [])
+            )
+    }
+
+    /**
+     * get data disease child
+     *
+     * 
+     */
+    getDataDiseaseChild(id: number): Observable<any>
+    {
+        return this._httpClient.get<any>(uriConfig.API_GET_ICD10_DATA_DISEASE_CHILD(id))
             .pipe(
                 map((res) => res?.data ?? [])
             )

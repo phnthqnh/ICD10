@@ -4,7 +4,7 @@ export interface Disease {
     code_no_sign: string;
     title_vi: string;
     updated_at: string;
-    is_leaf: boolean;
+    // is_leaf: boolean;
 }
 
 export interface DiseaseExtraInfo {

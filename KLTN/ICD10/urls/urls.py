@@ -21,6 +21,7 @@ urlpatterns = [
     path("data/chapter/<int:pk>/", icd_views.get_data_chapter, name="data-chapter"),
     path("data/block/<int:pk>/", icd_views.get_data_block, name="data-block"),
     path("data/disease/<int:pk>/", icd_views.get_data_disease, name="data-disease"),
+    path("data/disease_child/<int:pk>/", icd_views.get_data_disease_child, name="data-disease-child"),
     path("diseases_code/", icd_views.get_disease_code, name="disease-code"),
     path("disease/<str:code>/", icd_views.get_disease_by_code, name="disease-by-code"),
     path("search_diseases/", icd_views.search_diseases, name="search-diseases"),

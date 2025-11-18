@@ -110,7 +110,7 @@ def get_diseases_by_block(request, pk):
             return AppResponse.error(ErrorCodes.NOT_FOUND, errors="Block not found")
         
         diseases = ICDDisease.objects.filter(block=block, parent__isnull=True).all()
-        diseases_data = DiseaseSerializer(diseases, many=True).data
+        diseases_data = Utils.serialize_queryset(diseases)
         # thêm trường is_leaf vào data
         
         
@@ -148,7 +148,7 @@ def get_diseases_children(request, pk):
         if not subdisease:
             return AppResponse.error(ErrorCodes.NOT_FOUND, errors="Subdisease not found")
 
-        subdisease_data = DiseaseSerializer(subdisease, many=True).data
+        subdisease_data = Utils.serialize_queryset(subdisease)
         
         # 3. Lưu vào cache (ví dụ 15 phút)
         RedisWrapper.save(f"{Constants.CACHE_KEY_DISEASES_CHILDREN}_{pk}", subdisease_data, expire_time=60*1)
@@ -322,14 +322,13 @@ def get_data_block(request, pk):
     try:
         # 1. Lý dữ liệu từ cache
         cached_diseases = RedisWrapper.get(f"{Constants.CACHE_DATA_BLOCK}_DISEASES_{pk}")
-        cached_chapter = RedisWrapper.get(f"{Constants.CACHE_DATA_BLOCK}_CHAPTER_{pk}")
+        cached_block = RedisWrapper.get(f"{Constants.CACHE_DATA_BLOCK}_BLOCK_{pk}")
         if cached_diseases:
             return AppResponse.success(
                 SuccessCodes.GET_DATA_BLOCK,
                 data={
-                    "chapters": cached_chapter,
-                    "diseases": cached_diseases,
-                    "total": len(cached_diseases)
+                    "block": cached_block,
+                    "children": cached_diseases
                 }
             )
         # 2. Nếu chưa có cache -> query DB
@@ -337,21 +336,19 @@ def get_data_block(request, pk):
         if not block:
             return AppResponse.error(ErrorCodes.NOT_FOUND, errors="Block not found")
         
-        chapter = block.chapter
+        block_data = BlockSerializer(block).data
         diseases = ICDDisease.objects.filter(block=block, parent__isnull=True).all()
-        chapter_data = ChapterSerializer(chapter).data
         diseases_data = Utils.serialize_queryset(diseases)
 
         # 3. Lưu vào cache (ví dụ 15 phút)
         RedisWrapper.save(f"{Constants.CACHE_DATA_BLOCK}_DISEASES_{pk}", diseases_data, expire_time=60*1)
-        RedisWrapper.save(f"{Constants.CACHE_DATA_BLOCK}_CHAPTER_{pk}", chapter_data, expire_time=60*1)
+        RedisWrapper.save(f"{Constants.CACHE_DATA_BLOCK}_BLOCK_{pk}", block_data, expire_time=60*1)
         
         return AppResponse.success(
             SuccessCodes.GET_DATA_BLOCK,
             data={
-                "chapter": chapter_data,
-                "diseases": diseases_data,
-                "total": len(diseases_data)
+                "block": block_data,
+                "children": diseases_data
             }
         )
         
@@ -363,13 +360,13 @@ def get_data_block(request, pk):
 def get_data_disease(request, pk):
     try:
         # 1. Lý dữ liệu từ cache
-        cached_chapter = RedisWrapper.get(f"{Constants.CACHE_DATA_DISEASE}_CHAPTER_{pk}")
+        cached_disease = RedisWrapper.get(f"{Constants.CACHE_DATA_DISEASE}_DISEASE_{pk}")
         cached_children = RedisWrapper.get(f"{Constants.CACHE_DATA_DISEASE}_CHILDREN_{pk}")
         if cached_children:
             return AppResponse.success(
                 SuccessCodes.GET_DATA_DISEASE,
                 data={
-                    "chapter": cached_chapter,
+                    "disease": cached_disease,
                     "children": cached_children,
                 }
             )
@@ -378,20 +375,68 @@ def get_data_disease(request, pk):
         if not disease:
             return AppResponse.error(ErrorCodes.NOT_FOUND, errors="Disease not found")
         
-        chapter = disease.block.chapter
-        chapter_data = ChapterSerializer(chapter).data
+        disease_data = DiseaseSerializer(disease).data
         children = ICDDisease.objects.filter(parent=disease).all()
         children_data = Utils.serialize_queryset(children)
 
         # 3. Lưu vào cache (ví dụ 15 phút)
         RedisWrapper.save(f"{Constants.CACHE_DATA_DISEASE}_CHILDREN_{pk}", children_data, expire_time=60*1)
-        RedisWrapper.save(f"{Constants.CACHE_DATA_DISEASE}_CHAPTER_{pk}", chapter_data, expire_time=60*1)
+        RedisWrapper.save(f"{Constants.CACHE_DATA_DISEASE}_DISEASE_{pk}", disease_data, expire_time=60*1)
         
         return AppResponse.success(
             SuccessCodes.GET_DATA_DISEASE,
             data={
-                "chapter": chapter_data,
+                "disease": disease_data,
                 "children": children_data,
+            }
+        )
+        
+    except Exception as e:
+        return AppResponse.error(ErrorCodes.UNKNOWN_ERROR, errors=str(e))
+    
+    
+@api_view(['GET'])
+# @permission_classes([IsAuthenticated])
+def get_data_disease_child(request, pk):
+    try:
+        # 1. Lý dữ liệu từ cache
+        cached_disease_parent = RedisWrapper.get(f"{Constants.CACHE_DATA_DISEASE}_DISEASE_PARENT_{pk}")
+        cached_diseases = RedisWrapper.get(f"{Constants.CACHE_DATA_DISEASE}_DISEASES_SAME_PARENT_{pk}")
+        cached_disease = RedisWrapper.get(f"{Constants.CACHE_DATA_DISEASE}_DISEASE_{pk}")
+        if cached_disease:
+            return AppResponse.success(
+                SuccessCodes.GET_DATA_DISEASE,
+                data={
+                    "disease_parent": cached_disease_parent,
+                    "disease": cached_disease,
+                    "children": cached_diseases
+                }
+            )
+        # 2. Nếu chưa có cache -> query DB
+        disease = ICDDisease.objects.filter(id=pk).first()
+        if not disease:
+            return AppResponse.error(ErrorCodes.NOT_FOUND, errors="Disease not found")
+        
+        disease_data = DiseaseSerializer(disease).data
+        # Get parent
+        disease_parent = ICDDisease.objects.filter(id=disease.parent_id).first()
+        disease_parent_data = DiseaseSerializer(disease_parent).data
+        
+        # get same parent except current
+        diseases = ICDDisease.objects.filter(parent=disease_parent).exclude(id=disease.id).all()
+        diseases_data = Utils.serialize_queryset(diseases)
+
+        # 3. Lưu vào cache (ví dụ 15 phút)
+        RedisWrapper.save(f"{Constants.CACHE_DATA_DISEASE}_DISEASE_{pk}", disease_data, expire_time=60*1)
+        RedisWrapper.save(f"{Constants.CACHE_DATA_DISEASE}_DISEASE_PARENT_{pk}", disease_parent_data, expire_time=60*1)
+        RedisWrapper.save(f"{Constants.CACHE_DATA_DISEASE}_DISEASES_SAME_PARENT_{pk}", diseases_data, expire_time=60*1)
+        
+        return AppResponse.success(
+            SuccessCodes.GET_DATA_DISEASE,
+            data={
+                "disease_parent": disease_parent_data,
+                "disease": disease_data,
+                "children": diseases_data
             }
         )
         
