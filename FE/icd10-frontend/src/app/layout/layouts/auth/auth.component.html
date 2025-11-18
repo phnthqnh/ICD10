@@ -1,0 +1,124 @@
+<!-- Loading bar -->
+<!-- <fuse-loading-bar></fuse-loading-bar>
+
+<div
+    *transloco="let t"
+    class="relative flex flex-col items-center justify-center flex-auto min-w-0 sm:flex-row md:items-start md:justify-start"
+>
+    <div class="absolute top-4 right-2 md:hidden">
+        <languages></languages>
+    </div>
+    <span
+        *ngIf="!isSignInPage()"
+        class="absolute flex items-center justify-center font-medium cursor-pointer text-md top-4 left-2"
+        (click)="goBack()"
+    >
+        <mat-icon
+            class="font-medium text-black"
+            svgIcon="heroicons_outline:chevron-left"
+        ></mat-icon>
+        {{ t("auth.back") }}
+    </span>
+    <div
+        class="w-full px-4 py-8 md:flex md:items-start md:justify-center sm:w-auto md:h-full md:w-2/5 sm:p-12 md:p-16 sm:rounded-2xl md:rounded-none sm:shadow md:shadow-none sm:bg-card"
+    >
+        <div
+            class="w-full mx-auto max-w-100 sm:w-100 sm:mx-0"
+            [ngClass]="{ 'pt-10': !isSignInPage() }"
+        >
+            <router-outlet *ngIf="true"></router-outlet>
+        </div>
+    </div>
+
+    <div
+        class="relative items-center justify-center flex-auto hidden w-3/5 h-full overflow-hidden md:flex p-13 lg:px-28 bg-primary-50 dark:border-l"
+    >
+        <div
+            class="flex flex-col items-center justify-center space-y-6 text-center"
+        >
+            <div class="absolute top-4 right-2">
+                <languages [isAuth]="true"></languages>
+            </div>
+
+            <img
+                src="assets/images/logo/logo-text.svg"
+                class="w-full max-w-50"
+                alt="CRM Logo Image"
+            />
+            <img
+                src="assets/images/sign/sign.png"
+                alt="CRM Image"
+                class="w-full max-w-xl mx-auto"
+            />
+        </div>
+    </div>
+</div> -->
+
+<fuse-loading-bar></fuse-loading-bar>
+<div
+    *transloco="let t"
+    class="flex flex-col items-center flex-auto min-w-0 sm:flex-row md:items-start sm:justify-center md:justify-start"
+>
+    <div
+        class="relative items-center justify-center flex-auto hidden h-full overflow-hidden md:flex p-14 lg:px-24 bg-primary-50 dark:border-r"
+    >
+        <div class="absolute top-4 left-15">
+            <img
+                src="assets/images/logo/logo-myfiin.svg"
+                class="w-full max-w-32"
+                alt="CRM Logo Image"
+            />
+        </div>
+
+        <div class="flex flex-col items-center">
+            <ng-container *ngIf="_authLayoutService.titleDes$ | async as title">
+                <p
+                    class="text-[#6C6C6C] font-light text-xl sm:text-xl md:text-3xl"
+                >
+                    {{ title }}
+                </p>
+            </ng-container>
+
+            <ng-container *ngIf="_authLayoutService.title$ | async as title">
+                <p
+                    class="text-primary font-bold mb-5 text-2xl sm:text-2xl md:text-4xl lg:!mb-5"
+                >
+                    {{ title }}
+                </p>
+            </ng-container>
+
+            <ng-container *ngIf="_authLayoutService.image$ | async as image">
+                <img
+                    [src]="image"
+                    alt="CRM Image"
+                    class="w-full max-w-[500px] mx-auto"
+                />
+            </ng-container>
+        </div>
+    </div>
+    <div
+        class="relative px-4 py-8 md:flex md:justify-center sm:w-auto md:h-full sm:p-12 md:p-16 md:pt-24 sm:rounded-2xl md:rounded-none sm:shadow md:shadow-none sm:bg-card"
+    >
+        <span
+            *ngIf="!isSignInPage()"
+            class="absolute flex items-center justify-center font-medium cursor-pointer text-md top-4 left-2"
+            (click)="goBack()"
+        >
+            <mat-icon
+                class="font-medium text-black"
+                svgIcon="heroicons_outline:chevron-left"
+            ></mat-icon>
+            {{ t("auth.back") }}
+        </span>
+        <div class="w-full mx-auto max-w-100 sm:w-100 sm:mx-0">
+            <router-outlet *ngIf="true"></router-outlet>
+        </div>
+
+        <div class="absolute top-4 right-2">
+            <languages [isAuth]="true"></languages>
+        </div>
+    </div>
+</div>
+<div class="fixed top-6 right-4 z-[1000]">
+    <app-global-alert></app-global-alert>
+</div>

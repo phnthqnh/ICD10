@@ -9,13 +9,24 @@ from ICD10.models.notification import Notification
 @receiver(post_save, sender=Feedback_ICD10)
 def notify_admin_new_feedback(sender, instance, created, **kwargs):
     if created:
+        target_name = None
+        target_type = None
+        if instance.disease:
+            target_name = instance.disease.code
+            target_type = "bệnh"
+        elif instance.block:
+            target_name = instance.block.code
+            target_type = "nhóm"
+        elif instance.chapter:
+            target_name = instance.chapter.code
+            target_type = "chương"
         # Gửi notification trong DB
         admins = User.objects.filter(is_superuser=True)
         for admin in admins:
             Notification.objects.create(
                 recipient=admin,
                 title="Phản hồi về ICD-10",
-                message=f"{instance.user.username} đã gửi phản hồi cho {instance.disease.code}",
+                message=f"{instance.user.username} đã gửi phản hồi cho {target_type} {target_name}",
                 url=f"http://127.0.0.1:8000/admin/ICD10/feedback_icd10/{instance.id}/change/",
                 notif_type='feedback'
             )
@@ -26,7 +37,7 @@ def notify_admin_new_feedback(sender, instance, created, **kwargs):
             {
                 "type": "send_notification",
                 "event": "new_feedback",
-                "message": f"{instance.user.username} đã gửi phản hồi cho {instance.disease.code}",
+                "message": f"{instance.user.username} đã gửi phản hồi cho {target_type} {target_name}",
                 "url": f"http://127.0.0.1:8000/admin/ICD10/feedback_icd10/{instance.id}/change/"
             },
         )
@@ -51,8 +62,8 @@ def notify_admin_new_feedback(sender, instance, created, **kwargs):
             {
                 "type": "send_notification",
                 "event": "new_feedback",
-                "message": f"{instance.user.username} đã gửi phản hồi cho {instance.disease.code}",
-                "url": f"http://127.0.0.1:8000/admin/ICD10/feedback_icd10/{instance.id}/change/"
+                "message": f"{instance.user.username} đã gửi phản hồi cho tin nhắn {instance.chat_message.id}",
+                "url": f"http://127.0.0.1:8000/admin/ICD10/feedback_chatbot/{instance.id}/change/"
             },
         )
 

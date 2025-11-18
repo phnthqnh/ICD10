@@ -335,53 +335,6 @@ def logout(request):
     except Exception as e:
         return AppResponse.error(ErrorCodes.INTERNAL_SERVER_ERROR, errors=str(e))
 
-# @api_view(['POST'])
-# @permission_classes([IsAuthenticated])
-# def request_password_reset(request):
-#     serializer = PasswordResetRequestSerializer(data=request.data)
-#     if serializer.is_valid():
-#         email = request.user.email
-#         username = request.user.username
-#         try:
-#             user = User.objects.get(email=email)
-#         except User.DoesNotExist:
-#             return AppResponse.error(ErrorCodes.USER_NOT_FOUND)
-
-#         uid = urlsafe_base64_encode(force_bytes(user.pk))
-#         token = token_generator.make_token(user)
-#         reset_url = os.getenv("reset_link")
-#         reset_link = f"{reset_url}{uid}/{token}"
-
-#         # Gửi email
-#         Utils.email_reset_password(
-#             user=user,
-#             reset_link=reset_link
-#         )
-
-#         return AppResponse.success(SuccessCodes.PASSWORD_RESET_EMAIL_SENT)
-#     return AppResponse.error(ErrorCodes.VALIDATION_ERROR, errors=serializer.errors)
-
-# token_generator = PasswordResetTokenGenerator()
-# @api_view(['POST'])
-# def reset_password_confirm(request, uid, token):
-#     serializer = PasswordResetConfirmSerializer(data=request.data)
-#     if serializer.is_valid():
-#         new_password = serializer.validated_data['new_password']
-
-#         try:
-#             uid_decoded = force_str(urlsafe_base64_decode(uid))
-#             user = User.objects.get(pk=uid_decoded)
-#         except (User.DoesNotExist, ValueError, TypeError):
-#             return AppResponse.error(ErrorCodes.USER_NOT_FOUND)
-
-#         if token_generator.check_token(user, token):
-#             user.set_password(new_password)
-#             user.save()
-#             return AppResponse.success(SuccessCodes.PASSWORD_RESET_SUCCESS)
-#         else:
-#             return AppResponse.error(ErrorCodes.INVALID_TOKEN)
-
-#     return AppResponse.error(ErrorCodes.VALIDATION_ERROR, errors=serializer.errors)
 
 
 @api_view(['POST'])
