@@ -5,10 +5,11 @@ import { ChangeDetectionStrategy, ChangeDetectorRef, Component, OnDestroy, OnIni
 import { MatButton, MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
 import { MatTooltipModule } from '@angular/material/tooltip';
-import { RouterLink } from '@angular/router';
+import { Router, RouterLink } from '@angular/router';
 import { NotificationsService } from 'app/layout/common/notifications/notifications.service';
 import { Notification } from 'app/layout/common/notifications/notifications.types';
 import { Subject, takeUntil } from 'rxjs';
+import { AuthService } from 'app/core/auth/auth.service';
 
 @Component({
     selector       : 'notifications',
@@ -26,6 +27,7 @@ export class NotificationsComponent implements OnInit, OnDestroy
 
     notifications: Notification[];
     unreadCount: number = 0;
+    isLoggedIn: boolean = false;
     private _overlayRef: OverlayRef;
     private _unsubscribeAll: Subject<any> = new Subject<any>();
 
@@ -37,6 +39,8 @@ export class NotificationsComponent implements OnInit, OnDestroy
         private _notificationsService: NotificationsService,
         private _overlay: Overlay,
         private _viewContainerRef: ViewContainerRef,
+        private _authService: AuthService,
+        private _router: Router
     )
     {
     }
@@ -64,6 +68,8 @@ export class NotificationsComponent implements OnInit, OnDestroy
                 // Mark for check
                 this._changeDetectorRef.markForCheck();
             });
+        // Nếu chưa đăng nhập thì không lấy thông báo
+        this.isLoggedIn = this._authService.isLoggedIn();
     }
 
     /**
@@ -105,6 +111,15 @@ export class NotificationsComponent implements OnInit, OnDestroy
 
         // Attach the portal to the overlay
         this._overlayRef.attach(new TemplatePortal(this._notificationsPanel, this._viewContainerRef));
+    }
+
+    /**
+     * Sign in
+     * 
+     */
+    signIn(): void
+    {
+        this._router.navigate(['/sign-in']);
     }
 
     /**

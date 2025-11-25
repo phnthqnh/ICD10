@@ -1,62 +1,63 @@
-<!-- Button -->
-<button
-    [matMenuTriggerFor]="userActions">
+<button *ngIf="isLoggedIn"
+        [matMenuTriggerFor]="userActions">
      <span class="flex items-center gap-2.5 px-2 py-1 w-fit cursor-pointer">
-        <mat-icon *ngIf="!showAvatar || !user.avatar" [svgIcon]="'heroicons_outline:user-circle'"></mat-icon>
-        <!-- <if have avatar, show avatar -->
-        <ng-container *ngIf="showAvatar && user.avatar">
+        <mat-icon *ngIf="!showAvatar || !user?.avatar"
+                  [svgIcon]="'heroicons_outline:user-circle'"></mat-icon>
+
+        <ng-container *ngIf="showAvatar && user?.avatar">
             <img class="w-8 h-8 rounded-full" [src]="user.avatar">
         </ng-container>
-        <!-- <span class="absolute right-0 bottom-0 w-2 h-2 rounded-full"></span> -->
-        <!-- [ngClass]="{'mr-px mb-px': !showAvatar || !user?.avatar,
-                          'bg-green-500': user?.status === 'online',
-                          'bg-amber-500': user?.status === 'away',
-                          'bg-red-500': user?.status === 'busy',
-                          'bg-gray-400': user?.status === 'not-visible'}" -->
+
         <div class="hidden md:block text-left leading-tight">
             <p class="text-sm">Xin chào,</p>
             <p class="text-base font-medium truncate max-w-[5.5rem]">
                 {{ user.username }}
             </p>
         </div>
-
     </span>
 </button>
 
-<mat-menu
-    [xPosition]="'before'"
-    #userActions="matMenu">
+<button *ngIf="!isLoggedIn"
+        (click)="signIn()">
+     <span class="flex items-center gap-2.5 px-2 py-1 w-fit cursor-pointer">
+        <mat-icon [svgIcon]="'heroicons_outline:user-circle'"></mat-icon>
+        <div class="hidden md:block text-left leading-tight">
+            <p class="text-base font-medium truncate max-w-[5.5rem]">Đăng nhập</p>
+        </div>
+    </span>
+</button>
+
+<!-- KHÔNG DÙNG *ngIf Ở ĐÂY -->
+<mat-menu #userActions="matMenu" [hidden]="!isLoggedIn">
     <button mat-menu-item>
         <span class="flex flex-col leading-none">
-            <span>Đăng nhập bằng</span>
-            <span class="mt-1.5 text-md font-medium">{{user.email}}</span>
+            <span>Đăng nhập bằng</span>
+            <span class="mt-1.5 text-md font-medium">{{ user?.email }}</span>
         </span>
     </button>
+
     <mat-divider class="my-2"></mat-divider>
+
     <button mat-menu-item>
         <mat-icon [svgIcon]="'heroicons_outline:user-circle'"></mat-icon>
         <span>Thông tin cá nhân</span>
     </button>
+
     <button mat-menu-item>
         <mat-icon [svgIcon]="'heroicons_outline:key'"></mat-icon>
         <span>Đổi mật khẩu</span>
     </button>
-    <!-- <button
-        mat-menu-item
-        [matMenuTriggerFor]="userStatus">
-        <mat-icon [svgIcon]="'heroicons_outline:ellipsis-horizontal-circle'"></mat-icon>
-        <span>Status</span>
-    </button> -->
+
     <mat-divider class="my-2"></mat-divider>
-    <button
-        mat-menu-item
-        (click)="signOut()">
+
+    <button mat-menu-item (click)="signOut()">
         <mat-icon [svgIcon]="'heroicons_outline:arrow-right-on-rectangle'"></mat-icon>
         <span>Đăng xuất</span>
     </button>
 </mat-menu>
 
-<mat-menu
+
+<!-- <mat-menu
     class="user-status-menu"
     #userStatus="matMenu">
     <button
@@ -83,4 +84,4 @@
         <span class="w-4 h-4 mr-3 rounded-full bg-gray-400"></span>
         <span>Invisible</span>
     </button>
-</mat-menu>
+</mat-menu> -->

@@ -1,11 +1,19 @@
 <div class="flex flex-col sm:flex-row items-center md:items-start sm:justify-center md:justify-start flex-auto min-w-0">
+    <!-- NÚT QUAY LẠI TRÊN CÙNG -->
     <div class="md:flex md:items-center md:justify-end w-full sm:w-auto md:h-full md:w-1/2 py-8 px-4 sm:p-12 md:p-16 sm:rounded-2xl md:rounded-none sm:shadow md:shadow-none sm:bg-card">
         <div class="w-full max-w-80 sm:w-80 mx-auto sm:mx-0">
             <!-- Logo -->
             <div class="w-12">
                 <img src="assets/images/logo/logo.svg">
             </div>
-
+            <div class="w-full flex items-center p-2">
+                <mat-icon class="mr-2" [svgIcon]="'heroicons_solid:arrow-left'"></mat-icon>
+                <a class="flex items-center" [routerLink]="['/icd-10']">
+                    <span class="text-md font-medium text-primary-500 hover:underline">
+                        Quay lại trang ICD-10
+                    </span>
+                </a>
+            </div>
             <!-- Title -->
             <div class="flex items-baseline mt-0.5 font-medium">
                 <div>Bạn chưa có tài khoản?</div>

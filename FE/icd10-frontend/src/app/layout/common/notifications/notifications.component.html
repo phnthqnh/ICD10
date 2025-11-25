@@ -3,7 +3,7 @@
     mat-icon-button
     (click)="openPanel()"
     #notificationsOrigin>
-    <ng-container *ngIf="unreadCount > 0">
+    <ng-container *ngIf="unreadCount > 0 && isLoggedIn">
         <span class="absolute top-0 right-0 left-0 flex items-center justify-center h-3">
             <span class="flex items-center justify-center shrink-0 min-w-4 h-4 px-1 ml-4 mt-2.5 rounded-full bg-teal-600 text-indigo-50 text-xs font-medium">
                 {{unreadCount}}
@@ -16,7 +16,7 @@
 <!-- Notifications panel -->
 <ng-template #notificationsPanel>
 
-    <div class="fixed inset-0 sm:static sm:inset-auto flex flex-col sm:min-w-90 sm:w-90 sm:rounded-2xl overflow-hidden shadow-lg">
+    <div *ngIf="isLoggedIn" class="fixed inset-0 sm:static sm:inset-auto flex flex-col sm:min-w-90 sm:w-90 sm:rounded-2xl overflow-hidden shadow-lg">
 
         <!-- Header -->
         <div class="flex shrink-0 items-center py-4 pr-4 pl-6 bg-primary text-on-primary">
@@ -29,7 +29,7 @@
                         [svgIcon]="'heroicons_solid:x-mark'"></mat-icon>
                 </button>
             </div>
-            <div class="text-lg font-medium leading-10">Notifications</div>
+            <div class="text-lg font-medium leading-10">Thông báo ở đây nè</div>
             <div class="ml-auto">
                 <button
                     mat-icon-button
@@ -157,6 +157,27 @@
 
         </div>
 
+    </div>
+
+    <div class="fixed inset-0 sm:static sm:inset-auto flex flex-col sm:min-w-90 sm:w-90 sm:rounded-2xl overflow-hidden shadow-lg" *ngIf="!isLoggedIn">
+        <div
+            class="fixed inset-0 z-50 bg-black bg-opacity-20"
+            (click)="closePanel()">
+        </div>
+        <div
+            class="fixed top-1/2 left-1/2 z-50 w-80 max-w-full -translate-x-1/2 -translate-y-1/2 bg-card rounded-lg shadow-lg p-6 text-center">
+            <div class="flex items-center justify-center w-12 h-12 mx-auto rounded-full bg-yellow-100 mb-4">
+                <mat-icon class="text-yellow-600" [svgIcon]="'heroicons_solid:exclamation-triangle'"></mat-icon>
+            </div>
+            <div class="text-lg font-semibold mb-2">Bạn chưa đăng nhập</div>
+            <div class="text-secondary mb-6">Vui lòng đăng nhập để xem thông báo của bạn.</div>
+            <button
+                mat-raised-button
+                color="primary"
+                (click)="closePanel(); signIn()">
+                Đăng nhập
+            </button>
+        </div>
     </div>
 
 </ng-template>

@@ -15,6 +15,8 @@ import { MatInputModule } from '@angular/material/input';
 import { FeedBack } from 'app/core/feedback/feedback.types';
 import { FeedbackService } from 'app/core/feedback/feedback.service';
 import { AlertService } from 'app/core/alert/alert.service';
+import { AuthService } from 'app/core/auth/auth.service';
+import { Router } from '@angular/router';
 
 @Component({
     selector: 'icd-10',
@@ -59,15 +61,21 @@ export class Icd10Component implements OnInit {
         reason: ''
     };
 
+    isLoggedIn: boolean = false;
+
     constructor(
         private _icdService: Icd10Service, 
         private _feedbackService: FeedbackService,
-        private _alertService: AlertService
+        private _alertService: AlertService,
+        private _authService: AuthService,
+        private _router: Router,
     ) { }
 
     ngOnInit(): void {
         this.dataSource = new ICD10DataSource(this.treeControl, this._icdService);
         this.dataSource.initialize();
+        this.isLoggedIn = this._authService.isLoggedIn();
+        console.log('isLoggedIn', this.isLoggedIn);
     }
 
     hasChild = (_: number, node: DynamicFlatNode) => node.expandable;
@@ -103,6 +111,9 @@ export class Icd10Component implements OnInit {
 
     openFeedbackPopup(selected: any) {
         this.showFeedbackPopup = true;
+        if (!this.isLoggedIn) {
+            return;  // Không set feedBack nếu chưa login
+        }
         if (selected.chapter) {
             this.feedBack = {
                 disease: null,
@@ -158,6 +169,14 @@ export class Icd10Component implements OnInit {
         };
     }
 
+    /**
+    * Sign in
+     */
+    signIn(): void
+    {
+        this._router.navigate(['/sign-in']);
+    }
+
     submitFeedback() {
         if (!this.feedBack.reason || this.feedBack.reason.trim() === '') {
             this._alertService.showAlert({
@@ -185,6 +204,15 @@ export class Icd10Component implements OnInit {
         });
     }
 
+    highlightMatch(text: string): string {
+        if (!this.searchTerm) return text;
+
+        const term = this.searchTerm.trim().toLowerCase();
+        const regex = new RegExp(`(${term})`, "gi");
+
+        return text.replace(regex, `<span class="font-bold text-primary-700">$1</span>`);
+    }
+
     generateSuggestions() {
         if (!this.searchTerm.trim()) {
             this.suggestions = [];
@@ -193,20 +221,23 @@ export class Icd10Component implements OnInit {
 
         const term = this.searchTerm.toLowerCase();
         console.log('term', term);
-        // 👉 Bạn cần thay "fullList" bằng mảng chứa tất cả dữ liệu ICD của bạn
-        this.suggestions = this._icdService.searchICD(term).pipe(
-            map((res) => { 
-                console.log('res', res);
-                return res?.suggestions ?? [] 
-            })
-        ) as any;
-        }
+        this._icdService.searchICD(term).subscribe({
+            next: (res: any) => {
+                console.log('API res:', res);
+                this.suggestions = res?.suggestions ?? [];
+            },
+            error: (err) => {
+                console.error('Error fetching suggestions:', err);
+                this.suggestions = [];
+            }
+        });
+    }
 
-        selectSuggestion(item: any) {
-            this.searchTerm = `${item.code} ${item.title_vi}`;
-            this.suggestions = [];
-            this.showDetail(item.id, item.level);
-        }
+    selectSuggestion(item: any) {
+        this.searchTerm = `${item.code} ${item.title_vi}`;
+        this.suggestions = [];
+        this.showDetail(item.id, item.level);
+    }
 
     onSearchChange() {
         clearTimeout(this.typingTimer);

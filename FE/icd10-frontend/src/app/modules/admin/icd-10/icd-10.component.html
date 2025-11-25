@@ -1,8 +1,8 @@
-<div class="flex h-[calc(100vh-100px)]">
+<div class="flex h-[calc(100vh-120px)]">
 
     <!-- LEFT: Tree -->
     <div class="w-1/2 border-r p-4">
-        <div class="w-full mb-4 icd-search">
+        <div class="relative w-full mb-4 icd-search">
             <div class="flex items-center w-full h-full bg-white">
                 <mat-icon class="me-2" [svgIcon]="'heroicons_solid:magnifying-glass'"></mat-icon>
                 <input type="text"
@@ -20,28 +20,24 @@
             </div>
             <!-- 🔽 GỢI Ý TÌM KIẾM (dropdown) -->
             <div *ngIf="suggestions.length"
-                class="absolute left-0 right-0 mt-1 bg-white border rounded shadow-lg z-50 max-h-64 overflow-y-auto">
+                class="absolute left-0 right-0 mt-1 top-10 bg-white border rounded shadow-lg z-50 max-h-64 overflow-y-auto">
 
                 <div *ngFor="let item of suggestions"
                     class="px-3 py-2 hover:bg-gray-100 cursor-pointer flex gap-2"
                     (click)="selectSuggestion(item)">
 
-                    <span class="font-semibold text-primary">{{ item.code }}</span>
-                    <span>{{ item.title_vi }}</span>
+                    <!-- <span class="font-semibold text-primary">{{ item.code }}</span>
+                    <span>{{ item.title_vi }}</span> -->
+                    <!-- highlight code -->
+                    <span class="font-semibold text-primary-700"
+                        [innerHTML]="highlightMatch(item.code)"></span>
+
+                    <!-- highlight title_vi -->
+                    <span [innerHTML]="highlightMatch(item.title_vi)"></span>
                 </div>
             </div>
-            <!-- <mat-icon class="me-2" [svgIcon]="'heroicons_solid:magnifying-glass'"></mat-icon>
-            <input 
-                matInput 
-                [(ngModel)]="searchTerm" 
-                placeholder="Nhập từ khóa để tìm kiếm..." 
-            />
-            <button *ngIf="searchTerm" matSuffix mat-icon-button (click)="searchTerm=''">
-                <mat-icon [svgIcon]="'heroicons_solid:x-mark'"></mat-icon>
-            </button> -->
         </div>
         <mat-tree [dataSource]="dataSource" [treeControl]="treeControl" class="icd-tree">
-
             <!-- Node lá (không có con) -->
             <mat-tree-node *matTreeNodeDef="let node" matTreeNodePadding>
                 <!-- <button mat-icon-button disabled></button> -->
@@ -49,7 +45,6 @@
                     {{node.code}}: {{node.title_vi}}
                 </span>
             </mat-tree-node>
-
             <!-- Node có con (expandable) -->
             <mat-tree-node *matTreeNodeDef="let node; when: hasChild" matTreeNodePadding>
                 <button *ngIf="!node.is_leaf" mat-icon-button [matTreeNodeToggle]="node.expandable">
@@ -67,9 +62,7 @@
                     {{node.code}}: {{node.title_vi}}
                 </span>
             </mat-tree-node>
-
         </mat-tree>
-
     </div>
 
     <!-- RIGHT: Detail -->
@@ -194,7 +187,8 @@
     </div>
 </div>
 
-<div *ngIf="showFeedbackPopup" class="fixed inset-0 bg-black/40 flex items-center justify-center z-[100]">
+<div *ngIf="showFeedbackPopup"
+     class="fixed inset-0 bg-black/40 flex items-center justify-center z-[100]">
 
     <div class="w-[800px] bg-white rounded-lg shadow-lg max-h-[90vh] overflow-hidden">
 
@@ -209,41 +203,68 @@
 
         <!-- BODY -->
         <div class="p-5 space-y-4 overflow-y-auto max-h-[70vh]">
-            <!-- Row 1 -->
-            <div class="grid grid-cols-2 gap-4">
-                <!-- Code -->
-                <div>
-                    <label class="font-medium flex items-center gap-1 mb-1">
-                        <mat-icon svgIcon="heroicons_solid:code-bracket-square"></mat-icon> Mã
-                    </label>
-                    <input class="w-full border rounded px-3 py-2 mb-3" placeholder="Góp ý về mã bệnh"
-                        [(ngModel)]="feedBack.code">
-                </div>
 
-                <!-- Model -->
-                <div>
-                    <label class="font-medium flex items-center gap-1 mb-1">
-                        <mat-icon svgIcon="heroicons_solid:tag"></mat-icon> Tiêu đề
-                    </label>
-                    <input class="w-full border rounded px-3 py-2 mb-3" placeholder="Góp ý về tiêu đề"
-                        [(ngModel)]="feedBack.title_vi">
-                </div>
+            <!-- ============================= -->
+            <!--      CASE 1: NOT LOGGED IN    -->
+            <!-- ============================= -->
+            <div *ngIf="!isLoggedIn" class="text-center py-10">
+                <h2 class="text-xl font-semibold mb-3">Bạn cần đăng nhập</h2>
+                <p class="text-gray-600 mb-5">
+                    Hãy đăng nhập trước khi gửi góp ý về mã bệnh ICD-10.
+                </p>
+
+                <button (click)="signIn()"
+                        class="px-6 py-2 bg-primary-500 text-white rounded-lg hover:bg-primary-600">
+                    Đăng nhập ngay
+                </button>
             </div>
 
-            <!-- Góp ý -->
-            <div>
-                <label class="font-medium flex items-center gap-1 mb-1">
-                    <mat-icon svgIcon="heroicons_solid:chat-bubble-left-right"></mat-icon> Lý do góp ý
-                </label>
-                <textarea class="w-full border rounded px-3 py-2 resize-y" rows="4" required
-                    placeholder="Nhập lý do góp ý..." [(ngModel)]="feedBack.reason"></textarea>
+            <!-- ============================= -->
+            <!--       CASE 2: LOGGED IN       -->
+            <!-- ============================= -->
+            <div *ngIf="isLoggedIn">
 
+                <!-- Row 1 -->
+                <div class="grid grid-cols-2 gap-4">
+                    <!-- Code -->
+                    <div>
+                        <label class="font-medium flex items-center gap-1 mb-1">
+                            <mat-icon svgIcon="heroicons_solid:code-bracket-square"></mat-icon> Mã
+                        </label>
+                        <input class="w-full border rounded px-3 py-2 mb-3"
+                               placeholder="Góp ý về mã bệnh"
+                               [(ngModel)]="feedBack.code">
+                    </div>
+
+                    <!-- Title -->
+                    <div>
+                        <label class="font-medium flex items-center gap-1 mb-1">
+                            <mat-icon svgIcon="heroicons_solid:tag"></mat-icon> Tiêu đề
+                        </label>
+                        <input class="w-full border rounded px-3 py-2 mb-3"
+                               placeholder="Góp ý về tiêu đề"
+                               [(ngModel)]="feedBack.title_vi">
+                    </div>
+                </div>
+
+                <!-- Reason -->
+                <div>
+                    <label class="font-medium flex items-center gap-1 mb-1">
+                        <mat-icon svgIcon="heroicons_solid:chat-bubble-left-right"></mat-icon> Lý do góp ý
+                    </label>
+                    <textarea class="w-full border rounded px-3 py-2 resize-y"
+                              rows="4"
+                              required
+                              placeholder="Nhập lý do góp ý..."
+                              [(ngModel)]="feedBack.reason"></textarea>
+
+                </div>
             </div>
 
         </div>
 
         <!-- FOOTER -->
-        <div class="flex justify-end gap-3 px-6 py-3 bg-gray-100 rounded-b-lg">
+        <div *ngIf="isLoggedIn" class="flex justify-end gap-3 px-6 py-3 bg-gray-100 rounded-b-lg">
             <button class="px-5 py-2 bg-gray-200 rounded-lg hover:bg-gray-300 flex items-center gap-2"
                 (click)="closeFeedbackPopup()">
                 <mat-icon svgIcon="heroicons_solid:x-mark" class="scale-90"></mat-icon> Hủy

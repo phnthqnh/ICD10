@@ -7,6 +7,7 @@ import { MatIconModule } from '@angular/material/icon';
 import { MatMenuModule } from '@angular/material/menu';
 import { Router } from '@angular/router';
 import { UserService } from 'app/core/user/user.service';
+import { AuthService } from 'app/core/auth/auth.service';
 import { User } from 'app/core/user/user.types';
 import { Subject, takeUntil } from 'rxjs';
 
@@ -27,6 +28,7 @@ export class UserComponent implements OnInit, OnDestroy
 
     @Input() showAvatar: boolean = true;
     user: User;
+    isLoggedIn: boolean = false;
 
     private _unsubscribeAll: Subject<any> = new Subject<any>();
 
@@ -37,6 +39,7 @@ export class UserComponent implements OnInit, OnDestroy
         private _changeDetectorRef: ChangeDetectorRef,
         private _router: Router,
         private _userService: UserService,
+        private _authService: AuthService,
     )
     {
     }
@@ -60,6 +63,8 @@ export class UserComponent implements OnInit, OnDestroy
                 // Mark for check
                 this._changeDetectorRef.markForCheck();
             });
+
+        this.isLoggedIn = this._authService.isLoggedIn();
     }
 
     /**
@@ -101,5 +106,13 @@ export class UserComponent implements OnInit, OnDestroy
     signOut(): void
     {
         this._router.navigate(['/sign-out']);
+    }
+
+    /**
+     * Sign in
+     */
+    signIn(): void
+    {
+        this._router.navigate(['/sign-in']);
     }
 }

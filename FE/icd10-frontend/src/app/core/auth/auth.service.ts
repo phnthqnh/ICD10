@@ -207,4 +207,20 @@ export class AuthService
         // If the access token exists, and it didn't expire, sign in using it
         return this.signInUsingToken();
     }
+
+    /**
+     * check logged in
+     * 
+     */
+    isLoggedIn(): boolean {
+        if (this._authenticated) {
+            return true;
+        }
+
+        if (this.accessToken && !AuthUtils.isTokenExpired(this.accessToken)) {
+            return true;
+        }
+
+        return false;
+    }
 }

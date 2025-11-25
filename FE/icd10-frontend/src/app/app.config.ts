@@ -12,6 +12,7 @@ import { provideAuth } from 'app/core/auth/auth.provider';
 import { provideIcons } from 'app/core/icons/icons.provider';
 import { mockApiServices } from 'app/mock-api';
 import { TranslocoHttpLoader } from './core/transloco/transloco.http-loader';
+import { AuthService } from './core/auth/auth.service';
 
 
 export const appConfig: ApplicationConfig = {
@@ -41,6 +42,13 @@ export const appConfig: ApplicationConfig = {
                     monthYearA11yLabel: 'LLLL yyyy',
                 },
             },
+        },
+        {
+            provide: APP_INITIALIZER,
+            useFactory: (authService: AuthService) => () => 
+                authService.check().toPromise(),
+            deps: [AuthService],
+            multi: true
         },
 
         // Transloco Config
