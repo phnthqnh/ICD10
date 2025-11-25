@@ -1,0 +1,48 @@
+<div class="mt-4 space-y-4">
+
+    <div *ngFor="let item of feedbackList"
+         class="bg-white border border-gray-200 rounded-xl p-5 shadow-sm hover:shadow-md transition-all duration-200">
+
+        <!-- Header: Code + Status -->
+        <div class="flex items-start justify-between">
+
+            <div>
+                <div class="flex items-center gap-2">
+                    <span class="text-xl font-bold text-primary">{{ item.code }}</span>
+                </div>
+
+                <div class="text-gray-700 mt-1 font-medium">
+                    {{ item.title_vi }}
+                </div>
+            </div>
+
+            <!-- Status Badge -->
+            <span
+                class="px-3 py-1.5 text-xs font-semibold rounded-full whitespace-nowrap"
+                [ngClass]="{
+                    'bg-yellow-100 text-yellow-700 border border-yellow-200': item.status === 3,
+                    'bg-green-100 text-green-700 border border-green-200': item.status === 1,
+                    'bg-red-100 text-red-700 border border-red-200': item.status === 2
+                }"
+            >
+                {{ item.status === 3 ? 'Đang xử lý' :
+                   item.status === 1 ? 'Đã duyệt'   :
+                   'Đã từ chối' }}
+            </span>
+
+        </div>
+
+        <!-- Lý do -->
+        <div class="mt-4 bg-gray-50 p-3 rounded-lg border text-gray-700 text-sm">
+            <span class="font-semibold text-gray-600">Lý do:</span>
+            <span class="ml-1">{{ item.reason || '—' }}</span>
+        </div>
+
+        <!-- Ngày -->
+        <div class="text-right text-xs text-gray-400 mt-3">
+            {{ item.created_at | date:'dd/MM/yyyy HH:mm' }}
+        </div>
+
+    </div>
+
+</div>

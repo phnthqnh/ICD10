@@ -1188,6 +1188,14 @@ export const compactNavigation: FuseNavigationItem[] = [
         link : '/icd-10',
         icon    : 'heroicons_outline:globe-alt',
     },
+    {
+        id      : 'feedback',
+        title   : 'Feedback',
+        tooltip : 'Feedback',
+        type    : 'basic',
+        link : '/feedback',
+        icon    : 'heroicons_outline:chat-bubble-left-right',
+    },
     // {
     //     id      : 'dashboards',
     //     title   : 'Dashboards',
