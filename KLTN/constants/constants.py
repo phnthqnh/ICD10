@@ -4,6 +4,11 @@ class Constants:
         (2, "Inactive"),
         (3, "Waiting"),
     )
+    FEEDBACK_TYPE = (
+        (1, "Chapter"),
+        (2, "Block"),
+        (3, "Disease"),
+    )
     FEEDBACK_STATUS = (
         (1, "Accepted"),
         (2, "Rejected"),

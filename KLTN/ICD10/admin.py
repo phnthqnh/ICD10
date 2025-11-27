@@ -2,7 +2,7 @@ from django.contrib import admin
 from ICD10.models.icd10 import *
 from ICD10.models.user import *
 from ICD10.models.chatbot import *
-from ICD10.models.feedback import *
+from ICD10.models.feedback import Feedback_Chapter, Feedback_Block, Feedback_Disease, Feedback_Chatbot
 from ICD10.models.notification import *
 # Register your models here.
 from django.db import models
@@ -186,44 +186,27 @@ class ChatMessageAdmin(ModelAdmin):
     list_per_page = 20
     readonly_fields = ("created_at",)
     
-@admin.register(Feedback_ICD10)
-class FeedbackICD10Admin(ModelAdmin):
+@admin.register(Feedback_Chapter)
+class FeedbackChapterAdmin(ModelAdmin):
     list_display = ("code", "title_vi", "user", "status", "created_at")
-    search_fields = ("user__username", "user__email")
+    search_fields = ("user__username", "user__email", "chapter__code")
     ordering = ("-created_at",)
     list_filter = ("status", "created_at")
-    list_per_page = 20
     readonly_fields = ("created_at",)
-    
+
     def save_model(self, request, obj, form, change):
         super().save_model(request, obj, form, change)
-        
         channel_layer = get_channel_layer()
         
         if obj.status == 3:
             return
         
-        target_name = None
-        target_type = None
-        if obj.disease:
-            target_name = obj.disease.code
-            target_type = "bệnh"
-        elif obj.block:
-            target_name = obj.block.code
-            target_type = "nhóm"
-        elif obj.chapter:
-            target_name = obj.chapter.code
-            target_type = "chương"
-        else:
-            target_name = "mục ICD không xác định"
-            target_type = "ICD item"
-        # thay đổi trạng thái hoặc xử lý khác nếu cần thiết khi tạo mới phản hồi từ admin
         if obj.status == 1:
             # Thông báo cho người dùng
             Notification.objects.create(
                 recipient=obj.user,
                 title="Phản hồi ICD-10 được chấp nhận",
-                message=f"Phản hồi về {target_type} {target_name} đã được chấp nhận",
+                message=f"Phản hồi về chương {obj.chapter.code} đã được chấp nhận",
                 notif_type='system'
             )
             async_to_sync(channel_layer.group_send)(
@@ -231,57 +214,25 @@ class FeedbackICD10Admin(ModelAdmin):
                 {
                     "type": "send_notification",
                     "event": "feedback_update",
-                    "message": f"Phản hồi về {target_type} {target_name} đã được chấp nhận ✅",
+                    "message": f"Phản hồi về chương {obj.chapter.code} đã được chấp nhận ✅",
                     "feedback_id": obj.id,
                 },
             )
-            # Cập nhật thông tin bệnh theo phản hồi
-            if obj.disease:
-                disease = obj.disease
-                if obj.code:
-                    disease.code = obj.code
-                if obj.title_vi:
-                    disease.title_vi = obj.title_vi
-                disease.save()
-                self.message_user(request, f"Đã cập nhật lại bệnh {disease.code} theo phản hồi")
-            elif obj.block:
-                block = obj.block
-                if obj.code:
-                    block.code = obj.code
-                if obj.title_vi:
-                    block.title_vi = obj.title_vi
-                block.save()
-                self.message_user(request, f"Đã cập nhật lại nhóm {block.code} theo phản hồi")
-            elif obj.chapter:
-                chapter = obj.chapter
-                if obj.code:
-                    chapter.code = obj.code
-                if obj.title_vi:
-                    chapter.title_vi = obj.title_vi
-                chapter.save()
-                self.message_user(request, f"Đã cập nhật lại chương {chapter.code} theo phản hồi")
-            # disease_extra, created = DiseaseExtraInfo.objects.get_or_create(disease=disease)
-            # if obj.description:
-            #     disease_extra.description = obj.description
-            # if obj.symptoms:
-            #     disease_extra.symptoms = obj.symptoms
-            # if obj.image:
-            #     disease_extra.image = obj.image
-            # disease_extra.save()
             
-            # Reembedding sau khi cập nhật thông tin
-            # try:
-            #     Utils.reembed_disease(disease.code)
-            #     self.message_user(request, f"Đã cập nhật embedding cho bệnh {disease.code} thành công")
-            # except Exception as e:
-            #     self.message_user(request, f"Lỗi khi cập nhật embedding: {str(e)}", level='ERROR')
-            
+            chapter = obj.chapter
+            if obj.code:
+                chapter.code = obj.code
+            if obj.title_vi:
+                chapter.title_vi = obj.title_vi
+            chapter.save()
+            self.message_user(request, f"Đã cập nhật lại chương {chapter.code} theo phản hồi")
+        
         if obj.status == 2:
             # Thông báo cho người dùng
             Notification.objects.create(
                 recipient=obj.user,
                 title="Phản hồi ICD-10 bị từ chối",
-                message=f"Phản hồi về {target_type} {target_name} đã bị từ chối",
+                message=f"Phản hồi về chương {obj.chapter.code} đã bị từ chối",
                 notif_type='system'
             )
             async_to_sync(channel_layer.group_send)(
@@ -289,19 +240,152 @@ class FeedbackICD10Admin(ModelAdmin):
                 {
                     "type": "send_notification",
                     "event": "feedback_update",
-                    "message": f"Phản hồi về {target_type} {target_name} đã bị từ chối ❌",
+                    "message": f"Phản hồi về chương {obj.chapter.code} đã bị từ chối ❌",
                     "feedback_id": obj.id,
                 },
             )
-    
+        
+
+@admin.register(Feedback_Block)
+class FeedbackBlockAdmin(ModelAdmin):
+    list_display = ("code", "title_vi", "user", "status", "created_at")
+    search_fields = ("user__username", "user__email", "block__code")
+    ordering = ("-created_at",)
+    list_filter = ("status", "created_at")
+    readonly_fields = ("created_at",)
+
+    def save_model(self, request, obj, form, change):
+        super().save_model(request, obj, form, change)
+        channel_layer = get_channel_layer()
+        
+        if obj.status == 3:
+            return
+        
+        if obj.status == 1:
+            # Thông báo cho người dùng
+            Notification.objects.create(
+                recipient=obj.user,
+                title="Phản hồi ICD-10 được chấp nhận",
+                message=f"Phản hồi về nhóm {obj.block.code} đã được chấp nhận",
+                notif_type='system'
+            )
+            async_to_sync(channel_layer.group_send)(
+                f"user_{obj.user.id}",
+                {
+                    "type": "send_notification",
+                    "event": "feedback_update",
+                    "message": f"Phản hồi về nhóm {obj.block.code} đã được chấp nhận ✅",
+                    "feedback_id": obj.id,
+                },
+            )
+            
+            block = obj.block
+            if obj.code:
+                block.code = obj.code
+            if obj.title_vi:
+                block.title_vi = obj.title_vi
+            if obj.chapter:
+                block.chapter = obj.chapter
+            block.save()
+            self.message_user(request, f"Đã cập nhật lại nhóm {block.code} theo phản hồi")
+        
+        if obj.status == 2:
+            # Thông báo cho người dùng
+            Notification.objects.create(
+                recipient=obj.user,
+                title="Phản hồi ICD-10 bị từ chối",
+                message=f"Phản hồi về nhóm {obj.block.code} đã bị từ chối",
+                notif_type='system'
+            )
+            async_to_sync(channel_layer.group_send)(
+                f"user_{obj.user.id}",
+                {
+                    "type": "send_notification",
+                    "event": "feedback_update",
+                    "message": f"Phản hồi về nhóm {obj.block.code} đã bị từ chối ❌",
+                    "feedback_id": obj.id,
+                },
+            )
+
+@admin.register(Feedback_Disease)
+class FeedbackDiseaseAdmin(ModelAdmin):
+    list_display = ("code", "title_vi", "user", "status", "created_at")
+    search_fields = ("user__username", "user__email", "disease__code")
+    ordering = ("-created_at",)
+    list_filter = ("status", "created_at")
+    readonly_fields = ("created_at",)
+
+    def save_model(self, request, obj, form, change):
+        super().save_model(request, obj, form, change)
+        channel_layer = get_channel_layer()
+        
+        if obj.status == 3:
+            return
+        
+        if obj.status == 1:
+            # Thông báo cho người dùng
+            Notification.objects.create(
+                recipient=obj.user,
+                title="Phản hồi ICD-10 được chấp nhận",
+                message=f"Phản hồi về bệnh {obj.disease.code} đã được chấp nhận",
+                notif_type='system'
+            )
+            async_to_sync(channel_layer.group_send)(
+                f"user_{obj.user.id}",
+                {
+                    "type": "send_notification",
+                    "event": "feedback_update",
+                    "message": f"Phản hồi về bệnh {obj.disease.code} đã được chấp nhận ✅",
+                    "feedback_id": obj.id,
+                },
+            )
+            
+            disease = obj.disease
+            if obj.code:
+                disease.code = obj.code
+            if obj.title_vi:
+                disease.title_vi = obj.title_vi
+            if obj.block:
+                disease.block = obj.block
+            # if obj.chapter:
+            #     disease.chapter = obj.chapter
+            if obj.disease_parent:
+                disease.parent = obj.disease_parent
+            disease.save()
+            self.message_user(request, f"Đã cập nhật lại bệnh {disease.code} theo phản hồi")
+        
+        if obj.status == 2:
+            # Thông báo cho người dùng
+            Notification.objects.create(
+                recipient=obj.user,
+                title="Phản hồi ICD-10 bị từ chối",
+                message=f"Phản hồi về bệnh {obj.disease.code} đã bị từ chối",
+                notif_type='system'
+            )
+            async_to_sync(channel_layer.group_send)(
+                f"user_{obj.user.id}",
+                {
+                    "type": "send_notification",
+                    "event": "feedback_update",
+                    "message": f"Phản hồi về bệnh {obj.disease.code} đã bị từ chối ❌",
+                    "feedback_id": obj.id,
+                },
+            )
+
+
 @admin.register(Feedback_Chatbot)
 class FeedbackChatbotAdmin(ModelAdmin):
-    list_display = ("chat_message", "user", "status", "created_at")
-    search_fields = ("chat_message__id", "user__username", "user__email")
+    list_display = ("chat_message", "get_user", "status", "created_at")
+    search_fields = ("chat_message__id", "chat_message__session__user__username", "chat_message__session__user__email")
     ordering = ("-created_at",)
     list_filter = ("status", "created_at")
     list_per_page = 20
     readonly_fields = ("created_at",)
+    
+    def get_user(self, obj):
+        return obj.chat_message.session.user.username
+
+    get_user.short_description = "User"
     
 @admin.register(Notification)
 class NotificationAdmin(ModelAdmin):

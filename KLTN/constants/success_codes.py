@@ -124,6 +124,21 @@ class SuccessCodes:
         "Submit ICD-10 feedback successfully!",
     )
     
+    SUBMIT_FEEDBACK_CHAPTER = (
+        "SUBMIT_FEEDBACK_CHAPTER",
+        "Submit chapter feedback successfully!",
+    )
+    
+    SUBMIT_FEEDBACK_BLOCK = (
+        "SUBMIT_FEEDBACK_BLOCK",
+        "Submit block feedback successfully!",
+    )
+    
+    SUBMIT_FEEDBACK_DISEASE = (
+        "SUBMIT_FEEDBACK_DISEASE",
+        "Submit disease feedback successfully!",
+    )
+    
     SUBMIT_FEEDBACK_CHATBOT = (
         "SUBMIT_FEEDBACK_CHATBOT",
         "Submit chatbot feedback successfully!",

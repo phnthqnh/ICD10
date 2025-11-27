@@ -2,32 +2,22 @@ from django.db.models.signals import post_save
 from django.dispatch import receiver
 from asgiref.sync import async_to_sync
 from channels.layers import get_channel_layer
-from ICD10.models.feedback import Feedback_ICD10, Feedback_Chatbot
+from ICD10.models.feedback import Feedback_Chapter, Feedback_Block, Feedback_Disease, Feedback_Chatbot
 from ICD10.models.user import User
 from ICD10.models.notification import Notification
 
-@receiver(post_save, sender=Feedback_ICD10)
-def notify_admin_new_feedback(sender, instance, created, **kwargs):
+@receiver(post_save, sender=Feedback_Chapter)
+def notify_admin_new_feedback_chapter(sender, instance, created, **kwargs):
     if created:
-        target_name = None
-        target_type = None
-        if instance.disease:
-            target_name = instance.disease.code
-            target_type = "bệnh"
-        elif instance.block:
-            target_name = instance.block.code
-            target_type = "nhóm"
-        elif instance.chapter:
-            target_name = instance.chapter.code
-            target_type = "chương"
+        target_name = instance.chapter.code
         # Gửi notification trong DB
         admins = User.objects.filter(is_superuser=True)
         for admin in admins:
             Notification.objects.create(
                 recipient=admin,
-                title="Phản hồi về ICD-10",
-                message=f"{instance.user.username} đã gửi phản hồi cho {target_type} {target_name}",
-                url=f"http://127.0.0.1:8000/admin/ICD10/feedback_icd10/{instance.id}/change/",
+                title="Phản hồi về chương ICD-10",
+                message=f"{instance.user.username} đã gửi phản hồi cho chương {target_name}",
+                url=f"http://127.0.0.1:8000/admin/ICD10/feedback_chapter/{instance.id}/change/",
                 notif_type='feedback'
             )
         # Gửi realtime websocket
@@ -37,21 +27,74 @@ def notify_admin_new_feedback(sender, instance, created, **kwargs):
             {
                 "type": "send_notification",
                 "event": "new_feedback",
-                "message": f"{instance.user.username} đã gửi phản hồi cho {target_type} {target_name}",
-                "url": f"http://127.0.0.1:8000/admin/ICD10/feedback_icd10/{instance.id}/change/"
+                "message": f"{instance.user.username} đã gửi phản hồi cho chương {target_name}",
+                "url": f"http://127.0.0.1:8000/admin/ICD10/feedback_chapter/{instance.id}/change/"
             },
         )
         
-@receiver(post_save, sender=Feedback_Chatbot)
-def notify_admin_new_feedback(sender, instance, created, **kwargs):
+@receiver(post_save, sender=Feedback_Block)
+def notify_admin_new_feedback_block(sender, instance, created, **kwargs):
     if created:
+        target_name = instance.block.code
         # Gửi notification trong DB
         admins = User.objects.filter(is_superuser=True)
         for admin in admins:
             Notification.objects.create(
                 recipient=admin,
+                title="Phản hồi về nhóm ICD-10",
+                message=f"{instance.user.username} đã gửi phản hồi cho block {target_name}",
+                url=f"http://127.0.0.1:8000/admin/ICD10/feedback_block/{instance.id}/change/",
+                notif_type='feedback'
+            )
+        # Gửi realtime websocket
+        channel_layer = get_channel_layer()
+        async_to_sync(channel_layer.group_send)(
+            "admin_notifications",
+            {
+                "type": "send_notification",
+                "event": "new_feedback",
+                "message": f"{instance.user.username} đã gửi phản hồi cho block {target_name}",
+                "url": f"http://127.0.0.1:8000/admin/ICD10/feedback_block/{instance.id}/change/"
+            },
+        )
+        
+@receiver(post_save, sender=Feedback_Disease)
+def notify_admin_new_feedback_disease(sender, instance, created, **kwargs):
+    if created:
+        target_name = instance.disease.code
+        # Gửi notification trong DB
+        admins = User.objects.filter(is_superuser=True)
+        for admin in admins:
+            Notification.objects.create(
+                recipient=admin,
+                title="Phản hồi về bệnh ICD-10",
+                message=f"{instance.user.username} đã gửi phản hồi cho bệnh {target_name}",
+                url=f"http://127.0.0.1:8000/admin/ICD10/feedback_disease/{instance.id}/change/",
+                notif_type='feedback'
+            )
+        # Gửi realtime websocket
+        channel_layer = get_channel_layer()
+        async_to_sync(channel_layer.group_send)(
+            "admin_notifications",
+            {
+                "type": "send_notification",
+                "event": "new_feedback",
+                "message": f"{instance.user.username} đã gửi phản hồi cho bệnh {target_name}",
+                "url": f"http://127.0.0.1:8000/admin/ICD10/feedback_disease/{instance.id}/change/"
+            },
+        )
+        
+@receiver(post_save, sender=Feedback_Chatbot)
+def notify_admin_new_feedback_chatbot(sender, instance, created, **kwargs):
+    if created:
+        # Gửi notification trong DB
+        user = instance.chat_message.session.user
+        admins = User.objects.filter(is_superuser=True)
+        for admin in admins:
+            Notification.objects.create(
+                recipient=admin,
                 title="Phản hồi về Chatbot",
-                message=f"{instance.user.username} đã gửi phản hồi cho tin nhắn {instance.chat_message.id}",
+                message=f"{user.username} đã gửi phản hồi cho tin nhắn {instance.chat_message.id}",
                 url=f"http://127.0.0.1:8000/admin/ICD10/feedback_chatbot/{instance.id}/change/",
                 notif_type='feedback'
             )
@@ -62,7 +105,7 @@ def notify_admin_new_feedback(sender, instance, created, **kwargs):
             {
                 "type": "send_notification",
                 "event": "new_feedback",
-                "message": f"{instance.user.username} đã gửi phản hồi cho tin nhắn {instance.chat_message.id}",
+                "message": f"{user.username} đã gửi phản hồi cho tin nhắn {instance.chat_message.id}",
                 "url": f"http://127.0.0.1:8000/admin/ICD10/feedback_chatbot/{instance.id}/change/"
             },
         )

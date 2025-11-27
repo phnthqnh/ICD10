@@ -84,9 +84,19 @@ UNFOLD = {
                 "title": _("Navigation"),
                 "items": [
                     {
-                        "title": _("Phản hồi về ICD10"),
+                        "title": _("Phản hồi về chương ICD10"),
                         "icon": "feedback",
-                        "link": reverse_lazy("admin:ICD10_feedback_icd10_changelist"),
+                        "link": reverse_lazy("admin:ICD10_feedback_chapter_changelist"),
+                    },
+                    {
+                        "title": _("Phản hồi về nhóm ICD10"),
+                        "icon": "feedback",
+                        "link": reverse_lazy("admin:ICD10_feedback_block_changelist"),
+                    },
+                    {
+                        "title": _("Phản hồi về bệnh ICD10"),
+                        "icon": "feedback",
+                        "link": reverse_lazy("admin:ICD10_feedback_disease_changelist"),
                     },
                     {
                         "title": _("Phản hồi về Chatbot"),

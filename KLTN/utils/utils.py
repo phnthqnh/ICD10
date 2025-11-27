@@ -89,7 +89,24 @@ class Utils:
     def logger():
         return logging.getLogger(__name__)
 
-    
+    @staticmethod
+    def serialize_queryset_chapter(queryset, fields=None):
+        """
+        Chuyển queryset hoặc list object thành list dict chỉ chứa các field cần thiết.
+        Mặc định: ["code", "title_en", "title_vi"]
+        """
+        if fields is None:
+            fields = ["id", "chapter", "code", "title_en", "title_vi"]
+
+        data = []
+        for obj in queryset:
+            item = {}
+            for field in fields:
+                # getattr để lấy từ object (model instance)
+                # nếu dùng .values() thì không cần getattr
+                item[field] = getattr(obj, field, None)
+            data.append(item)
+        return data
     @staticmethod
     def serialize_queryset(queryset, fields=None):
         """

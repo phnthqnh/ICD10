@@ -300,15 +300,18 @@ def autocomplete_diseases(request):
         )
         .order_by("code")
     )
+    
 
-    data = [
-        {
+    data = []
+    
+    for d in diseases:
+        level = 3 if d.parent else 2
+        data.append({
             "id": d.id,
             "code": d.code,
-            "title_vi": d.title_vi
-        }
-        for d in diseases
-    ]
+            "title_vi": d.title_vi,
+            "level": level
+        })
 
     return Response({"suggestions": data})
 
@@ -477,3 +480,74 @@ def get_data_disease_child(request, pk):
         
     except Exception as e:
         return AppResponse.error(ErrorCodes.UNKNOWN_ERROR, errors=str(e))
+
+
+@api_view(["GET"])
+def get_chapter(request):
+    """
+    Lấy tất cả chapter ICD-10
+    """
+    cached_chapter = RedisWrapper.get(f"{Constants.CACHE_DATA_CHAPTER}_ALL")
+    if cached_chapter:
+        return AppResponse.success(
+            SuccessCodes.GET_CHAPTERS,
+            data={
+                "chapters": cached_chapter
+            },
+        )
+    chapters = ICDChapter.objects.all().order_by("code")
+    chapters_data = Utils.serialize_queryset_chapter(chapters)
+    RedisWrapper.save(f"{Constants.CACHE_DATA_CHAPTER}_ALL", chapters_data, expire_time=60*1)
+    return AppResponse.success(
+        SuccessCodes.GET_CHAPTERS,
+        data={
+            "chapters": chapters_data
+        }
+    )
+    
+@api_view(["GET"])
+def get_block(request):
+    """
+    Lấy tất cả block ICD-10
+    """
+    cached_block = RedisWrapper.get(f"{Constants.CACHE_DATA_BLOCK}_ALL")
+    if cached_block:
+        return AppResponse.success(
+            SuccessCodes.GET_BLOCKS_BY_CHAPTER,
+            data={
+                "blocks": cached_block
+            },
+        )
+    blocks = ICDBlock.objects.all().order_by("code")
+    blocks_data = Utils.serialize_queryset(blocks)
+    RedisWrapper.save(f"{Constants.CACHE_DATA_BLOCK}_ALL", blocks_data, expire_time=60*1)
+    return AppResponse.success(
+        SuccessCodes.GET_BLOCKS_BY_CHAPTER,
+        data={
+            "blocks": blocks_data
+        }
+    )
+    
+@api_view(["GET"])
+def get_disease(request):
+    """
+    Lấy tất cả disease ICD-10
+    """
+    cached_disease = RedisWrapper.get(f"{Constants.CACHE_DATA_DISEASE}_ALL")
+    if cached_disease:
+        return AppResponse.success(
+            SuccessCodes.GET_DISEASE_BY_CODE,
+            data={
+                "diseases": cached_disease
+            },
+        )
+    # lấy diseases parent is null
+    diseases = ICDDisease.objects.filter(parent__isnull=True).order_by("code")
+    diseases_data = Utils.serialize_queryset(diseases)
+    RedisWrapper.save(f"{Constants.CACHE_DATA_DISEASE}_ALL", diseases_data, expire_time=60*1)
+    return AppResponse.success(
+        SuccessCodes.GET_DISEASE_BY_CODE,
+        data={
+            "diseases": diseases_data
+        }
+    )
