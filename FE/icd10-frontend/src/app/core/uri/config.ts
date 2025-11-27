@@ -9,6 +9,9 @@ export const uriConfig = {
     API_USER_INFOR: baseUrl + '/api/profile/',
     API_FORGET_PASSWORD: baseUrl + '/api/reset-password/',
     API_CONFIRM_PASSWORD: baseUrl + '/api/password-confirm/',
+    API_GET_CHAPTER: baseUrl + '/api/get/chapter/',
+    API_GET_BLOCK: baseUrl + '/api/get/block/',
+    API_GET_DISEASE: baseUrl + '/api/get/disease/',
     API_GET_ICD10_CHAPTERS: baseUrl + '/api/chapters/',
     API_GET_ICD10_BLOCKS_BY_CHAPTER: (id: number) => 
         baseUrl + `/api/childs/chapter/${id}/`,
@@ -25,6 +28,8 @@ export const uriConfig = {
     API_GET_ICD10_DATA_DISEASE_CHILD: (id: number) =>
         baseUrl + `/api/data/disease_child/${id}/`,
     API_ICD10_SEARCH: baseUrl + '/api/autocomplete',
-    API_FEEDBACK_ICD10_SUBMIT: baseUrl + '/api/feedbacks/icd10/submit/',
+    API_FEEDBACK_CHAPTER_SUBMIT: baseUrl + '/api/feedbacks/chapter/submit/',
+    API_FEEDBACK_BLOCK_SUBMIT: baseUrl + '/api/feedbacks/block/submit/',
+    API_FEEDBACK_DISEASE_SUBMIT: baseUrl + '/api/feedbacks/disease/submit/',
     API_FEEDBACK_ICD10_LIST: baseUrl + '/api/feedbacks/icd10/user/',
 }

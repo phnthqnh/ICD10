@@ -1,6 +1,6 @@
 import { HttpClient } from '@angular/common/http';
 import { inject, Injectable } from '@angular/core';
-import { FeedBack, Status } from './feedback.types';
+import { FeedBack, Status, FeedBackResponse } from './feedback.types';
 import { BehaviorSubject, map, switchMap, Observable, ReplaySubject, tap } from 'rxjs';
 import { uriConfig } from '../uri/config';
 
@@ -19,7 +19,7 @@ export class FeedbackService
      *
      * 
      */
-    getUserFeedbackList(): Observable<FeedBack[]>
+    getUserFeedbackList(): Observable<any>
     {
         return this._httpClient.get<any>(uriConfig.API_FEEDBACK_ICD10_LIST)
             .pipe(
@@ -32,9 +32,19 @@ export class FeedbackService
      *
      * 
      */
-    submitFeedback(payload: any): Observable<any>
+    submitFeedbackChapter(payload: any): Observable<any>
     {
-        return this._httpClient.post<any>(uriConfig.API_FEEDBACK_ICD10_SUBMIT, payload)
+        return this._httpClient.post<any>(uriConfig.API_FEEDBACK_CHAPTER_SUBMIT, payload)
+    }
+
+    submitFeedbackBlock(payload: any): Observable<any>
+    {
+        return this._httpClient.post<any>(uriConfig.API_FEEDBACK_BLOCK_SUBMIT, payload)
+    }
+
+    submitFeedbackDisease(payload: any): Observable<any>
+    {
+        return this._httpClient.post<any>(uriConfig.API_FEEDBACK_DISEASE_SUBMIT, payload)
     }
 
     getStatus(): Status[] {

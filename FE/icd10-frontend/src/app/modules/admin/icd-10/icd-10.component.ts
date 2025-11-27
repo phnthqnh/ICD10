@@ -6,7 +6,7 @@ import { MatButtonModule } from '@angular/material/button';
 import { FormsModule } from '@angular/forms';
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { Icd10Service } from 'app/core/icd-10/icd-10.service';
-import { DynamicFlatNode } from 'app/core/icd-10/icd-10.types';
+import { DynamicFlatNode, Chapter, Block, Disease } from 'app/core/icd-10/icd-10.types';
 import { RouterModule } from '@angular/router';
 import { FlatTreeControl } from '@angular/cdk/tree';
 import { ICD10DataSource } from 'app/core/icd-10/icd10.datasource';
@@ -43,6 +43,13 @@ export class Icd10Component implements OnInit {
         n => n.expandable
     );
 
+    listChapter: Chapter[] = [];
+    listBlock: Block[] = [];
+    listDisease: Disease[] = [];
+    newChapterSelection: any = {};
+    dropdownOpenId: number | null = null;
+    dropdownOpenDiseaseParentId: number | null = null;
+
     searchTerm: string = '';
     suggestions: any[] = [];
     typingTimer: any;
@@ -56,6 +63,10 @@ export class Icd10Component implements OnInit {
         disease: null,
         block: null,
         chapter: null,
+        disease_parent: null,
+        new_chapter: null,
+        new_block: null,
+        new_disease_parent: null,
         code: '',
         title_vi: '',
         reason: ''
@@ -76,6 +87,21 @@ export class Icd10Component implements OnInit {
         this.dataSource.initialize();
         this.isLoggedIn = this._authService.isLoggedIn();
         console.log('isLoggedIn', this.isLoggedIn);
+        this.loadAllData();
+    }
+
+    loadAllData() {
+        this._icdService.getChapter().subscribe(chapters => {
+            this.listChapter = chapters;
+        });
+
+        this._icdService.getBlock().subscribe(blocks => {
+            this.listBlock = blocks;
+        });
+
+        this._icdService.getDisease().subscribe(diseases => {
+            this.listDisease = diseases;
+        });
     }
 
     hasChild = (_: number, node: DynamicFlatNode) => node.expandable;
@@ -116,8 +142,6 @@ export class Icd10Component implements OnInit {
         }
         if (selected.chapter) {
             this.feedBack = {
-                disease: null,
-                block: null,
                 chapter: selected.chapter.id,
                 code: selected.chapter.code || '',
                 title_vi: selected.chapter.title_vi || '',
@@ -126,19 +150,18 @@ export class Icd10Component implements OnInit {
         }
         else if (selected.block) {
             this.feedBack = {
-                disease: null,
                 block: selected.block.id,
-                chapter: null,
+                chapter: selected.block.chapter,
+                new_chapter: null,
                 code: selected.block.code || '',
                 title_vi: selected.block.title_vi || '',
                 reason: ''
             };
         }
-        else if (selected.disease) {
+        else if (selected.disease && !selected.disease_parent) {
             this.feedBack = {
                 disease: selected.disease.id,
-                block: null,
-                chapter: null,
+                block: selected.disease.block || '',
                 code: selected.disease.code || '',
                 title_vi: selected.disease.title_vi || '',
                 reason: ''
@@ -146,22 +169,29 @@ export class Icd10Component implements OnInit {
         }
         else if (selected.disease_parent) {
             this.feedBack = {
-                disease: selected.disease_parent.id,
-                block: null,
-                chapter: null,
-                code: selected.disease_parent.code || '',
-                title_vi: selected.disease_parent.title_vi || '',
+                disease: selected.disease.id,
+                disease_parent: selected.disease_parent,
+                block: selected.disease_parent.block || '',
+                code: selected.disease.code || '',
+                title_vi: selected.disease.title_vi || '',
                 reason: ''
             };
         }
+
     }
 
     closeFeedbackPopup() {
         this.showFeedbackPopup = false;
+        this.dropdownOpenId = null;
+        this.dropdownOpenDiseaseParentId = null;
         this.feedBack = {
             disease: null,
+            disease_parent: null,
             block: null,
             chapter: null,
+            new_chapter: null,
+            new_block: null,
+            new_disease_parent: null,
             code: '',
             title_vi: '',
             status: 3,
@@ -177,6 +207,46 @@ export class Icd10Component implements OnInit {
         this._router.navigate(['/sign-in']);
     }
 
+    toggleDropdown(id: number) {
+        this.dropdownOpenId = this.dropdownOpenId === id ? null : id;
+    }
+
+    isDropdownOpen(id: number) {
+        return this.dropdownOpenId === id;
+    }
+
+    toggleDropdownDiseaseParent(id: number) {
+        this.dropdownOpenDiseaseParentId = this.dropdownOpenDiseaseParentId === id ? null : id;
+    }
+
+    isDropdownOpenDiseaseParent(id: number) {
+        return this.dropdownOpenDiseaseParentId === id;
+    }
+
+    selectNewChapter(feedBack: any, chapter: any) {
+        feedBack.new_chapter = chapter;
+
+        // đóng dropdown
+        this.dropdownOpenId = null;
+
+    }
+
+    selectNewBlock(feedBack: any, block: any) {
+        feedBack.new_block = block;
+
+        // đóng dropdown
+        this.dropdownOpenId = null;
+
+    }
+
+    selectNewDiseaseParent(feedBack: any, disease: any) {
+        feedBack.new_disease_parent = disease;
+
+        // đóng dropdown
+        this.dropdownOpenId = null;
+        this.dropdownOpenDiseaseParentId = null;
+    }
+
     submitFeedback() {
         if (!this.feedBack.reason || this.feedBack.reason.trim() === '') {
             this._alertService.showAlert({
@@ -186,22 +256,84 @@ export class Icd10Component implements OnInit {
                 });
             return;
         }
-        this._feedbackService.submitFeedback(this.feedBack).subscribe(
-            (res) => {
-            this._alertService.showAlert({
-                    title: "Thàng công",
-                    message: "Gửi góp ý thành công!",
-                    type: 'success'
-                });
-            this.closeFeedbackPopup();
-        },
-        (error) => {
-            this._alertService.showAlert({
-                    title: "Thất bại",
-                    message: "Gửi góp ý thất bại. Vui lòng thử lại.",
-                    type: 'error'
-                });
-        });
+        if (this.feedBack.chapter && !this.feedBack.block) {
+            console.log('this.feedBack', this.feedBack);
+            this._feedbackService.submitFeedbackChapter(this.feedBack).subscribe(
+                (res) => {
+                this._alertService.showAlert({
+                        title: "Thàng công",
+                        message: "Gửi góp ý thành công!",
+                        type: 'success'
+                    });
+                this.closeFeedbackPopup();
+            },
+            (error) => {
+                this._alertService.showAlert({
+                        title: "Thất bại",
+                        message: "Gửi góp ý thất bại. Vui lòng thử lại.",
+                        type: 'error'
+                    });
+            });
+        } else if (this.feedBack.block && !this.feedBack.disease) {
+            const payload = {
+                block: this.feedBack.block,
+                chapter: this.feedBack.new_chapter ? this.feedBack.new_chapter.id : this.feedBack.chapter.id,   // gửi chapter người dùng đề xuất
+                code: this.feedBack.code,
+                title_vi: this.feedBack.title_vi,
+                reason: this.feedBack.reason,
+            };
+            console.log('payload', payload);
+            this._feedbackService.submitFeedbackBlock(payload).subscribe(
+                (res) => {
+                this._alertService.showAlert({
+                        title: "Thàng công",
+                        message: "Gửi góp ý thành công!",
+                        type: 'success'
+                    });
+                this.closeFeedbackPopup();
+            },
+            (error) => {
+                this._alertService.showAlert({
+                        title: "Thất bại",
+                        message: "Gửi góp ý thất bại. Vui lòng thử lại.",
+                        type: 'error'
+                    });
+            });
+        } else if (this.feedBack.disease) {
+            let disease_parent = null;
+            if (!this.feedBack.new_disease_parent) {
+                if (this.feedBack.disease_parent) {
+                    disease_parent = this.feedBack.disease_parent;
+                }
+            } else {
+                disease_parent = this.feedBack.new_disease_parent;
+            }
+            const payload = {
+                disease: this.feedBack.disease,
+                disease_parent: disease_parent ? disease_parent.id : null,
+                block: this.feedBack.block.id ?? null,
+                code: this.feedBack.code,
+                title_vi: this.feedBack.title_vi,
+                reason: this.feedBack.reason,
+            };
+            console.log('payload', payload);
+            this._feedbackService.submitFeedbackDisease(payload).subscribe(
+                (res) => {
+                this._alertService.showAlert({
+                        title: "Thàng công",
+                        message: "Gửi góp ý thành công!",
+                        type: 'success'
+                    });
+                this.closeFeedbackPopup();
+            },
+            (error) => {
+                this._alertService.showAlert({
+                        title: "Thất bại",
+                        message: "Gửi góp ý thất bại. Vui lòng thử lại.",
+                        type: 'error'
+                    });
+            });
+        }
     }
 
     highlightMatch(text: string): string {
@@ -220,10 +352,8 @@ export class Icd10Component implements OnInit {
         }
 
         const term = this.searchTerm.toLowerCase();
-        console.log('term', term);
         this._icdService.searchICD(term).subscribe({
             next: (res: any) => {
-                console.log('API res:', res);
                 this.suggestions = res?.suggestions ?? [];
             },
             error: (err) => {

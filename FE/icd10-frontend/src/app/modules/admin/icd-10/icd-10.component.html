@@ -7,13 +7,10 @@
                 <mat-icon class="me-2" [svgIcon]="'heroicons_solid:magnifying-glass'"></mat-icon>
                 <input type="text"
                     class="flex-1 border-0 outline-none bg-transparent text-gray-700 text-base placeholder-gray-400"
-                    placeholder="Nhập từ khóa để tìm kiếm..." 
-                    [(ngModel)]="searchTerm"
+                    placeholder="Nhập từ khóa để tìm kiếm..." [(ngModel)]="searchTerm"
                     (ngModelChange)="onSearchChange()" />
                 <!-- Nút X -->
-                <button *ngIf="searchTerm" 
-                    type="button" 
-                    (click)="searchTerm=''; suggestions=[]"
+                <button *ngIf="searchTerm" type="button" (click)="searchTerm=''; suggestions=[]"
                     class="p-1 flex items-center justify-center rounded hover:bg-gray-200 transition">
                     <mat-icon [svgIcon]="'heroicons_outline:x-mark'" class="text-primary"></mat-icon>
                 </button>
@@ -22,15 +19,13 @@
             <div *ngIf="suggestions.length"
                 class="absolute left-0 right-0 mt-1 top-10 bg-white border rounded shadow-lg z-50 max-h-64 overflow-y-auto">
 
-                <div *ngFor="let item of suggestions"
-                    class="px-3 py-2 hover:bg-gray-100 cursor-pointer flex gap-2"
+                <div *ngFor="let item of suggestions" class="px-3 py-2 hover:bg-gray-100 cursor-pointer flex gap-2"
                     (click)="selectSuggestion(item)">
 
                     <!-- <span class="font-semibold text-primary">{{ item.code }}</span>
                     <span>{{ item.title_vi }}</span> -->
                     <!-- highlight code -->
-                    <span class="font-semibold text-primary-700"
-                        [innerHTML]="highlightMatch(item.code)"></span>
+                    <span class="font-semibold text-primary-700" [innerHTML]="highlightMatch(item.code)"></span>
 
                     <!-- highlight title_vi -->
                     <span [innerHTML]="highlightMatch(item.title_vi)"></span>
@@ -187,8 +182,7 @@
     </div>
 </div>
 
-<div *ngIf="showFeedbackPopup"
-     class="fixed inset-0 bg-black/40 flex items-center justify-center z-[100]">
+<div *ngIf="showFeedbackPopup" class="fixed inset-0 bg-black/40 flex items-center justify-center z-[100]">
 
     <div class="w-[800px] bg-white rounded-lg shadow-lg max-h-[90vh] overflow-hidden">
 
@@ -213,8 +207,7 @@
                     Hãy đăng nhập trước khi gửi góp ý về mã bệnh ICD-10.
                 </p>
 
-                <button (click)="signIn()"
-                        class="px-6 py-2 bg-primary-500 text-white rounded-lg hover:bg-primary-600">
+                <button (click)="signIn()" class="px-6 py-2 bg-primary-500 text-white rounded-lg hover:bg-primary-600">
                     Đăng nhập ngay
                 </button>
             </div>
@@ -231,9 +224,8 @@
                         <label class="font-medium flex items-center gap-1 mb-1">
                             <mat-icon svgIcon="heroicons_solid:code-bracket-square"></mat-icon> Mã
                         </label>
-                        <input class="w-full border rounded px-3 py-2 mb-3"
-                               placeholder="Góp ý về mã bệnh"
-                               [(ngModel)]="feedBack.code">
+                        <input class="w-full border rounded px-3 py-2 mb-3" placeholder="Góp ý về mã bệnh"
+                            [(ngModel)]="feedBack.code">
                     </div>
 
                     <!-- Title -->
@@ -241,9 +233,105 @@
                         <label class="font-medium flex items-center gap-1 mb-1">
                             <mat-icon svgIcon="heroicons_solid:tag"></mat-icon> Tiêu đề
                         </label>
-                        <input class="w-full border rounded px-3 py-2 mb-3"
-                               placeholder="Góp ý về tiêu đề"
-                               [(ngModel)]="feedBack.title_vi">
+                        <input class="w-full border rounded px-3 py-2 mb-3" placeholder="Góp ý về tiêu đề"
+                            [(ngModel)]="feedBack.title_vi">
+                    </div>
+                </div>
+                <!-- Chapter -->
+                <div *ngIf="feedBack.block && !feedBack.disease" class="relative">
+                    <label class="font-medium flex items-center gap-1 mb-1">
+                        <mat-icon svgIcon="heroicons_solid:document"></mat-icon> Chương
+                    </label>
+                    <!-- Dropdown Trigger -->
+                    <button type="button"
+                        class="text-sm font-semibold px-3 py-2 mb-3 rounded-lg flex items-center gap-1 border w-full"
+                        (click)="toggleDropdown(feedBack.id)" [attr.aria-expanded]="isDropdownOpen(feedBack.id)">
+
+                        <!-- Chapter hiện tại -->
+                        {{ (feedBack.new_chapter || feedBack.chapter).chapter }} -
+                        {{ (feedBack.new_chapter || feedBack.chapter).title_vi }}
+                        ({{ (feedBack.new_chapter || feedBack.chapter).code }})
+
+                        <mat-icon>keyboard_arrow_down</mat-icon>
+                    </button>
+
+                    <!-- Dropdown danh sách chapter -->
+                    <div *ngIf="isDropdownOpen(feedBack.id)"
+                        class="absolute top-full left-0 mt-1 bg-white border border-gray-200 rounded-lg shadow-lg z-50 w-full max-h-40 overflow-y-auto">
+
+                        <button *ngFor="let chap of listChapter" type="button"
+                            class="w-full px-3 py-2 text-left hover:bg-gray-100 flex items-center gap-2 transition"
+                            (click)="selectNewChapter(feedBack, chap)">
+
+                            {{ chap.chapter }} - {{ chap.title_vi }} ({{ chap.code }})
+
+                            <span class="material-icons text-primary ml-auto"
+                                *ngIf="feedBack.new_chapter?.id === chap.id">check</span>
+                        </button>
+                    </div>
+                </div>
+                <!-- Block -->
+                <div *ngIf="feedBack.disease" class="relative">
+                    <label class="font-medium flex items-center gap-1 mb-1">
+                        <mat-icon svgIcon="heroicons_solid:book-open"></mat-icon> Nhóm
+                    </label>
+                    <!-- Dropdown Trigger -->
+                    <button type="button"
+                        class="text-sm font-semibold px-3 py-2 mb-3 rounded-lg flex items-center gap-1 border w-full"
+                        (click)="toggleDropdown(feedBack.id)" [attr.aria-expanded]="isDropdownOpen(feedBack.id)">
+
+                        <!-- Block hiện tại -->
+                        {{ (feedBack.new_block || feedBack.block).code }} -
+                        {{ (feedBack.new_block || feedBack.block).title_vi }}
+
+                        <mat-icon>keyboard_arrow_down</mat-icon>
+                    </button>
+
+                    <!-- Dropdown danh sách block -->
+                    <div *ngIf="isDropdownOpen(feedBack.id)"
+                        class="absolute top-full left-0 mt-1 bg-white border border-gray-200 rounded-lg shadow-lg z-50 w-full max-h-40 overflow-y-auto">
+
+                        <button *ngFor="let block of listBlock" type="button"
+                            class="w-full px-3 py-2 text-left hover:bg-gray-100 flex items-center gap-2 transition"
+                            (click)="selectNewBlock(feedBack, block)">
+
+                            {{ block.code }} - {{ block.title_vi }}
+
+                            <span class="material-icons text-primary ml-auto"
+                                *ngIf="feedBack.new_block?.id === block.id">check</span>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Disease Parent -->
+                <div *ngIf="feedBack.disease && feedBack.disease_parent" class="relative">
+                    <label class="font-medium flex items-center gap-1 mb-1">
+                        <mat-icon svgIcon="heroicons_solid:cube-transparent"></mat-icon> Bệnh cha
+                    </label>
+                    <!-- Dropdown Trigger -->
+                    <button type="button"
+                        class="text-sm font-semibold px-3 py-2 mb-3 rounded-lg flex items-center gap-1 border w-full"
+                        (click)="toggleDropdownDiseaseParent(feedBack.id)" [attr.aria-expanded]="isDropdownOpenDiseaseParent(feedBack.id)">
+
+                        <!-- Block hiện tại -->
+                        {{ (feedBack.new_disease_parent || feedBack.disease_parent).code || '-' }} -
+                        {{ (feedBack.new_disease_parent || feedBack.disease_parent).title_vi || '-' }}
+
+                        <mat-icon>keyboard_arrow_down</mat-icon>
+                    </button>
+
+                    <!-- Dropdown danh sách block -->
+                    <div *ngIf="isDropdownOpenDiseaseParent(feedBack.id)"
+                        class="absolute top-full left-0 mt-1 bg-white border border-gray-200 rounded-lg shadow-lg z-50 w-full max-h-40 overflow-y-auto">
+
+                        <button *ngFor="let ds of listDisease" type="button"
+                            class="w-full px-3 py-2 text-left hover:bg-gray-100 flex items-center gap-2 transition"
+                            (click)="selectNewDiseaseParent(feedBack, ds)">
+
+                            {{ ds.code }} - {{ ds.title_vi }}
+                            <span class="material-icons text-primary ml-auto"
+                                *ngIf="feedBack.new_disease_parent?.id === ds.id">check</span>
+                        </button>
                     </div>
                 </div>
 
@@ -252,11 +340,8 @@
                     <label class="font-medium flex items-center gap-1 mb-1">
                         <mat-icon svgIcon="heroicons_solid:chat-bubble-left-right"></mat-icon> Lý do góp ý
                     </label>
-                    <textarea class="w-full border rounded px-3 py-2 resize-y"
-                              rows="4"
-                              required
-                              placeholder="Nhập lý do góp ý..."
-                              [(ngModel)]="feedBack.reason"></textarea>
+                    <textarea class="w-full border rounded px-3 py-2 resize-y" rows="4" required
+                        placeholder="Nhập lý do góp ý..." [(ngModel)]="feedBack.reason"></textarea>
 
                 </div>
             </div>

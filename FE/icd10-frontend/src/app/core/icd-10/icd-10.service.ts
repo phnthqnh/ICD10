@@ -21,6 +21,44 @@ export class Icd10Service
 
 
     /**
+     * Get chapter
+     * 
+     */
+    getChapter(): Observable<Chapter[]>
+    {
+        return this._httpClient.get<any>(uriConfig.API_GET_CHAPTER)
+            .pipe(
+                map((res) => res.data?.chapters ?? [])
+            )
+    }
+
+    /**
+     * Get block
+     * 
+     */
+    getBlock(): Observable<Block[]>
+    {
+        return this._httpClient.get<any>(uriConfig.API_GET_BLOCK)
+            .pipe(
+                map((res) => {
+                    return res.data?.blocks ?? []
+                })
+            )
+    }
+
+    /**
+     * Get disease
+     * 
+     */
+    getDisease(): Observable<Disease[]>
+    {
+        return this._httpClient.get<any>(uriConfig.API_GET_DISEASE)
+            .pipe(
+                map((res) => res.data?.diseases ?? [])
+            )
+    }
+
+    /**
      * Get all chapters
      *
      * 
