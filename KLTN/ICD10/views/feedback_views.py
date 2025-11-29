@@ -10,7 +10,7 @@ from django.http import HttpResponseRedirect
 from django.core import signing
 from constants.redis_keys import Rediskeys
 from ICD10.models.user import User
-from ICD10.models.icd10 import ICDDisease, DiseaseExtraInfo
+from ICD10.models.icd10 import ICDDisease, ICDChapter, ICDBlock
 from ICD10.models.chatbot import ChatMessage, ChatSession
 from ICD10.models.feedback import Feedback_Chapter, Feedback_Block, Feedback_Disease, Feedback_Chatbot
 from ICD10.serializers.feedback_serializers import FeedbackChapterSerializer, FeedbackBlockSerializer, FeedbackDiseaseSerializer, FeedbackChatbotSerializer
@@ -147,6 +147,37 @@ def get_feedbacks_icd_by_user(request):
     serializer_chapter = FeedbackChapterSerializer(feedbacks_chapter, many=True)
     serializer_block = FeedbackBlockSerializer(feedbacks_block, many=True)
     serializer_disease = FeedbackDiseaseSerializer(feedbacks_disease, many=True)
+    
+    for chapter in serializer_chapter.data:
+        if chapter['chapter']:
+            chapter['chapter'] = {
+                'id': chapter['chapter'],
+                'chapter': ICDChapter.objects.get(id=chapter['chapter']).chapter
+            }
+    
+    for block in serializer_block.data:
+        if block['chapter']:
+            block['chapter'] = {
+                'id': block['chapter'],
+                'chapter': ICDChapter.objects.get(id=block['chapter']).chapter,
+                'code': ICDChapter.objects.get(id=block['chapter']).code,
+                'title_vi': ICDChapter.objects.get(id=block['chapter']).title_vi
+            }
+    
+    for disease in serializer_disease.data:
+        if disease['block']:
+            disease['block'] = {
+                'id': disease['block'],
+                'code': ICDBlock.objects.get(id=disease['block']).code,
+                'title_vi': ICDBlock.objects.get(id=disease['block']).title_vi
+            }
+        if disease['disease_parent']:
+            disease['disease_parent'] = {
+                'id': disease['disease_parent'],
+                'code': ICDDisease.objects.get(id=disease['disease_parent']).code,
+                'title_vi': ICDDisease.objects.get(id=disease['disease_parent']).title_vi
+            }
+    
     return AppResponse.success(
         SuccessCodes.GET_USER_FEEDBACKS_ICD10,
         data={

@@ -1,7 +1,12 @@
-<div class="flex h-[calc(100vh-120px)]">
+<div class="grid grid-cols-1 sm:grid-cols-2 sm:h-[calc(100vh-120px)]">
 
     <!-- LEFT: Tree -->
-    <div class="w-1/2 border-r p-4">
+    <div class="w-full border-r p-4 relative">
+        <div *ngIf="isExpandingTree" 
+            class="absolute inset-0 bg-white bg-opacity-80 z-50 flex flex-col items-center justify-center">
+            <img src="assets/images/logo/loading.gif" alt="Loading..." class="h-1/2">
+            <p class="mt-3 text-gray-600 font-medium">Đang mở rộng cây phân loại...</p>
+        </div>
         <div class="relative w-full mb-4 icd-search">
             <div class="flex items-center w-full h-full bg-white">
                 <mat-icon class="me-2" [svgIcon]="'heroicons_solid:magnifying-glass'"></mat-icon>
@@ -34,25 +39,36 @@
         </div>
         <mat-tree [dataSource]="dataSource" [treeControl]="treeControl" class="icd-tree">
             <!-- Node lá (không có con) -->
-            <mat-tree-node *matTreeNodeDef="let node" matTreeNodePadding>
+            <mat-tree-node *matTreeNodeDef="let node" matTreeNodePadding
+                [attr.data-code]="node.code"
+                [attr.data-chapter]="node.level === 0 ? node.chapter : null"
+                [attr.data-level]="node.level"
+                [class.selected-node]="isNodeSelected(node)">
                 <!-- <button mat-icon-button disabled></button> -->
-                <span (click)="showDetail(node.id, node.level)" class="cursor-pointer hover:text-primary-400">
+                <span *ngIf="node.level === 0" (click)="showDetail(node.chapter, node.level)" class="cursor-pointer hover:text-primary-400">
+                    {{node.code}}: {{node.title_vi}}
+                </span>
+                <span *ngIf="node.level !== 0" (click)="showDetail(node.code, node.level)" class="cursor-pointer hover:text-primary-400">
                     {{node.code}}: {{node.title_vi}}
                 </span>
             </mat-tree-node>
             <!-- Node có con (expandable) -->
-            <mat-tree-node *matTreeNodeDef="let node; when: hasChild" matTreeNodePadding>
+            <mat-tree-node *matTreeNodeDef="let node; when: hasChild" matTreeNodePadding
+                [attr.data-code]="node.code"
+                [attr.data-chapter]="node.level === 0 ? node.chapter : null"
+                [attr.data-level]="node.level"
+                [class.selected-node]="isNodeSelected(node)">
                 <button *ngIf="!node.is_leaf" mat-icon-button [matTreeNodeToggle]="node.expandable">
                     <mat-icon>
                         {{treeControl.isExpanded(node) ? 'expand_more' : 'chevron_right'}}
                     </mat-icon>
                 </button>
                 <button *ngIf="node.is_leaf" mat-icon-button disabled></button>
-                <span *ngIf="node.level === 0" (click)="showDetail(node.id, node.level)"
+                <span *ngIf="node.level === 0" (click)="showDetail(node.chapter, node.level)"
                     class="cursor-pointer font-semibold hover:text-primary-400">
                     {{node.chapter}}: {{node.title_vi}}
                 </span>
-                <span *ngIf="node.level !== 0" (click)="showDetail(node.id, node.level)"
+                <span *ngIf="node.level !== 0" (click)="showDetail(node.code, node.level)"
                     class="cursor-pointer font-semibold hover:text-primary-400">
                     {{node.code}}: {{node.title_vi}}
                 </span>
@@ -61,7 +77,7 @@
     </div>
 
     <!-- RIGHT: Detail -->
-    <div class="w-1/2 p-4">
+    <div class="w-full p-4">
         <div class="detail">
             <ng-container class="relative" *ngIf="selected; else noSel">
                 <ng-container *ngIf="selected.chapter">
@@ -75,7 +91,7 @@
                     <ul class="ml-6">
                         <li *ngFor="let item of selected.children"
                             class="grid grid-cols-[80px_1fr] gap-4 py-2 hover:text-primary-400">
-                            <span class="font-semibold cursor-pointer underline" (click)="showDetail(item.id, 1)">{{
+                            <span class="font-semibold cursor-pointer underline" (click)="showDetail(item.code, 1)">{{
                                 item.code }}</span>
                             <span>{{ item.title_vi }}</span>
                         </li>
@@ -94,7 +110,7 @@
                     <ul class="ml-6">
                         <li *ngFor="let item of selected.children"
                             class="grid grid-cols-[50px_1fr] gap-4 py-2 hover:text-primary-400">
-                            <span class="font-semibold cursor-pointer underline" (click)="showDetail(item.id, 2)">{{
+                            <span class="font-semibold cursor-pointer underline" (click)="showDetail(item.code, 2)">{{
                                 item.code }}</span>
                             <span>{{ item.title_vi }}</span>
                         </li>
@@ -109,12 +125,12 @@
                     </h2>
                     <p class="my-3 pb-2 border-b-2 text-primary-600 text-xl font-semibold">
                         {{selected.disease.block.code}}: {{selected.disease.block.title_vi}}</p>
-                    <p class="my-3 pb-2 border-b-2 text-primary-600 text-xl font-semibold">{{selected.disease.code}}:
+                    <p class="my-3 pb-2 border-b-2 text-primary-600 text-lg font-medium">{{selected.disease.code}}:
                         {{selected.disease.title_vi}}</p>
                     <ul class="ml-6">
                         <li *ngFor="let item of selected.children"
                             class="grid grid-cols-[50px_1fr] gap-4 py-2 hover:text-primary-400">
-                            <span class="font-semibold cursor-pointer underline" (click)="showDetail(item.id, 3)">{{
+                            <span class="font-semibold cursor-pointer underline" (click)="showDetail(item.code, 3)">{{
                                 item.code }}</span>
                             <span>{{ item.title_vi }}</span>
                         </li>
@@ -130,7 +146,7 @@
                     </h2>
                     <p class="my-3 pb-2 border-b-2 text-primary-600 text-xl font-semibold">
                         {{selected.disease_parent.block.code}}: {{selected.disease_parent.block.title_vi}}</p>
-                    <p class="my-3 pb-2 border-b-2 text-primary-600 text-xl font-semibold">
+                    <p class="my-3 pb-2 border-b-2 text-primary-600 text-lg font-medium">
                         {{selected.disease_parent.code}}: {{selected.disease_parent.title_vi}}</p>
                     <div class="grid grid-cols-[50px_1fr] gap-4 py-2">
                         <span class="font-semibold">{{ selected.disease.code }}</span>
@@ -139,7 +155,7 @@
                     <p class="my-3 text-center font-semibold bg-gray-300">Các bệnh khác cùng loại</p>
                     <ul class="ml-6">
                         <li *ngFor="let item of selected.children" class="grid grid-cols-[50px_1fr] gap-4 py-2">
-                            <span class="font-semibold cursor-pointer underline" (click)="showDetail(item.id, 3)">{{
+                            <span class="font-semibold cursor-pointer underline" (click)="showDetail(item.code, 3)">{{
                                 item.code }}</span>
                             <span>{{ item.title_vi }}</span>
                         </li>

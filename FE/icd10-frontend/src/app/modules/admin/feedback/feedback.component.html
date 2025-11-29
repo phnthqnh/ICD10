@@ -1,48 +1,232 @@
-<div class="mt-4 space-y-4">
+<!-- ...existing code... -->
+<div class="bg-white space-y-4 h-[calc(100vh-120px)] w-full overflow-y-auto">
+    <div class="flex items-center justify-between mb-3 p-3">
+        <h2 class="text-2xl font-semibold">Góp ý của tôi</h2>
+    </div>
+    <!-- Empty state -->
+    <div *ngIf="(feedbackChapter.length + feedbackBlock.length + feedbackDisease.length) === 0"
+        class="text-center text-gray-500 py-8">
+        Chưa có góp ý nào. Hãy gửi góp ý để chúng tôi cải thiện dữ liệu.
+    </div>
+    <!-- Tabs -->
+    <mat-tab-group
+        class="sm:px-2"
+        mat-stretch-tabs="false"
+        [animationDuration]="'0'">
+        <mat-tab>
+            <ng-template mat-tab-label>
+                <span class="inline-flex items-center space-x-2">
+                    <span class="">Chương</span>
+                    <span class="px-2 py-1 text-sm rounded-full bg-primary-50 text-on-primary-100">{{ feedbackChapter.length }}</span>
+                </span>
+            </ng-template>
+            <ng-template matTabContent>
+                <section *ngIf="feedbackChapter?.length; else noChapter">
+                    <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-4">
+                        <div *ngFor="let item of feedbackChapter; trackBy: trackById"
+                            class="bg-[#e8eaebff] border border-gray-200 rounded-xl p-4 shadow-sm hover:shadow-md transition-all duration-150">
+                            <div class="flex gap-4 items-start justify-between">
+                                <div>
+                                    <div class="flex items-center gap-3">
+                                        <span class="text-lg font-bold text-primary">{{ item.code || item.chapter?.code || '—'
+                                            }}</span>
+                                        <div class="text-sm text-primary-600">{{ item.title_vi || item.chapter?.title_vi || 'Không có
+                                            tiêu đề' }}</div>
+                                    </div>
+                                    <div class="text-xs text-primary-600 mt-1">{{ item.created_at | date:'dd/MM/yyyy HH:mm' }}</div>
+                                </div>
 
-    <div *ngFor="let item of feedbackList"
-         class="bg-white border border-gray-200 rounded-xl p-5 shadow-sm hover:shadow-md transition-all duration-200">
+                                <div class="text-right">
+                                    <div [ngClass]="statusClass(item.status)"
+                                        class="px-3 py-1.5 text-xs font-semibold rounded-full whitespace-nowrap">
+                                        {{ statusLabel(item.status) }}
+                                    </div>
+                                </div>
+                            </div>
 
-        <!-- Header: Code + Status -->
-        <div class="flex items-start justify-between">
+                            <div class="mt-3 bg-gray-50 p-3 rounded-lg border text-gray-700 text-sm">
+                                <span class="font-semibold text-gray-600">Lý do:</span>
+                                <span class="ml-1">{{ item.reason || '—' }}</span>
+                            </div>
 
-            <div>
-                <div class="flex items-center gap-2">
-                    <span class="text-xl font-bold text-primary">{{ item.code }}</span>
+                            <div class="mt-3 flex justify-end gap-2">
+                                <!-- điều hướng nếu muốn: routerLink cần được xử lý trong component -->
+                                <button mat-button class="text-sm text-primary" (click)="openDetail(item, 'chapter')">Xem</button>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+                <ng-template #noChapter>
+                    <div class="text-sm text-gray-500 italic">Chưa có góp ý cho Chương.</div>
+                </ng-template>
+            </ng-template>
+        </mat-tab>
+        <mat-tab>
+            <ng-template mat-tab-label>
+                <span class="inline-flex items-center space-x-2">
+                    <span class="">Nhóm</span>
+                    <span class="px-2 py-1 text-sm rounded-full bg-primary-50 text-on-primary-100">{{ feedbackBlock.length }}</span>
+                </span>
+            </ng-template>
+            <ng-template matTabContent>
+                <section *ngIf="feedbackBlock?.length; else noBlock">
+                    <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-4">
+                        <div *ngFor="let item of feedbackBlock; trackBy: trackById"
+                            class="bg-[#e8eaebff] border border-gray-200 rounded-xl p-4 shadow-sm hover:shadow-md transition-all duration-150">
+                            <div class="flex items-start justify-between">
+                                <div>
+                                    <div class="flex items-center gap-3">
+                                        <span class="text-lg font-bold text-primary">{{ item.code || item.block?.code || '—'
+                                            }}</span>
+                                        <div class="text-sm text-primary-600">{{ item.title_vi || item.block?.title_vi || 'Không có
+                                            tiêu đề' }}</div>
+                                    </div>
+                                    <div class="text-xs text-primary-600 mt-1">{{ item.created_at | date:'dd/MM/yyyy HH:mm' }}</div>
+                                    <div *ngIf="item.chapter || item.block?.chapter" class="text-xs text-primary-600 mt-1">
+                                        Thuộc chương: {{ item.chapter?.chapter }} - {{ item.chapter?.title_vi }} {{ (item.chapter?.code) }}
+                                    </div>
+                                </div>
+
+                                <div class="text-right">
+                                    <div [ngClass]="statusClass(item.status)"
+                                        class="px-3 py-1.5 text-xs font-semibold rounded-full whitespace-nowrap">
+                                        {{ statusLabel(item.status) }}
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="mt-3 bg-gray-50 p-3 rounded-lg border text-gray-700 text-sm">
+                                <span class="font-semibold text-gray-600">Lý do:</span>
+                                <span class="ml-1">{{ item.reason || '—' }}</span>
+                            </div>
+
+                            <div class="mt-3 flex justify-end gap-2">
+                                <button mat-button class="text-sm text-primary" (click)="openDetail(item, 'block')">Xem</button>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+                <ng-template #noBlock>
+                    <div class="text-sm text-gray-500 italic">Chưa có góp ý cho Nhóm.</div>
+                </ng-template>
+            </ng-template>
+        </mat-tab>
+        <mat-tab>
+            <ng-template mat-tab-label>
+                <span class="inline-flex items-center space-x-2">
+                    <span class="">Mã bệnh</span>
+                    <span class="px-2 py-1 text-sm rounded-full bg-primary-50 text-on-primary-100">{{ feedbackDisease.length }}</span>
+                </span>
+            </ng-template>
+            <ng-template matTabContent>
+                <section *ngIf="feedbackDisease?.length; else noDisease">
+                    <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-4">
+                        <div *ngFor="let item of feedbackDisease; trackBy: trackById"
+                            class="bg-[#e8eaebff] border border-gray-200 rounded-xl p-4 shadow-sm hover:shadow-md transition-all duration-150">
+                            <div class="flex items-start justify-between">
+                                <div>
+                                    <div class="flex items-center gap-3">
+                                        <span class="text-lg font-bold text-primary">{{ item.code || item.disease?.code || '—'
+                                            }}</span>
+                                        <div class="text-sm text-primary-600">{{ item.title_vi || item.disease?.title_vi || 'Không có
+                                            tiêu đề' }}</div>
+                                    </div>
+                                    <div class="text-xs text-primary-600 mt-1">{{ item.created_at | date:'dd/MM/yyyy HH:mm' }}</div>
+                                    <div *ngIf="item.block || item.disease?.block" class="text-xs text-primary-600 mt-1">
+                                        Thuộc nhóm: {{ item.block?.code }} - {{ item.block?.title_vi }}
+                                    </div>
+                                    <div *ngIf="item.disease_parent" class="text-xs text-primary-600 mt-1">
+                                        Bệnh cha: {{ item.disease_parent?.code }} - {{ item.disease_parent?.title_vi }}
+                                    </div>
+                                </div>
+
+                                <div class="text-right">
+                                    <div [ngClass]="statusClass(item.status)"
+                                        class="px-3 py-1.5 text-xs font-semibold rounded-full whitespace-nowrap">
+                                        {{ statusLabel(item.status) }}
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="mt-3 bg-gray-50 p-3 rounded-lg border text-gray-700 text-sm">
+                                <span class="font-semibold text-gray-600">Lý do:</span>
+                                <span class="ml-1">{{ item.reason || '—' }}</span>
+                            </div>
+
+                            <div class="mt-3 flex justify-end gap-2">
+                                <button mat-button class="text-sm text-primary" (click)="openDetail(item, 'disease')">Xem</button>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+                <ng-template #noDisease>
+                    <div class="text-sm text-gray-500 italic">Chưa có góp ý cho Mã bệnh.</div>
+                </ng-template>
+            </ng-template>
+        </mat-tab>
+    </mat-tab-group>
+</div>
+
+<div *ngIf="showDetailPopup" class="fixed inset-0 bg-black/40 flex items-center justify-center z-[100]">
+    <div class="w-[720px] bg-white rounded-lg shadow-lg max-h-[80vh] overflow-auto">
+        <div class="flex items-center justify-between px-4 py-3 bg-primary-600 text-white rounded-t-lg">
+            <div class="flex items-center gap-2 text-lg font-semibold">
+                <mat-icon svgIcon="heroicons_solid:information-circle" class="text-white"></mat-icon>
+                Chi tiết góp ý
+            </div>
+            <button class="text-white" (click)="closeDetailPopup()">Đóng</button>
+        </div>
+
+        <div class="p-5 space-y-3">
+            <div class="grid grid-cols-2 gap-4">
+                <div>
+                    <div class="text-xs text-gray-500">Loại góp ý</div>
+                    <div class="font-medium">{{ detailType | titlecase }}</div>
                 </div>
-
-                <div class="text-gray-700 mt-1 font-medium">
-                    {{ item.title_vi }}
+                <div>
+                    <div class="text-xs text-gray-500">Mã</div>
+                    <div class="font-medium">{{ detailItem?.code || detailItem?.chapter?.code || detailItem?.block?.code || detailItem?.disease?.code }}</div>
+                </div>
+                <div>
+                    <div class="text-xs text-gray-500">Trạng thái</div>
+                    <div [ngClass]="statusClass(detailItem?.status)" class="inline-block px-2 py-1 rounded text-sm">
+                        {{ statusLabel(detailItem?.status) }}
+                    </div>
+                </div>
+                <div>
+                    <div class="text-xs text-gray-500">Tiêu đề</div>
+                    <div class="font-medium">{{ detailItem?.title_vi || detailItem?.chapter?.title_vi || detailItem?.block?.title_vi || detailItem?.disease?.title_vi }}</div>
+                </div>
+                <div>
+                    <div class="text-xs text-gray-500">Ngày tạo</div>
+                    <div class="font-medium">{{ detailItem?.created_at | date:'dd/MM/yyyy HH:mm' }}</div>
                 </div>
             </div>
 
-            <!-- Status Badge -->
-            <span
-                class="px-3 py-1.5 text-xs font-semibold rounded-full whitespace-nowrap"
-                [ngClass]="{
-                    'bg-yellow-100 text-yellow-700 border border-yellow-200': item.status === 3,
-                    'bg-green-100 text-green-700 border border-green-200': item.status === 1,
-                    'bg-red-100 text-red-700 border border-red-200': item.status === 2
-                }"
-            >
-                {{ item.status === 3 ? 'Đang xử lý' :
-                   item.status === 1 ? 'Đã duyệt'   :
-                   'Đã từ chối' }}
-            </span>
+            <!-- show related info -->
+            <div *ngIf="detailType === 'block' && (detailItem?.chapter || detailItem?.block?.chapter)">
+                <div class="text-xs text-gray-500">Thuộc chương</div>
+                <div class="mt-1">{{ detailItem?.chapter?.chapter }} - {{ detailItem?.chapter?.title_vi }} {{ (detailItem?.chapter?.code) }}</div>
+            </div>
 
+            <div *ngIf="detailType === 'disease'">
+                <div class="text-xs text-gray-500">Thuộc nhóm</div>
+                <div class="mt-1">{{ detailItem?.block?.code }} - {{ detailItem?.block?.title_vi }}</div>
+
+                <div *ngIf="detailItem?.disease?.disease_parent || detailItem?.disease_parent" class="mt-2">
+                    <div class="text-xs text-gray-500">Bệnh cha</div>
+                    <div class="mt-1">{{ detailItem?.disease_parent?.code }} - {{ detailItem?.disease_parent?.title_vi }}</div>
+                </div>
+            </div>
+            <div>
+                <div class="text-xs text-gray-500">Lý do</div>
+                <div class="mt-1 p-3 bg-gray-50 rounded">{{ detailItem?.reason || '—' }}</div>
+            </div>
         </div>
 
-        <!-- Lý do -->
-        <div class="mt-4 bg-gray-50 p-3 rounded-lg border text-gray-700 text-sm">
-            <span class="font-semibold text-gray-600">Lý do:</span>
-            <span class="ml-1">{{ item.reason || '—' }}</span>
+        <div class="flex justify-end gap-3 px-4 py-3 bg-gray-100 rounded-b-lg">
+            <button class="px-4 py-2 bg-gray-200 rounded" (click)="closeDetailPopup()">Đóng</button>
+            <button class="px-4 py-2 bg-primary-500 text-white rounded" (click)="viewInICD()">Xem trên ICD</button>
         </div>
-
-        <!-- Ngày -->
-        <div class="text-right text-xs text-gray-400 mt-3">
-            {{ item.created_at | date:'dd/MM/yyyy HH:mm' }}
-        </div>
-
     </div>
-
 </div>

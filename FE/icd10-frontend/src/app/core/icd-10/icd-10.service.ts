@@ -135,9 +135,9 @@ export class Icd10Service
      *
      * 
      */
-    getDataChapter(id: number): Observable<any>
+    getDataChapter(chapter: string): Observable<any>
     {
-        return this._httpClient.get<any>(uriConfig.API_GET_ICD10_DATA_CHAPTER(id))
+        return this._httpClient.get<any>(uriConfig.API_GET_ICD10_DATA_CHAPTER(chapter))
             .pipe(
                 map((res) => res?.data ?? [])
             )
@@ -148,9 +148,9 @@ export class Icd10Service
      *
      * 
      */
-    getDataBlock(id: number): Observable<any>
+    getDataBlock(code: string): Observable<any>
     {
-        return this._httpClient.get<any>(uriConfig.API_GET_ICD10_DATA_BLOCK(id))
+        return this._httpClient.get<any>(uriConfig.API_GET_ICD10_DATA_BLOCK(code))
             .pipe(
                 map((res) => res?.data ?? [])
             )
@@ -161,9 +161,9 @@ export class Icd10Service
      *
      * 
      */
-    getDataDisease(id: number): Observable<any>
+    getDataDisease(code: string): Observable<any>
     {
-        return this._httpClient.get<any>(uriConfig.API_GET_ICD10_DATA_DISEASE(id))
+        return this._httpClient.get<any>(uriConfig.API_GET_ICD10_DATA_DISEASE(code))
             .pipe(
                 map((res) => res?.data ?? [])
             )
@@ -174,9 +174,9 @@ export class Icd10Service
      *
      * 
      */
-    getDataDiseaseChild(id: number): Observable<any>
+    getDataDiseaseChild(code: string): Observable<any>
     {
-        return this._httpClient.get<any>(uriConfig.API_GET_ICD10_DATA_DISEASE_CHILD(id))
+        return this._httpClient.get<any>(uriConfig.API_GET_ICD10_DATA_DISEASE_CHILD(code))
             .pipe(
                 map((res) => res?.data ?? [])
             )

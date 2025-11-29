@@ -1,8 +1,6 @@
 import { environment } from 'environments/environment.dev';
-import { environment as devenv } from 'environments/environment.dev';
 
 const baseUrl = environment.baseUrl;
-const baseUrlDev = devenv.baseUrl;
 export const uriConfig = {
     API_USER_LOGIN: baseUrl + '/api/login/',
     API_USER_REGISTER: baseUrl + '/api/register/',
@@ -19,17 +17,25 @@ export const uriConfig = {
         baseUrl + `/api/childs/block/${id}/`,
     API_GET_ICD10_DISEASES_CHILDREN: (id: number) =>
         baseUrl + `/api/childs/diseases/${id}/`,
-    API_GET_ICD10_DATA_CHAPTER: (id: number) =>
-        baseUrl + `/api/data/chapter/${id}/`,
-    API_GET_ICD10_DATA_BLOCK: (id: number) =>
-        baseUrl + `/api/data/block/${id}/`,
-    API_GET_ICD10_DATA_DISEASE: (id: number) =>
-        baseUrl + `/api/data/disease/${id}/`,
-    API_GET_ICD10_DATA_DISEASE_CHILD: (id: number) =>
-        baseUrl + `/api/data/disease_child/${id}/`,
+    API_GET_ICD10_DATA_CHAPTER: (chapter: string) =>
+        baseUrl + `/api/data/chapter/${chapter}/`,
+    API_GET_ICD10_DATA_BLOCK: (code: string) =>
+        baseUrl + `/api/data/block/${code}/`,
+    API_GET_ICD10_DATA_DISEASE: (code: string) =>
+        baseUrl + `/api/data/disease/${code}/`,
+    API_GET_ICD10_DATA_DISEASE_CHILD: (code: string) =>
+        baseUrl + `/api/data/disease_child/${code}/`,
     API_ICD10_SEARCH: baseUrl + '/api/autocomplete',
     API_FEEDBACK_CHAPTER_SUBMIT: baseUrl + '/api/feedbacks/chapter/submit/',
     API_FEEDBACK_BLOCK_SUBMIT: baseUrl + '/api/feedbacks/block/submit/',
     API_FEEDBACK_DISEASE_SUBMIT: baseUrl + '/api/feedbacks/disease/submit/',
     API_FEEDBACK_ICD10_LIST: baseUrl + '/api/feedbacks/icd10/user/',
+    WEBSOCKET_NOTIFICATIONS: baseUrl.replace('http', 'ws') + '/ws/notifications/',
+    API_GET_NOTIFICATIONS: baseUrl + '/api/notifications/user/',
+    API_MARK_NOTIFICATION_AS_READ: (id: number) =>
+        baseUrl + `/api/notifications/mark_read/${id}/`,
+    API_MARK_ALL_NOTIFICATIONS_AS_READ:
+        baseUrl + `/api/notifications/mark_all_read/`,
+    API_DELETE_NOTIFICATION: (id: number) =>
+        baseUrl + `/api/notifications/delete/${id}/`,
 }
