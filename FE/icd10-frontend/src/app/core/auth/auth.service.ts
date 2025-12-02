@@ -41,6 +41,17 @@ export class AuthService
         return localStorage.getItem('refreshToken') ?? '';
     }
 
+    /**
+     * Setter & getter for role
+     * 
+     */
+    set role(role: number) {
+        localStorage.setItem('role', role.toString());
+    }
+    get role(): number {
+        return parseInt(localStorage.getItem('role') ?? '0');
+    }
+
     // -----------------------------------------------------------------------------------------------------
     // @ Public methods
     // -----------------------------------------------------------------------------------------------------
@@ -109,6 +120,8 @@ export class AuthService
             {
                 // Store the access token in the local storage
                 this.accessToken = response.data.token;
+                this.role = response.data.user.role;
+                console.log('role', this.role);
 
                 if (this._remMe)
                     this.refreshToken = response.data.refresh_token;
@@ -139,6 +152,7 @@ export class AuthService
             catchError(() => {
                 localStorage.removeItem('accessToken');
                 localStorage.removeItem('refreshToken');
+                localStorage.removeItem('role');
                 this._authenticated = false;
                 return of(false);
             })
@@ -153,6 +167,7 @@ export class AuthService
         // Remove the access token from the local storage
         localStorage.removeItem('accessToken');
         localStorage.removeItem('refreshToken');
+        localStorage.removeItem('role');
 
         // Set the authenticated flag to false
         this._authenticated = false;
@@ -222,5 +237,13 @@ export class AuthService
         }
 
         return false;
+    }
+
+    /**
+     * Get role
+     * 
+     */
+    getRole(): number {
+        return this.role;
     }
 }

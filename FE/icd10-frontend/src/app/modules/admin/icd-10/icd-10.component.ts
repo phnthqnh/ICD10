@@ -79,6 +79,7 @@ export class Icd10Component implements OnInit {
     };
 
     isLoggedIn: boolean = false;
+    role: number = 0;
 
     constructor(
         private _icdService: Icd10Service, 
@@ -94,7 +95,8 @@ export class Icd10Component implements OnInit {
         this.dataSource = new ICD10DataSource(this.treeControl, this._icdService);
         this.dataSource.initialize();
         this.isLoggedIn = this._authService.isLoggedIn();
-        console.log('isLoggedIn', this.isLoggedIn);
+        this.role = this._authService.getRole();
+        console.log('isLoggedIn', this.isLoggedIn, 'this.role', this.role);
         this.loadAllData();
 
         // Đọc hash từ URL khi component load
@@ -227,7 +229,19 @@ private expandAndScrollToNode(code: string, level: number, chapter?: string): vo
         }, 100);
         return;
     }
-
+    if (level === 1) {
+        // Block level - cần expand chapter trước
+        this.expandParentsSequentially(code, level, chapter).then(() => {
+            // Sau khi expand xong, scroll đến node
+            setTimeout(() => {
+                this.scrollToNode(code, level);
+            }, 300);
+        }).catch(() => {
+            // Ẩn loading
+            this.isExpandingTree = false;
+        });
+        return;
+    }
     // Hiển thị loading
     this.isExpandingTree = true;
 

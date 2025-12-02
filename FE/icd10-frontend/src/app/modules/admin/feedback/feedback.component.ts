@@ -16,6 +16,7 @@ import { MatInputModule } from '@angular/material/input';
 import { FeedBack } from 'app/core/feedback/feedback.types';
 import { FeedbackService } from 'app/core/feedback/feedback.service';
 import { AlertService } from 'app/core/alert/alert.service';
+import { marked } from 'marked';
 
 @Component({
     selector: 'feedback',
@@ -40,11 +41,12 @@ export class FeedbackComponent implements OnInit{
     feedbackChapter: any[] = [];
     feedbackBlock: any[] = [];
     feedbackDisease: any[] = [];
+    feedbackChatbot: any[] = [];
 
     // popup detail
-    showDetailPopup: boolean = false;
+    showDetailICDPopup: boolean = false;
     detailItem: any = null;
-    detailType: 'chapter' | 'block' | 'disease' | null = null;
+    detailType: 'chapter' | 'block' | 'disease' | 'chatbot' | null = null;
     detailLevel: number | null = null;
 
 
@@ -55,14 +57,14 @@ export class FeedbackComponent implements OnInit{
 
     ngOnInit() {
         this._feedbackService.getUserFeedbackList().subscribe(res => {
-            console.log('res', res);
             this.feedbackChapter = res.chapter_feedbacks;
             this.feedbackBlock = res.block_feedbacks;
             this.feedbackDisease = res.disease_feedbacks;
-            console.log('this.feedbackChapter', this.feedbackChapter);
-            console.log('this.feedbackBlock', this.feedbackBlock);
-            console.log('this.feedbackDisease', this.feedbackDisease);
         });
+        this._feedbackService.getUserFeedbackChatbotList().subscribe(res => {
+            console.log('res', res);
+            this.feedbackChatbot = res;
+        })
     }
 
     private _normalize(item: any, type: 'chapter'|'block'|'disease') {
@@ -154,7 +156,7 @@ export class FeedbackComponent implements OnInit{
     }
 
     // open detail popup
-    openDetail(item: any, type: 'chapter'|'block'|'disease'): void {
+    openDetailICD(item: any, type: 'chapter'|'block'|'disease'): void {
         this.detailItem = item;
         this.detailType = type;
         if (type === 'chapter') {
@@ -169,11 +171,11 @@ export class FeedbackComponent implements OnInit{
         console.log('detailItem', this.detailItem);
         console.log('detailType', this.detailType);
         console.log('detailLevel', this.detailLevel);
-        this.showDetailPopup = true;
+        this.showDetailICDPopup = true;
     }
 
     closeDetailPopup(): void {
-        this.showDetailPopup = false;
+        this.showDetailICDPopup = false;
         this.detailItem = null;
         this.detailType = null;
     }
@@ -192,6 +194,26 @@ export class FeedbackComponent implements OnInit{
         // this._router.navigate(['/icd-10']).then(() => {
         //     window.location.hash = `#/${level}#${code}`;
         // });
+    }
+
+    // open detail popup
+    openDetailChatbot(item: any): void {
+        this.detailItem = item;
+        console.log('detailItem', this.detailItem);
+    }
+
+    getContent(item: any) {
+        // chỉ lấy 50 kí tự đầu tiên
+        if (item?.chat_message?.content.length > 50) {
+            return item?.chat_message?.content.slice(0, 50) + '...';
+        }
+        return item?.chat_message?.content
+    }
+
+    getContentHtml(item: any) {
+        const raw = this.getContent(item);
+        if (!raw) return '';
+        return marked.parse(raw); // convert markdown → HTML
     }
 
 }

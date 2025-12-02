@@ -194,8 +194,25 @@ def get_feedbacks_chatbot_by_user(request):
     Lấy phản hồi chatbot của user hiện tại
     """
     user = request.user
-    feedbacks = Feedback_Chatbot.objects.filter(user=user).order_by("-created_at")
+    feedbacks = Feedback_Chatbot.objects.filter(chat_message__session__user=user).order_by("-created_at")
     serializer = FeedbackChatbotSerializer(feedbacks, many=True)
+    for feedback in serializer.data:
+        feedback['chat_message'] = {
+            'id': feedback['chat_message'],
+            'role': ChatMessage.objects.get(id=feedback['chat_message']).role,
+            'content': ChatMessage.objects.get(id=feedback['chat_message']).content,
+            'image': ChatMessage.objects.get(id=feedback['chat_message']).image
+        }
+        
+        feedback['user'] = {
+            'id': feedback['user'],
+            'username': User.objects.get(id=feedback['user']).username
+        }
+        
+        feedback['session'] = {
+            'id': feedback['session'],
+            'title': ChatSession.objects.get(id=feedback['session']).title
+        }
     return AppResponse.success(
         SuccessCodes.GET_USER_FEEDBACKS_CHATBOT,
         data=serializer.data,

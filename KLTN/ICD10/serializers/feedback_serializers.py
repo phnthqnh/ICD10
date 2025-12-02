@@ -37,14 +37,18 @@ class FeedbackDiseaseSerializer(serializers.ModelSerializer):
 
 class FeedbackChatbotSerializer(serializers.ModelSerializer):
     user = serializers.SerializerMethodField()
+    session = serializers.SerializerMethodField()
 
     class Meta:
         model = Feedback_Chatbot
-        fields = ['id', 'chat_message', 'rating', 'comments', 'status', 'created_at', 'user']
+        fields = ['id', 'chat_message', 'session', 'rating', 'comments', 'status', 'created_at', 'user']
         read_only_fields = ['id', 'created_at', 'user']
 
     def get_user(self, obj):
-        return obj.chat_message.session.user.username
+        return obj.chat_message.session.user.id
+    
+    def get_session(self, obj):
+        return obj.chat_message.session.id
     
     def create(self, validated_data):
         # Loại bỏ user trong validated_data nếu request gửi lên

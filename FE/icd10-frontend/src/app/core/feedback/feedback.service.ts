@@ -26,6 +26,19 @@ export class FeedbackService
                 map((res) => res.data ?? [])
             )
     }
+
+    /**
+     * Get user feedback chatbot list
+     *
+     * 
+     */
+    getUserFeedbackChatbotList(): Observable<any>
+    {
+        return this._httpClient.get<any>(uriConfig.API_FEEDBACK_CHATBOT_LIST)
+            .pipe(
+                map((res) => res.data ?? [])
+            )
+    }
     
     /**
      * Submit feedback icd10

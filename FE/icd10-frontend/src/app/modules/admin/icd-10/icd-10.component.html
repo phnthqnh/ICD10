@@ -229,9 +229,9 @@
             </div>
 
             <!-- ============================= -->
-            <!--       CASE 2: LOGGED IN       -->
+            <!-- CASE 2: LOGGED IN & ROLE = 2  -->
             <!-- ============================= -->
-            <div *ngIf="isLoggedIn">
+            <div *ngIf="isLoggedIn && role === 2">
 
                 <!-- Row 1 -->
                 <div class="grid grid-cols-2 gap-4">
@@ -362,10 +362,25 @@
                 </div>
             </div>
 
+            <!-- ============================= -->
+            <!-- CASE 2: LOGGED IN & ROLE != 2  -->
+            <!-- ============================= -->
+             
+            <div *ngIf="isLoggedIn && role !== 2" class="text-center py-10">
+                <h2 class="text-xl font-semibold mb-3">Chỉ có bác sĩ được góp ý về mã bệnh ICD-10.</h2>
+                <p class="text-gray-600 mb-5">
+                    Nếu bạn là bác sĩ, hãy xác minh tài khoản nhé.
+                </p>
+
+                <button (click)="verifyDoctor()" class="px-6 py-2 bg-primary-500 text-white rounded-lg hover:bg-primary-600">
+                    Xác minh ngay
+                </button>
+            </div>
+
         </div>
 
         <!-- FOOTER -->
-        <div *ngIf="isLoggedIn" class="flex justify-end gap-3 px-6 py-3 bg-gray-100 rounded-b-lg">
+        <div *ngIf="isLoggedIn && role === 2" class="flex justify-end gap-3 px-6 py-3 bg-gray-100 rounded-b-lg">
             <button class="px-5 py-2 bg-gray-200 rounded-lg hover:bg-gray-300 flex items-center gap-2"
                 (click)="closeFeedbackPopup()">
                 <mat-icon svgIcon="heroicons_solid:x-mark" class="scale-90"></mat-icon> Hủy
