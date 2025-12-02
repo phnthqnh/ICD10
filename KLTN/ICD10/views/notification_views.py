@@ -70,3 +70,54 @@ def unread_notis(request):
         "unread_count": unread_count,
         "notifications": notifications_data
     })
+    
+@api_view(['POST'])
+@permission_classes([IsAuthenticated, IsUser])
+def mark_notifications_as_read(request, pk):
+    user = request.user
+    is_read = request.data.get("is_read")
+
+    if is_read is None:
+        return AppResponse.error(
+            ErrorCodes.INVALID_REQUEST,
+            errors="Missing `is_read` field"
+        )
+        
+    notification = Notification.objects.filter(id=pk, recipient=user).first()
+    if not notification:
+        return AppResponse.error(
+            ErrorCodes.NOT_FOUND,
+            errors="Notification not found"
+        )
+        
+    notification.is_read = bool(is_read)
+    notification.save()
+    
+    return AppResponse.success(
+        SuccessCodes.MARK_NOTIFICATIONS_AS_READ,
+        data={"is_read": notification.is_read}
+    )
+    
+@api_view(['POST'])
+@permission_classes([IsAuthenticated, IsUser])
+def mark_all_notifications_as_read(request):
+    user = request.user
+    Notification.objects.filter(recipient=user, is_read=False).update(is_read=True)
+    return AppResponse.success(
+        SuccessCodes.MARK_ALL_NOTIFICATIONS_AS_READ
+    )
+    
+@api_view(['DELETE'])
+@permission_classes([IsAuthenticated, IsUser])
+def delete_notification(request, pk):
+    user = request.user
+    notification = Notification.objects.filter(id=pk, recipient=user).first()
+    if not notification:
+        return AppResponse.error(
+            ErrorCodes.NOT_FOUND,
+            errors="Notification not found"
+        )
+    notification.delete()
+    return AppResponse.success(
+        SuccessCodes.DELETE_NOTIFICATION
+    )

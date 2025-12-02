@@ -18,7 +18,7 @@ export const initialDataResolver = () =>
     return forkJoin([
         navigationService.get(),
         messagesService.getAll(),
-        notificationsService.getAll(),
+        // notificationsService.getAll(),
         quickChatService.getChats(),
         shortcutsService.getAll(),
     ]);

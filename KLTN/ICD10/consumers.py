@@ -250,3 +250,4 @@ class NotificationConsumer(AsyncWebsocketConsumer):
             await self.send(text_data=json.dumps(content))
         except Exception as e:
             logger.error(f"Error sending notification: {str(e)}")
+            

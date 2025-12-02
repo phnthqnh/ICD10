@@ -180,6 +180,21 @@ class SuccessCodes:
         "Get user notifications successfully!",
     )
     
+    MARK_ALL_NOTIFICATIONS_AS_READ = (
+        "MARK_ALL_NOTIFICATIONS_AS_READ",
+        "Mark all notifications as read successfully!",
+    )
+    
+    MARK_NOTIFICATIONS_AS_READ = (
+        "MARK_NOTIFICATIONS_AS_READ",
+        "Mark notifications as read successfully!",
+    )
+    
+    DELETE_NOTIFICATION = (
+        "DELETE_NOTIFICATION",
+        "Delete notification successfully!",
+    )
+    
     @classmethod
     def get_success(cls, message):
         return getattr(cls, message, cls.DEFAULT)

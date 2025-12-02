@@ -15,13 +15,25 @@ django_asgi_app = get_asgi_application()
 
 from channels.routing import ProtocolTypeRouter, URLRouter
 from channels.auth import AuthMiddlewareStack
+from channels.sessions import SessionMiddlewareStack
 from ICD10.routing import websocket_urlpatterns
+# application = ProtocolTypeRouter({
+#     "http": django_asgi_app,
+#     "websocket": AuthMiddlewareStack(
+#         URLRouter(
+#             websocket_urlpatterns
+#         )
+#     ),
+# })
+from ICD10.middleware.jwt_middleware import HybridAuthMiddleware
 
 application = ProtocolTypeRouter({
     "http": django_asgi_app,
-    "websocket": AuthMiddlewareStack(
-        URLRouter(
-            websocket_urlpatterns
+    "websocket": 
+        AuthMiddlewareStack(
+            HybridAuthMiddleware(
+                URLRouter(websocket_urlpatterns)
+            )
         )
-    ),
+    ,
 })

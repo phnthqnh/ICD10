@@ -29,7 +29,7 @@
                         [svgIcon]="'heroicons_solid:x-mark'"></mat-icon>
                 </button>
             </div>
-            <div class="text-lg font-medium leading-10">Thông báo ở đây nè</div>
+            <div class="text-lg font-medium leading-10">Thông báo</div>
             <div class="ml-auto">
                 <button
                     mat-icon-button
@@ -49,7 +49,8 @@
             <ng-container *ngFor="let notification of notifications; trackBy: trackByFn">
                 <div
                     class="flex group hover:bg-gray-50 dark:hover:bg-black dark:hover:bg-opacity-5"
-                    [ngClass]="{'unread': !notification.read}">
+                    [ngClass]="{'bg-white dark:bg-gray-900': !notification.is_read,
+                                'bg-gray-100 dark:bg-gray-800': notification.is_read}">
 
                     <!-- Notification with a link -->
                     <ng-container *ngIf="notification.link">
@@ -85,11 +86,11 @@
                             class="w-6 h-6 min-h-6"
                             mat-icon-button
                             (click)="toggleRead(notification)"
-                            [matTooltip]="notification.read ? 'Mark as unread' : 'Mark as read'">
+                            [matTooltip]="notification.is_read ? 'Mark as unread' : 'Mark as read'">
                             <span
                                 class="w-2 h-2 rounded-full"
-                                [ngClass]="{'bg-gray-400 dark:bg-gray-500 sm:opacity-0 sm:group-hover:opacity-100': notification.read,
-                                            'bg-primary': !notification.read}"></span>
+                                [ngClass]="{'bg-gray-400 dark:bg-gray-500 sm:opacity-0 sm:group-hover:opacity-100': notification.is_read,
+                                            'bg-primary': !notification.is_read}"></span>
                         </button>
                         <!-- Remove -->
                         <button
@@ -123,20 +124,20 @@
                             [src]="notification.image"
                             [alt]="'Notification image'">
                     </ng-container>
-                    <!-- Title, description & time -->
+                    <!-- Title, message & time -->
                     <div class="flex flex-col flex-auto">
                         <ng-container *ngIf="notification.title">
                             <div
                                 class="font-semibold line-clamp-1"
                                 [innerHTML]="notification.title"></div>
                         </ng-container>
-                        <ng-container *ngIf="notification.description">
+                        <ng-container *ngIf="notification.message">
                             <div
                                 class="line-clamp-2"
-                                [innerHTML]="notification.description"></div>
+                                [innerHTML]="notification.message"></div>
                         </ng-container>
                         <div class="mt-2 text-sm leading-none text-secondary">
-                            {{notification.time | date:'MMM dd, h:mm a'}}
+                            {{ notification.created_at }}
                         </div>
                     </div>
                 </ng-template>

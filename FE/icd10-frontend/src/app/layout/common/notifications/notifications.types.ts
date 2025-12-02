@@ -9,4 +9,9 @@ export interface Notification
     link?: string;
     useRouter?: boolean;
     read: boolean;
+    notifications?: any;
+    unread_count?: number;
+    is_read?: boolean;
+    created_at?: string;
+    message?: string;
 }

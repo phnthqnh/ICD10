@@ -51,7 +51,7 @@
         <!-- Notification List -->
         <div class="max-h-96 overflow-y-auto">
             <template x-if="notifications.length > 0">
-                <template x-for="notif in notifications" :key="notif.created_at">
+                <template x-for="notif in notifications" :key="notif.id">
                     <a :href="`/admin/ICD10/notification/${notif.id}/change/`"
                         class="block px-4 py-3 hover:bg-gray-50 dark:hover:bg-base-700 no-underline" 
                          :class="{ 'bg-blue-50 dark:bg-base-700': !notif.is_read }">

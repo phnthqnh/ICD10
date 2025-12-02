@@ -10,6 +10,7 @@ import { NotificationsService } from 'app/layout/common/notifications/notificati
 import { Notification } from 'app/layout/common/notifications/notifications.types';
 import { Subject, takeUntil } from 'rxjs';
 import { AuthService } from 'app/core/auth/auth.service';
+import { AlertService } from 'app/core/alert/alert.service';
 
 @Component({
     selector       : 'notifications',
@@ -40,7 +41,8 @@ export class NotificationsComponent implements OnInit, OnDestroy
         private _overlay: Overlay,
         private _viewContainerRef: ViewContainerRef,
         private _authService: AuthService,
-        private _router: Router
+        private _router: Router,
+        private _alertService: AlertService
     )
     {
     }
@@ -54,22 +56,48 @@ export class NotificationsComponent implements OnInit, OnDestroy
      */
     ngOnInit(): void
     {
-        // Subscribe to notification changes
+        this.isLoggedIn = this._authService.isLoggedIn();
+
+        // nếu chưa đăng nhập thì khóa cấu trúc
+        if (!this.isLoggedIn) {
+            return;
+        }
+
+        // ✅ Initialize WebSocket nếu đã đăng nhập
+        if (this.isLoggedIn) {
+            this._notificationsService.initializeWebSocket();
+        }
+
+        this._notificationsService.getAll().subscribe((res) => {
+            this.notifications = res?.data?.notifications;
+            this.unreadCount = res?.data?.unread_count;
+            console.log('fetch', this.notifications, this.unreadCount);
+            this._changeDetectorRef.markForCheck();
+        })
+        
+        // ✅ Subscribe to notifications changes từ WebSocket
         this._notificationsService.notifications$
             .pipe(takeUntil(this._unsubscribeAll))
-            .subscribe((notifications: Notification[]) =>
-            {
-                // Load the notifications
+            .subscribe((notifications: Notification[]) => {
                 this.notifications = notifications;
-
-                // Calculate the unread count
-                this._calculateUnreadCount();
-
-                // Mark for check
+                console.log('🔄 Notifications updated from WebSocket:', notifications.length);
                 this._changeDetectorRef.markForCheck();
             });
-        // Nếu chưa đăng nhập thì không lấy thông báo
-        this.isLoggedIn = this._authService.isLoggedIn();
+
+        // ✅ Subscribe to unread count changes
+        this._notificationsService.unreadCount$
+            .pipe(takeUntil(this._unsubscribeAll))
+            .subscribe((count: number) => {
+                const previousCount = this.unreadCount;
+                this.unreadCount = count;
+                
+                if (count > previousCount && previousCount !== 0) {
+                    console.log('📊 Unread count increased:', previousCount, '->', count);
+                }
+                
+                this._changeDetectorRef.markForCheck();
+            });
+
     }
 
     /**
@@ -80,6 +108,9 @@ export class NotificationsComponent implements OnInit, OnDestroy
         // Unsubscribe from all subscriptions
         this._unsubscribeAll.next(null);
         this._unsubscribeAll.complete();
+
+         // ✅ Close WebSocket khi component destroy
+        this._notificationsService.closeWebSocket();
 
         // Dispose the overlay
         if ( this._overlayRef )
@@ -142,22 +173,70 @@ export class NotificationsComponent implements OnInit, OnDestroy
     /**
      * Toggle read status of the given notification
      */
-    toggleRead(notification: Notification): void
+    toggleRead(notification: any): void
     {
-        // Toggle the read status
-        notification.read = !notification.read;
+        // // Toggle the read status
+        // notification.read = !notification.read;
 
-        // Update the notification
-        this._notificationsService.update(notification.id, notification).subscribe();
+        // // Update the notification
+        // this._notificationsService.update(notification.id, notification).subscribe();
+        const previousState = notification.is_read;
+        const newState = !previousState;
+
+        notification.is_read = newState;
+
+        // Cập nhật số lượng unread
+        this.unreadCount += newState ? -1 : 1;
+        if (this.unreadCount < 0) this.unreadCount = 0;
+
+        this._changeDetectorRef.markForCheck();
+        this._notificationsService.markAsRead(notification.id, {is_read: newState}).subscribe({
+            error: (err) => {
+                // Nếu lỗi, rollback lại
+                notification.is_read = previousState;
+                this.unreadCount += previousState ? 1 : -1;
+                if (this.unreadCount < 0) this.unreadCount = 0;
+
+                this._changeDetectorRef.markForCheck();
+                console.error('Error toggling read status:', err);
+            }
+        });
     }
 
     /**
      * Delete the given notification
      */
-    delete(notification: Notification): void
+    delete(notification: any): void
     {
         // Delete the notification
-        this._notificationsService.delete(notification.id).subscribe();
+        // this._notificationsService.delete(notification.id).subscribe();
+        // ✅ Lưu index để rollback nếu cần
+        const notificationIndex = this.notifications.findIndex(n => n.id === notification.id);
+        const deletedNotification = { ...notification };
+        
+        // ✅ Xóa khỏi UI ngay lập tức
+        this.notifications = this.notifications.filter(n => n.id !== notification.id);
+        
+        // ✅ Cập nhật unread count nếu notification chưa đọc
+        if (!deletedNotification.is_read) {
+            this.unreadCount = Math.max(0, this.unreadCount - 1);
+        }
+        
+        // ✅ Trigger change detection
+        this._changeDetectorRef.markForCheck();
+
+        // Gửi request lên server
+        this._notificationsService.delete(notification.id).subscribe({
+            error: (err) => {
+                // ❌ Nếu lỗi, rollback lại
+                this.notifications.splice(notificationIndex, 0, deletedNotification);
+                if (!deletedNotification.is_read) {
+                    this.unreadCount++;
+                }
+                this._changeDetectorRef.markForCheck();
+                console.error('Error deleting notification:', err);
+            }
+        });
     }
 
     /**
