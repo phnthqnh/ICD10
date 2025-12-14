@@ -103,6 +103,7 @@ def login(request):
     user.last_login = Utils.get_current_datetime()
     
     user.save()
+    cleanup_pending_email(user)
     user_data = save_user(user)
    
     return AppResponse.success(
@@ -255,7 +256,7 @@ def verified_doctor(request):
         return AppResponse.error(ErrorCodes.INTERNAL_SERVER_ERROR, errors="Failed to upload file")
     
     # Lưu key file vào DB (không nên lưu presigned URL vì hết hạn)
-    user.verification_file = file_name
+    user.verification_file = presigned_url
     user.role = 1  # Doctor role
     user.is_verified_doctor = False  # chờ admin xác thực
 
@@ -273,8 +274,7 @@ def verified_doctor(request):
         return AppResponse.success(
             SuccessCodes.UPDATE_USER_PROFILE, 
             data={
-                "user": UserSerializer(updated_user).data,
-                "verification_file_url": presigned_url  # client lấy link tạm thời
+                "user": UserSerializer(updated_user).data
             }
         )
     return AppResponse.error(ErrorCodes.VALIDATION_ERROR, errors=serializer.errors)
@@ -406,3 +406,104 @@ def reset_password_confirm(request):
 @permission_classes([IsAuthenticated])
 def get_user_profile(request):
     return AppResponse.success(SuccessCodes.GET_USER_PROFILE, data=UserSerializer(request.user).data)
+
+
+@api_view(['PUT'])
+@permission_classes([IsAuthenticated])
+def update_user_profile(request):
+    user = request.user
+    if "email" in request.data and user.email != request.data["email"]:
+        new_email = request.data["email"]
+        # kiểm tra xem email đã tồn tại chưa
+        if User.objects.filter(email=new_email).exists():
+            return AppResponse.error(ErrorCodes.EMAIL_ALREADY_EXISTS)
+        
+        # nếu new_email == user.email thi thoát điều kiện
+        RedisWrapper.save(f"{Constants.CACHE_EMAIL}_{user.id}", new_email, expire_time=60*2)
+        
+        
+        user.pending_email = new_email
+        user.pending_email_verified = False
+        
+        token = signing.dumps(
+            {"user_id": user.id, "pending_email": new_email},
+            salt="email-change",
+        )
+        user.pending_email_token = token
+        user.save()
+        
+        verify_change_email = os.getenv("verify_change_email")
+        print("verify_change_email", verify_change_email)
+        activation_link = f"{verify_change_email}?token={token}"
+        Utils.verify_change_email(user=user, activation_link=activation_link)
+    
+        # Bỏ email khỏi request.data trước khi đẩy vào serializer
+        mutable = request.data.copy()
+        mutable.pop("email", None)
+        request.data = mutable
+    
+    serializer = UserSerializer(request.user, data=request.data, partial=True)
+    if serializer.is_valid():
+        serializer.save()
+        return AppResponse.success(SuccessCodes.UPDATE_USER_PROFILE, data=serializer.data)
+    return AppResponse.error(ErrorCodes.VALIDATION_ERROR, errors=serializer.errors)
+
+@api_view(["GET"])
+@permission_classes([AllowAny])
+@authentication_classes([])
+def verify_new_email(request):
+    token = request.GET.get("token")
+    if not token:
+        return AppResponse.error(ErrorCodes.TOKEN_REQUIRED)
+    try:
+        data = signing.loads(token, salt="email-change", max_age=60*2)  # 2 minutes
+        user = User.objects.get(id=data["user_id"])
+        pending = data.get("pending_email")
+        if pending != user.pending_email:
+            return HttpResponseRedirect("http://localhost:4200/not-verify-email")
+        old_email = user.email
+        user.email = user.pending_email
+        user.pending_email = None
+        user.pending_email_verified = True
+        user.pending_email_token = None
+        user.save()
+
+        # Xóa cache rollback
+        RedisWrapper.remove(f"{Constants.CACHE_EMAIL}_{user.id}")
+
+        # Redirect về trang thông báo thành công
+        return HttpResponseRedirect("http://localhost:4200/profile")
+    except signing.BadSignature:
+        # Redirect về trang thông báo lỗi
+        return HttpResponseRedirect("http://localhost:4200/not-verify-email")
+
+@api_view(['PUT'])
+@permission_classes([IsAuthenticated])
+def upload_avatar(request):
+    try:
+        user = User.objects.get(id=request.user.id)
+    except User.DoesNotExist:
+        return AppResponse.error(ErrorCodes.USER_NOT_FOUND)
+    
+    file = request.FILES.get('file')
+    file_name, presigned_url = Utils.save_file_to_s3(file, "avatar")
+
+    if not file_name or not presigned_url:
+        return AppResponse.error(ErrorCodes.INTERNAL_SERVER_ERROR, errors="Failed to upload file")
+
+    user.avatar = presigned_url
+    user.save()
+
+    return AppResponse.success(SuccessCodes.UPDATE_USER_PROFILE, data=UserSerializer(user).data)
+
+def cleanup_pending_email(user):
+    cache_key = f"{Constants.CACHE_EMAIL}_{user.id}"
+    old_email = RedisWrapper.get(cache_key)
+
+    if old_email and not user.pending_email_verified:
+        user.email = old_email
+        user.pending_email = None
+        user.pending_email_token = None
+        user.pending_email_verified = False
+        user.save()
+        RedisWrapper.remove(cache_key)

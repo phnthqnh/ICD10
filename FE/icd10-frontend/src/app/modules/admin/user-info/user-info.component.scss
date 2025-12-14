@@ -1,0 +1,23 @@
+.btn-primary {
+    @apply flex items-center gap-2 px-4 py-2 bg-primary text-white rounded-lg hover:bg-primary-600 transition h-9;
+}
+
+.btn-sub {
+    @apply flex items-center gap-2 px-4 py-2 bg-gray-300 text-gray-700 rounded-md hover:bg-gray-400 transition h-9;
+}
+
+.icon {
+    @apply w-5 h-5;
+}
+
+.row {
+    @apply border-b border-gray-100 hover:bg-gray-50 transition;
+}
+
+.cell-title {
+    @apply font-medium text-[14px] text-gray-700 w-1/3;
+}
+
+.input {
+    @apply w-full px-2 py-1 border border-gray-300 rounded text-sm;
+}

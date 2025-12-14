@@ -16,3 +16,10 @@ export interface User {
     hospital?: string
     verification_file?: string
 }
+
+export interface Role {
+    id: number;
+    name: string;
+    class: string;
+    is_list: boolean;
+}

@@ -21,6 +21,8 @@ class UserSerializer(serializers.ModelSerializer):
             "first_name",
             "last_name",
             "email",
+            "pending_email",
+            "pending_email_verified",
             "avatar",
             "role",
             "is_staff",
@@ -62,6 +64,8 @@ class UserSerializer(serializers.ModelSerializer):
 
     def update(self, instance, validated_data):
         request = self.context.get("request")
+        if "email" in validated_data:
+            validated_data.pop("email")
         
         instance.updated_at = Utils.get_current_datetime()
         if self.context.get(Constants.REGISTER, False):
@@ -86,9 +90,9 @@ class UserSerializer(serializers.ModelSerializer):
         if instance.is_superuser:
             instance.role = 3  # admin
         elif instance.is_verified_doctor:
-            instance.role = 1 # doctor
+            instance.role = 2 # doctor
         else:
-            instance.role = 2  # user
+            instance.role = 1  # user
 
         instance.save()
         return instance
@@ -121,17 +125,17 @@ class UserSerializer(serializers.ModelSerializer):
 
         return data
 
-    def validate_avatar(self, value):
-        # avatar không bắt buộc
-        if not value:
-            return None
-        if isinstance(value, str):
-            if value.startswith('data:image/'):  # Nếu là base64
-                return Validator.validate_avatar_base64(value)
-            else:  # Nếu là URL
-                return Validator.validate_avatar(value)
-        else:  # Nếu là file upload
-            return Validator.validate_avatar_file(value)
+    # def validate_avatar(self, value):
+    #     # avatar không bắt buộc
+    #     if not value:
+    #         return None
+    #     if isinstance(value, str):
+    #         if value.startswith('data:image/'):  # Nếu là base64
+    #             return Validator.validate_avatar_base64(value)
+    #         else:  # Nếu là URL
+    #             return Validator.validate_avatar(value)
+    #     else:  # Nếu là file upload
+    #         return Validator.validate_avatar_file(value)
     
     def validate_email(self, value):
         if value:

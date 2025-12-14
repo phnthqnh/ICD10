@@ -7,7 +7,7 @@ from django.contrib.auth.models import (
     PermissionsMixin,
     BaseUserManager,
 )
-from django.utils import timezone
+from django.utils.html import format_html
 
     
 
@@ -44,11 +44,14 @@ class User(AbstractBaseUser, PermissionsMixin):
     username = models.CharField(max_length=150, unique=True)
     first_name = models.CharField(max_length=255, null=True, blank=True)
     last_name = models.CharField(max_length=255, null=True, blank=True)
-    avatar = models.TextField(null=True, blank=True)
+    avatar = models.URLField(null=True, blank=True)
     email = models.EmailField(unique=True)
     password = models.CharField(max_length=128, null=True)
     status = models.PositiveSmallIntegerField(choices=Constants.USER_STATUS, default=3)
     email_verified = models.BooleanField(default=False)
+    pending_email = models.EmailField(null=True, blank=True)
+    pending_email_verified = models.BooleanField(default=False)
+    pending_email_token = models.CharField(max_length=255, null=True, blank=True)
     is_staff = models.BooleanField(default=False)
     is_superuser = models.BooleanField(default=False)
     last_login = models.DateTimeField(null=True)
@@ -58,7 +61,7 @@ class User(AbstractBaseUser, PermissionsMixin):
     # Thông tin xác minh
     license_number = models.CharField(max_length=50, null=True, blank=True)
     hospital = models.CharField(max_length=255, null=True, blank=True)
-    verification_file = models.TextField(null=True, blank=True)
+    verification_file = models.URLField(null=True, blank=True)
     
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(null=True)
@@ -96,5 +99,51 @@ class User(AbstractBaseUser, PermissionsMixin):
     @property
     def is_authenticated(self):
         return self.status
+    
+    def verification_image_tag(self):
+        if not self.verification_file:
+            return "—"
+        return format_html("""
+            <img src="{0}" style="max-height: 200px; cursor:pointer; border:1px solid #ccc; padding:4px;"
+                onclick="document.getElementById('imgModal').style.display='block';
+                        document.getElementById('imgModalContent').src='{0}'" />
+
+            <div id="imgModal" style="
+                display:none; position:fixed; z-index:9999; padding-top:100px;
+                left:0; top:0; width:100%; height:100%; overflow:auto;
+                background-color:rgba(0,0,0,0.8);">
+                <span onclick="document.getElementById('imgModal').style.display='none'"
+                    style="position:absolute; top:30px; right:50px; font-size:40px; color:white; cursor:pointer;">
+                    &times;
+                </span>
+                <img id="imgModalContent" style="margin:auto; display:block; max-width:90%; max-height:90%;">
+            </div>
+            """, self.verification_file
+        )
+
+    verification_image_tag.short_description = "Xem ảnh"
+    
+    def avatar_tag(self):
+        if not self.avatar:
+            return "—"
+        return format_html("""
+            <img src="{0}" style="max-height: 200px; cursor:pointer; border:1px solid #ccc; padding:4px;"
+                onclick="document.getElementById('imgModal').style.display='block';
+                        document.getElementById('imgModalContent').src='{0}'" />
+
+            <div id="imgModal" style="
+                display:none; position:fixed; z-index:9999; padding-top:100px;
+                left:0; top:0; width:100%; height:100%; overflow:auto;
+                background-color:rgba(0,0,0,0.8);">
+                <span onclick="document.getElementById('imgModal').style.display='none'"
+                    style="position:absolute; top:30px; right:50px; font-size:40px; color:white; cursor:pointer;">
+                    &times;
+                </span>
+                <img id="imgModalContent" style="margin:auto; display:block; max-width:90%; max-height:90%;">
+            </div>
+            """, self.avatar
+        )
+
+    avatar_tag.short_description = "Xem ảnh"
 
 

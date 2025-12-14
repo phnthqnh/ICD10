@@ -1,13 +1,15 @@
 import { HttpClient } from '@angular/common/http';
 import { inject, Injectable } from '@angular/core';
-import { User } from 'app/core/user/user.types';
-import { map, Observable, ReplaySubject, tap } from 'rxjs';
+import { User, Role } from 'app/core/user/user.types';
+import { map, Observable, ReplaySubject, tap, catchError, of } from 'rxjs';
+import { uriConfig } from '../uri/config';
 
 @Injectable({providedIn: 'root'})
 export class UserService
 {
     private _httpClient = inject(HttpClient);
     private _user: ReplaySubject<User> = new ReplaySubject<User>(1);
+    public itemUser$ = this._user.asObservable();
 
     // -----------------------------------------------------------------------------------------------------
     // @ Accessors
@@ -29,6 +31,10 @@ export class UserService
         return this._user.asObservable();
     }
 
+    public role$ = this._user.pipe(
+        map(user => user?.role ?? 0)
+    );
+
     // -----------------------------------------------------------------------------------------------------
     // @ Public methods
     // -----------------------------------------------------------------------------------------------------
@@ -38,11 +44,20 @@ export class UserService
      */
     get(): Observable<User>
     {
-        return this._httpClient.get<User>('api/common/user').pipe(
-            tap((user) =>
-            {
-                this._user.next(user);
+        return this._httpClient.get<User>(uriConfig.API_USER_INFOR).pipe(
+            map((response: any) => {
+                if (response?.data) {
+                    const user = {
+                        ...response.data,
+                    };
+
+                    this.user = user;
+
+                    return user;
+                }
+                return null;
             }),
+            catchError(() => of(null))
         );
     }
 
@@ -51,13 +66,56 @@ export class UserService
      *
      * @param user
      */
-    update(user: User): Observable<any>
-    {
-        return this._httpClient.patch<User>('api/common/user', {user}).pipe(
-            map((response) =>
-            {
-                this._user.next(response);
-            }),
-        );
+    update(user: any): Observable<any> {
+        return this._httpClient
+            .put<User>(uriConfig.API_USER_INFOR_UPDATE, user)
+            .pipe(
+                map((response) => {
+                    this._user.next(response);
+                })
+            );
     }
+
+    /**
+     * Upload avatar
+     * 
+     */
+    uploadAvatar(payload: any): Observable<any> {
+        return this._httpClient
+            .put<any>(uriConfig.API_USER_INFOR_AVATAR, payload)
+            .pipe(
+                tap((response) => {
+                    if (response?.data) {
+                        this.user = response.data;
+                    }
+                }),
+                catchError((error) => {
+                    console.error('Error uploading avatar:', error);
+                    return of(null);
+                })
+            );
+    }
+
+    /**
+     * verify doctor
+     * 
+     */
+    verifyDoctor(payload: any): Observable<any> {
+        return this._httpClient
+            .put<any>(uriConfig.API_VERIFY_DOCTOR, payload)
+            .pipe(
+                tap((response) => {
+                    if (response?.data?.user) {
+                        this.user = response.data.user;
+                    }
+                }),
+                catchError((error) => {
+                    console.error('Error verify doctor:', error);
+                    return of(null);
+                })
+            );
+    }
+
+
+
 }
