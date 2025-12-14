@@ -68,3 +68,47 @@ class RedisWrapper:
         except Exception as e:
             logger.error(f"Redis hgetall error: {e}")
             return {}
+        
+    @staticmethod
+    def incr(key: str, amount: int = 1) -> Optional[int]:
+        """
+        Tăng giá trị integer trong Redis.
+        - Nếu key chưa tồn tại → set = amount.
+        - Nếu key tồn tại nhưng không phải số → ghi đè thành amount.
+        Trả về giá trị sau khi tăng.
+        """
+        try:
+            # cache.incr chỉ hoạt động nếu key tồn tại và là int
+            value = cache.get(key)
+
+            if value is None:
+                # Nếu key chưa tồn tại → khởi tạo
+                cache.set(key, amount)
+                return amount
+
+            try:
+                # Nếu là số thì tăng
+                new_value = cache.incr(key, amount)
+                return new_value
+            except ValueError:
+                # Nếu value không phải số → ghi đè lại
+                cache.set(key, amount)
+                return amount
+
+        except Exception as e:
+            logger.error(f"Redis incr error for key '{key}': {e}")
+            return None
+    
+    @staticmethod
+    def expire(key: str, seconds: int) -> bool:
+        """
+        Đặt TTL cho key (giống Redis EXPIRE).
+        Chỉ hoạt động nếu backend cache là Redis.
+        """
+        try:
+            client = cache.client.get_client()
+            return client.expire(key, seconds)
+        except Exception as e:
+            logger.error(f"Redis expire error for key '{key}': {e}")
+            return False
+

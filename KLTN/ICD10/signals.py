@@ -8,8 +8,14 @@ from ICD10.models.notification import Notification
 
 @receiver(post_save, sender=Feedback_Chapter)
 def notify_admin_new_feedback_chapter(sender, instance, created, **kwargs):
+    if not created:
+        return
+    
     if created:
-        target_name = instance.chapter.code
+        try:
+            target_name = instance.chapter.code
+        except:
+            return
         # Gửi notification trong DB
         admins = User.objects.filter(is_superuser=True)
         for admin in admins:
@@ -34,8 +40,14 @@ def notify_admin_new_feedback_chapter(sender, instance, created, **kwargs):
         
 @receiver(post_save, sender=Feedback_Block)
 def notify_admin_new_feedback_block(sender, instance, created, **kwargs):
+    if not created:
+        return
+    
     if created:
-        target_name = instance.block.code
+        try:
+            target_name = instance.block.code
+        except:
+            return
         # Gửi notification trong DB
         admins = User.objects.filter(is_superuser=True)
         for admin in admins:
@@ -60,8 +72,13 @@ def notify_admin_new_feedback_block(sender, instance, created, **kwargs):
         
 @receiver(post_save, sender=Feedback_Disease)
 def notify_admin_new_feedback_disease(sender, instance, created, **kwargs):
+    if not created:
+        return
     if created:
-        target_name = instance.disease.code
+        try:
+            target_name = instance.disease.code
+        except:
+            return
         # Gửi notification trong DB
         admins = User.objects.filter(is_superuser=True)
         for admin in admins:
@@ -86,9 +103,15 @@ def notify_admin_new_feedback_disease(sender, instance, created, **kwargs):
         
 @receiver(post_save, sender=Feedback_Chatbot)
 def notify_admin_new_feedback_chatbot(sender, instance, created, **kwargs):
+    if not created:
+        return
     if created:
+        try:
+            chat_message = instance.chat_message
+        except:
+            return
         # Gửi notification trong DB
-        user = instance.chat_message.session.user
+        user = chat_message.session.user
         admins = User.objects.filter(is_superuser=True)
         for admin in admins:
             Notification.objects.create(
