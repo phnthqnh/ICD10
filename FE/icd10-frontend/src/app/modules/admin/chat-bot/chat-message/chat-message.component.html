@@ -1,0 +1,193 @@
+<div class="flex flex-col overflow-y-auto lg:overflow-hidden bg-card dark:bg-default">
+
+    <ng-container *ngIf="chat; else selectChatOrStartNew">
+        <!-- Header -->
+        <div class="flex flex-0 items-center px-4 md:px-6 border-b bg-gray-50 dark:bg-transparent">
+            <!-- Back button -->
+            <a class="lg:hidden md:-ml-2" mat-icon-button [routerLink]="['/chat-bot']" (click)="resetChat()">
+                <mat-icon [svgIcon]="'heroicons_outline:arrow-left'"></mat-icon>
+            </a>
+        </div>
+        <!-- Warning banner -->
+        <div class="flex items-center gap-3 px-4 py-3 border-l-4 border-yellow-500"
+            style="background-color: rgba(255, 243, 179, 0.3);">
+            
+            <mat-icon svgIcon="heroicons_outline:exclamation-triangle"
+                class="text-yellow-600"></mat-icon>
+
+            <span class="text-yellow-900 font-semibold text-sm">
+                Các câu trả lời chỉ mang tính tham khảo gợi ý. Không thay thế chẩn đoán của bác sĩ y khoa.
+            </span>
+        </div>
+
+        <!-- Conversation -->
+        <div #messagesPanel class="flex-1 overflow-y-auto flex-col-reverse">
+            <div class="flex flex-col flex-auto flex-shrink p-6 bg-card dark:bg-transparent">
+                <ng-container
+                    *ngFor="let message of chat; let i = index; let first = first; let last = last; trackBy: trackByFn">
+                    <div class="flex flex-col" [ngClass]="{'items-end': message.role === 'user',
+                                                        'items-start': message.role === 'bot',
+                                                        'mt-0.5': i > 0 && chat[i - 1].role === message.role,
+                                                        'mt-3': i > 0 && chat[i - 1].role !== message.role}">
+                        <!-- Bubble -->
+                        <div class="relative max-w-3/4 inline-block px-3 py-2 rounded-lg chat-bubble" 
+                            [ngClass]="{'bg-blue-500 text-blue-50': message.role === 'user',
+                                        'bg-gray-200 text-black': message.role === 'bot'}">
+                            <!-- Speech bubble tail -->
+                            <!-- <ng-container *ngIf="last || chat[i + 1].role !== message.role">
+                                <div class="absolute bottom-0 w-3 transform"
+                                    [ngClass]="{'text-blue-500 -right-1 -mr-px mb-px': message.role === 'user',
+                                                                    'text-gray-500 -left-1 -ml-px mb-px -scale-x-1': message.role === 'bot'}">
+                                    <ng-container *ngTemplateOutlet="speechBubbleExtension"></ng-container>
+                                </div>
+                            </ng-container> -->
+                            <!-- image nếu có -->
+                            <ng-container *ngIf="message.image">
+                                <img class="chat-image mb-3 rounded-lg" [src]="getImage(message.image)">
+                            </ng-container>
+                            <!-- content -->
+                            <div class="chat-content" [innerHTML]="getMessageHtml(message.content)">
+                            </div>
+                        </div>
+                        <!-- Time -->
+                        <div class="flex items-center gap-2">
+                            <ng-container *ngIf="first
+                                                        || last
+                                                        || chat[i + 1].role !== message.role
+                                                        || chat[i + 1].created_at !== message.created_at">
+                                <div class="my-0.5 text-sm font-medium text-secondary" [ngClass]="{'mr-3': message.role === 'user',
+                                                                    'ml-3': message.role === 'bot'}">
+                                    {{message.created_at | date:'HH:mm'}}
+                                </div>
+                            </ng-container>
+                            <ng-container *ngIf="message.role === 'bot'">
+                                <button
+                                    mat-icon-button
+                                    [matTooltip]="'Góp ý'"
+                                    (click)="openFeedback(message)"
+                                    class="w-6 h-6 min-h-6 text-gray-400 hover:text-gray-600 transition"
+                                >
+                                    <mat-icon class="icon-size-4" svgIcon="heroicons_outline:document-chart-bar"></mat-icon>
+                                </button>
+                            </ng-container>
+                        </div>
+                    </div>
+                </ng-container>
+                <!-- Loading indicator - Thêm đoạn này sau ngFor -->
+                <div *ngIf="isLoading" class="flex flex-col items-start mt-3">
+                    <div class="relative max-w-3/4 inline-block px-3 py-2 rounded-lg bg-gray-200">
+                        <img src="assets/images/logo/loading.gif" 
+                            alt="Loading..." 
+                            class="w-12 h-12"
+                            style="opacity: 0.7;">
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Message field -->
+        <div class="flex flex-col w-full p-4 border-t bg-gray-50 dark:bg-transparent">
+
+            <!-- Image preview -->
+            <div *ngIf="selectedFileUrl"
+                class="mb-2 relative border shadow max-w-[150px]">
+                
+                <img [src]="selectedFileUrl" class="rounded-lg max-h-[150px] object-cover" />
+
+                <button (click)="removeImage()"
+                        class="absolute -top-2 -right-2 bg-gray-700 text-white rounded-full p-1 hover:bg-black">
+                    ×
+                </button>
+            </div>
+
+            <div class="flex items-end">
+                <label class="flex items-center h-11 gap-2 cursor-pointer my-px">
+                    <mat-icon [svgIcon]="'heroicons_outline:photo'"></mat-icon>
+                    <input accept="image/*" type="file" hidden (change)="onImageChange($event)" />
+                </label>
+
+                <mat-form-field class="border-2 border-gray-200 rounded-md w-full ml-4 bg-white">
+                    <textarea
+                        matInput
+                        #messageInput
+                        cdkTextareaAutosize
+                        [cdkAutosizeMinRows]="1"
+                        [cdkAutosizeMaxRows]="5"
+                        placeholder="Type a message"
+                        class="m-2 px-2 block w-[98%] resize-none"></textarea>
+                </mat-form-field>
+
+                <div class="flex items-center h-11 my-px ml-4">
+                    <button mat-icon-button (click)="sendMessage(messageInput.value)">
+                        <mat-icon class="transform" [svgIcon]="'heroicons_outline:paper-airplane'"></mat-icon>
+                    </button>
+                </div>
+            </div>
+        </div>
+
+    </ng-container>
+
+    <!-- Select chat or start new template -->
+    <ng-template #selectChatOrStartNew>
+        <div class="flex flex-col flex-auto items-center justify-center bg-gray-100 dark:bg-transparent">
+            <mat-icon class="icon-size-24" [svgIcon]="'heroicons_outline:chat-bubble-oval-left'"></mat-icon>
+            <div class="mt-4 text-2xl font-semibold tracking-tight text-secondary">Chọn đoạn chat</div>
+        </div>
+    </ng-template>
+
+    <!-- @formatter:on -->
+
+</div>
+
+<div *ngIf="feedbackPopUp" class="fixed inset-0 bg-black/40 flex items-center justify-center z-[100]">
+    <div class="w-[720px] bg-white rounded-lg shadow-lg max-h-[80vh] overflow-auto">
+        <div class="flex items-center justify-between px-4 py-3 bg-primary-600 text-white rounded-t-lg">
+            <div class="flex items-center gap-2 text-lg font-semibold">
+                <mat-icon svgIcon="heroicons_solid:information-circle" class="text-white"></mat-icon>
+                Góp ý về tin nhắn
+            </div>
+            <span class="material-icons cursor-pointer hover:text-gray-300" (click)="closeFeedbackPopup()">close</span>
+        </div>
+
+        <div class="p-5 space-y-2">
+            <label class="font-medium">Bạn đánh giá phản hồi này như thế nào?</label>
+
+            <div class="flex items-center gap-1">
+                <ng-container *ngFor="let star of [1,2,3,4,5]">
+                    <mat-icon
+                        class="cursor-pointer text-3xl transition"
+                        [ngClass]="{
+                            'text-yellow-400': star <= feedbackRating,
+                            'text-gray-300': star > feedbackRating
+                        }"
+                        (click)="setRating(star)"
+                        (mouseenter)="hoverRating = star"
+                        (mouseleave)="hoverRating = 0"
+                        [svgIcon]="
+                            (hoverRating >= star || feedbackRating >= star)
+                                ? 'heroicons_solid:star'
+                                : 'heroicons_outline:star'
+                        "
+                    ></mat-icon>
+                </ng-container>
+            </div>
+        </div>
+
+        <!-- Comment box -->
+        <div class="p-5 space-y-2">
+            <label class="font-medium">Bạn muốn góp ý thêm điều gì không?</label>
+            
+            <textarea
+                [(ngModel)]="feedbackComment"
+                rows="4"
+                class="w-full border rounded-md p-2 outline-none focus:ring-2 focus:ring-primary-400 resize-none"
+                placeholder="Viết góp ý của bạn tại đây..."
+            ></textarea>
+        </div>
+
+        <div class="flex justify-end gap-3 px-4 py-3 bg-gray-100 rounded-b-lg">
+            <button class="px-4 py-2 bg-gray-200 rounded" (click)="closeFeedbackPopup()">Đóng</button>
+            <button class="px-4 py-2 bg-primary-500 text-white rounded" (click)="submitFeedback()">Gửi</button>
+        </div>
+    </div>
+</div>

@@ -1,0 +1,87 @@
+<div class="flex flex-col flex-auto overflow-y-auto lg:overflow-hidden bg-card dark:bg-default">
+    <!-- Warning banner -->
+    <div class="flex items-center gap-3 px-4 py-3 border-l-4 border-yellow-500"
+        style="background-color: rgba(255, 243, 179, 0.3);">
+        <mat-icon svgIcon="heroicons_outline:exclamation-triangle"
+            class="text-yellow-600"></mat-icon>
+        <span class="text-yellow-900 font-semibold text-sm">
+            Các câu trả lời chỉ mang tính tham khảo gợi ý. Không thay thế chẩn đoán của bác sĩ y khoa.
+        </span>
+    </div>
+    <!-- Conversation -->
+    <div *ngIf="isLoading" class="flex-1 overflow-y-auto flex-col-reverse">
+        <div class="flex flex-col flex-auto flex-shrink p-6 bg-card dark:bg-transparent">
+            <ng-container
+                *ngFor="let message of chat; let i = index; let first = first; let last = last; trackBy: trackByFn">
+                <div class="flex flex-col" [ngClass]="{'items-end': message.role === 'user',
+                                                    'items-start': message.role === 'bot',
+                                                    'mt-0.5': i > 0 && chat[i - 1].role === message.role,
+                                                    'mt-3': i > 0 && chat[i - 1].role !== message.role}">
+                    <!-- Bubble -->
+                    <div class="relative max-w-3/4 inline-block px-3 py-2 rounded-lg chat-bubble" 
+                        [ngClass]="{'bg-blue-500 text-blue-50': message.role === 'user',
+                                    'bg-gray-200 text-black': message.role === 'bot'}">
+                        <!-- image nếu có -->
+                        <ng-container *ngIf="message.image">
+                            <img class="chat-image mb-3 rounded-lg" [src]="getImage(message.image)">
+                        </ng-container>
+                        <!-- content -->
+                        <div class="chat-content" [innerHTML]="message.content">
+                        </div>
+                    </div>
+                    <!-- Time -->
+                    <div class="flex items-center gap-2">
+                        <ng-container *ngIf="first
+                                                    || last
+                                                    || chat[i + 1].role !== message.role
+                                                    || chat[i + 1].created_at !== message.created_at">
+                            <div class="my-0.5 text-sm font-medium text-secondary" [ngClass]="{'mr-3': message.role === 'user',
+                                                                'ml-3': message.role === 'bot'}">
+                                {{message.created_at | date:'HH:mm'}}
+                            </div>
+                        </ng-container>
+                    </div>
+                </div>
+            </ng-container>
+            <!-- Loading indicator - Thêm đoạn này sau ngFor -->
+            <div class="flex flex-col items-start mt-3">
+                <div class="relative max-w-3/4 inline-block px-3 py-2 rounded-lg bg-gray-200">
+                    <img src="assets/images/logo/loading.gif" 
+                        alt="Loading..." 
+                        class="w-12 h-12"
+                        style="opacity: 0.7;">
+                </div>
+            </div>
+        </div>
+    </div>
+    <!-- Select chat or start new -->
+    <div class="flex flex-col flex-auto items-center justify-center bg-card dark:bg-default">
+        <div class="my-4 text-2xl font-semibold tracking-tight text-secondary">Tôi có thể giúp gì cho bạn?</div>
+        <ng-container>
+            <!-- Message field -->
+            <div class="flex items-end p-4 border bg-gray-50 dark:bg-transparent w-3/4">
+                <label class="flex items-center h-11 gap-2 cursor-pointer my-px">
+                    <mat-icon [svgIcon]="'heroicons_outline:photo'"></mat-icon>
+                    <input accept="image/*" type="file" hidden (change)="onImageChange($event)" />
+                </label>
+                <div class="flex items-center w-full ml-4 bg-white border-2 border-gray-200 rounded-md px-2 py-2">
+                    <textarea
+                        matInput
+                        #messageInput
+                        cdkTextareaAutosize
+                        class="w-full resize-none outline-none"
+                        placeholder="Nhập tin nhắn"
+                        [cdkAutosizeMinRows]="1"
+                        [cdkAutosizeMaxRows]="5"
+                    ></textarea>
+                </div>
+                <div class="flex items-center h-11 my-px ml-4">
+                    <button mat-icon-button (click)="sendMessage(messageInput.value)">
+                        <mat-icon class="transform" [svgIcon]="'heroicons_outline:paper-airplane'"></mat-icon>
+                    </button>
+                </div>
+            </div>
+        </ng-container>
+    </div>
+
+</div>

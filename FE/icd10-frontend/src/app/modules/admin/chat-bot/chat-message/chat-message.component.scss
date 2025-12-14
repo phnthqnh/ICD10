@@ -1,0 +1,40 @@
+.break-anywhere {
+    word-break: break-word;
+    overflow-wrap: anywhere;
+}
+.chat-message pre {
+    white-space: pre-wrap !important; /* Cho xuống dòng */
+    word-break: break-word !important;
+    overflow-wrap: anywhere !important;
+    max-width: 100% !important;      /* Không vượt bubble */
+}
+
+.chat-message code {
+    white-space: pre-wrap !important;
+}
+
+/* bubble chung */
+.chat-bubble {
+    display: inline-block;
+    word-wrap: break-word;
+    overflow-wrap: anywhere;
+}
+
+/* xử lý code block */
+.chat-bubble pre {
+    white-space: pre-wrap !important;
+    word-break: break-word !important;
+    max-width: 100% !important;
+}
+
+/* xử lý image fit bubble */
+.chat-image {
+    max-width: 250px;
+    height: auto;
+    border-radius: 6px;
+}
+
+/* markdown text xuống dòng đúng */
+.chat-content {
+    white-space: pre-wrap;
+}
