@@ -1,5 +1,5 @@
 from django.urls import path
-from ICD10.views import icd_views, user_views, chatbot_views, feedback_views, notification_views
+from ICD10.views import icd_views, user_views, feedback_views, notification_views, chatbot_views
 
 urlpatterns = [
     # user endpoints
@@ -32,7 +32,10 @@ urlpatterns = [
     path("disease/<str:code>/", icd_views.get_disease_by_code, name="disease-by-code"),
     path("search_diseases/", icd_views.search_diseases, name="search-diseases"),
     path("autocomplete", icd_views.autocomplete_diseases, name="autocomplete-diseases"),
+    # chatbot endpoints
     path("chat_with_ai/", chatbot_views.chat_with_ai, name="chat-with-ai"),
+    path("get_chat_session/", chatbot_views.get_user_chat_sessions, name="get-user-chat-session"),
+    path("get_chat_messages/<int:session_id>/", chatbot_views.get_message_chat_session, name="get-message-chat-session"),
     # path("blocks/<str:block_code>/", icd_views.BlockDetailView.as_view(), name="block-detail"),
     # path("diseases/<str:disease_code>/", icd_views.DiseaseDetailView.as_view(), name="disease-detail"),
     # path("diseases/<str:disease_code>/subdiseases/", icd_views.SubDiseaseListView.as_view(), name="subdisease-list"),

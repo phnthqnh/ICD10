@@ -1,6 +1,7 @@
 from django.db import models
 from .user import User
 from constants.constants import Constants
+from django.utils.html import format_html
 
 class ChatSession(models.Model):
     """
@@ -8,6 +9,7 @@ class ChatSession(models.Model):
     """
     user = models.ForeignKey(User, on_delete=models.CASCADE, related_name="chat_sessions")
     title = models.CharField(max_length=255, default="Cuộc hội thoại mới")
+    adk_session_id = models.CharField(max_length=255, null=True, blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
     summary_count = models.IntegerField(default=0)  # số lần đã tóm tắt
@@ -32,7 +34,7 @@ class ChatMessage(models.Model):
     session = models.ForeignKey(ChatSession, on_delete=models.CASCADE, related_name="messages")
     role = models.CharField(max_length=10, choices=Constants.ROLE_CHAT)
     content = models.TextField()
-    image = models.TextField(null=True, blank=True)
+    image = models.URLField(null=True, blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
     timestamp = models.DateTimeField(auto_now_add=True)
 
@@ -46,3 +48,26 @@ class ChatMessage(models.Model):
         indexes = [
             models.Index(fields=['session', 'timestamp'], name='gemini_msg_session_time_idx'),
         ]
+        
+    def image_tag(self):
+        if not self.image:
+            return "—"
+        return format_html("""
+            <img src="{0}" style="max-height: 200px; cursor:pointer; border:1px solid #ccc; padding:4px;"
+                onclick="document.getElementById('imgModal').style.display='block';
+                        document.getElementById('imgModalContent').src='{0}'" />
+
+            <div id="imgModal" style="
+                display:none; position:fixed; z-index:9999; padding-top:100px;
+                left:0; top:0; width:100%; height:100%; overflow:auto;
+                background-color:rgba(0,0,0,0.8);">
+                <span onclick="document.getElementById('imgModal').style.display='none'"
+                    style="position:absolute; top:30px; right:50px; font-size:40px; color:white; cursor:pointer;">
+                    &times;
+                </span>
+                <img id="imgModalContent" style="margin:auto; display:block; max-width:90%; max-height:90%;">
+            </div>
+            """, self.image
+        )
+
+    image_tag.short_description = "Xem ảnh"

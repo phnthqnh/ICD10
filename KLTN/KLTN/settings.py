@@ -171,6 +171,8 @@ MIDDLEWARE = [
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
+    'ICD10.middleware.token_limit.TokenLimitMiddleware',
+    'ICD10.middleware.daily_request_limit.DailyRequestLimitMiddleware',
 ]
 
 ROOT_URLCONF = 'KLTN.urls'
@@ -205,6 +207,7 @@ WSGI_APPLICATION = 'KLTN.wsgi.application'
 
 # AI API
 GEMINI_API_KEY = os.getenv("GEMINI_API_KEY")
+EMBEDDING_API_KEY = os.getenv("EMBEDDING_API_KEY")
 
 
 DATABASES = {

@@ -195,6 +195,17 @@ class SuccessCodes:
         "Delete notification successfully!",
     )
     
+    # CHATBOT
+    GET_USER_CHAT_SESSIONS = (
+        "GET_USER_CHAT_SESSIONS",
+        "Get user chat sessions successfully!",
+    )
+    
+    GET_MESSAGE_CHAT_SESSION = (
+        "GET_MESSAGE_CHAT_SESSION",
+        "Get message chat session successfully!",
+    )
+    
     @classmethod
     def get_success(cls, message):
         return getattr(cls, message, cls.DEFAULT)
