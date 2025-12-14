@@ -16,6 +16,7 @@ import { FeedBack } from 'app/core/feedback/feedback.types';
 import { FeedbackService } from 'app/core/feedback/feedback.service';
 import { AlertService } from 'app/core/alert/alert.service';
 import { AuthService } from 'app/core/auth/auth.service';
+import { UserService } from 'app/core/user/user.service';
 import { ActivatedRoute, Router } from '@angular/router';
 
 @Component({
@@ -82,20 +83,24 @@ export class Icd10Component implements OnInit {
     role: number = 0;
 
     constructor(
-        private _icdService: Icd10Service, 
+        private _icdService: Icd10Service,
         private _feedbackService: FeedbackService,
         private _alertService: AlertService,
         private _authService: AuthService,
+        private _userService: UserService,
         private _router: Router,
         private _route: ActivatedRoute,
         private _location: Location,
     ) { }
 
     ngOnInit(): void {
+        this._userService.role$.subscribe(role => {
+            console.log("Role changed:", role);
+            this.role = role;
+        });
         this.dataSource = new ICD10DataSource(this.treeControl, this._icdService);
         this.dataSource.initialize();
         this.isLoggedIn = this._authService.isLoggedIn();
-        this.role = this._authService.getRole();
         console.log('isLoggedIn', this.isLoggedIn, 'this.role', this.role);
         this.loadAllData();
 
@@ -140,12 +145,12 @@ export class Icd10Component implements OnInit {
     private checkUrlHash(): void {
         // Lấy hash từ URL (ví dụ: #/A00)
         const hash = window.location.hash;
-        
+
         if (hash && hash.startsWith('#/')) {
-        const url = hash.substring(2); // Bỏ "#/" để lấy thông tin
-        const level = url.split('#')[0];
-        const code = url.split('#')[1];
-        this.showDetail(code, parseInt(level));
+            const url = hash.substring(2); // Bỏ "#/" để lấy thông tin
+            const level = url.split('#')[0];
+            const code = url.split('#')[1];
+            this.showDetail(code, parseInt(level));
         } else {
             // Clear selection
             this.selected = null;
@@ -221,17 +226,34 @@ export class Icd10Component implements OnInit {
     /**
  * ✅ Expand tree và scroll đến node được chọn - FIXED for Lazy Loading
  */
-private expandAndScrollToNode(code: string, level: number, chapter?: string): void {
-    if (level === 0) {
-        // Chapter level - có sẵn trong dataSource
-        setTimeout(() => {
-            this.scrollToNode(code, level);
-        }, 100);
-        return;
-    }
-    if (level === 1) {
-        // Block level - cần expand chapter trước
+    private expandAndScrollToNode(code: string, level: number, chapter?: string): void {
+        if (level === 0) {
+            // Chapter level - có sẵn trong dataSource
+            setTimeout(() => {
+                this.scrollToNode(code, level);
+            }, 100);
+            return;
+        }
+        if (level === 1) {
+            // Block level - cần expand chapter trước
+            this.expandParentsSequentially(code, level, chapter).then(() => {
+                // Sau khi expand xong, scroll đến node
+                setTimeout(() => {
+                    this.scrollToNode(code, level);
+                }, 300);
+            }).catch(() => {
+                // Ẩn loading
+                this.isExpandingTree = false;
+            });
+            return;
+        }
+        // Hiển thị loading
+        this.isExpandingTree = true;
+
+        // Với level > 0, cần expand parent trước
         this.expandParentsSequentially(code, level, chapter).then(() => {
+            // Ẩn loading
+            this.isExpandingTree = false;
             // Sau khi expand xong, scroll đến node
             setTimeout(() => {
                 this.scrollToNode(code, level);
@@ -240,196 +262,179 @@ private expandAndScrollToNode(code: string, level: number, chapter?: string): vo
             // Ẩn loading
             this.isExpandingTree = false;
         });
-        return;
     }
-    // Hiển thị loading
-    this.isExpandingTree = true;
 
-    // Với level > 0, cần expand parent trước
-    this.expandParentsSequentially(code, level, chapter).then(() => {
-        // Ẩn loading
-        this.isExpandingTree = false;
-        // Sau khi expand xong, scroll đến node
-        setTimeout(() => {
-            this.scrollToNode(code, level);
-        }, 300);
-    }).catch(() => {
-        // Ẩn loading
-        this.isExpandingTree = false;
-    });
-}
-
-/**
-     * ✅ Lấy mã chapter từ code (ví dụ: A00 -> A)
-     */
+    /**
+         * ✅ Lấy mã chapter từ code (ví dụ: A00 -> A)
+         */
     private getChapterFromCode(code: string): string {
         // ICD-10 code thường bắt đầu bằng 1 chữ cái
         return code.charAt(0);
     }
 
-/**
- * ✅ Expand các parent nodes tuần tự và đợi children load
- */
-private async expandParentsSequentially(code: string, level: number, chapter?: string): Promise<void> {
-    console.log('code', code, 'level', level, 'chapter', chapter);
-    if (level === 1) {
-        // Block level - cần expand chapter
-        if (chapter) {
-            await this.expandChapter(chapter);
-        } else {
-            const chapterCode = this.getChapterFromCode(code);
-            await this.expandChapter(chapterCode);
+    /**
+     * ✅ Expand các parent nodes tuần tự và đợi children load
+     */
+    private async expandParentsSequentially(code: string, level: number, chapter?: string): Promise<void> {
+        console.log('code', code, 'level', level, 'chapter', chapter);
+        if (level === 1) {
+            // Block level - cần expand chapter
+            if (chapter) {
+                await this.expandChapter(chapter);
+            } else {
+                const chapterCode = this.getChapterFromCode(code);
+                await this.expandChapter(chapterCode);
+            }
         }
-    } 
-    else if (level === 2) {
-        // Disease level - cần expand chapter -> block
-        if (chapter) {
-            await this.expandChapter(chapter);
-        } else {
-            const chapterCode = this.getChapterFromCode(code);
-            await this.expandChapter(chapterCode);
-        }
-        
-        const blockCode = await this.findBlockCodeForDisease(code);
-        if (blockCode) {
-            await this.expandBlock(blockCode);
-        }
-    } 
-    else if (level === 3) {
-        if (chapter) {
-            await this.expandChapter(chapter);
-        } else {
-            const chapterCode = this.getChapterFromCode(code);
-            await this.expandChapter(chapterCode);
-        }
-        
-        const diseaseParentCode = this.selected?.disease_parent?.code;
-        if (diseaseParentCode) {
-            const blockCode = await this.findBlockCodeForDisease(diseaseParentCode);
+        else if (level === 2) {
+            // Disease level - cần expand chapter -> block
+            if (chapter) {
+                await this.expandChapter(chapter);
+            } else {
+                const chapterCode = this.getChapterFromCode(code);
+                await this.expandChapter(chapterCode);
+            }
+
+            const blockCode = await this.findBlockCodeForDisease(code);
             if (blockCode) {
                 await this.expandBlock(blockCode);
-                await this.expandDisease(diseaseParentCode);
+            }
+        }
+        else if (level === 3) {
+            if (chapter) {
+                await this.expandChapter(chapter);
+            } else {
+                const chapterCode = this.getChapterFromCode(code);
+                await this.expandChapter(chapterCode);
+            }
+
+            const diseaseParentCode = this.selected?.disease_parent?.code;
+            if (diseaseParentCode) {
+                const blockCode = await this.findBlockCodeForDisease(diseaseParentCode);
+                if (blockCode) {
+                    await this.expandBlock(blockCode);
+                    await this.expandDisease(diseaseParentCode);
+                }
             }
         }
     }
-}
 
-/**
- * ✅ Expand chapter và đợi children load
- */
-private expandChapter(chapterCode: string): Promise<void> {
-    return new Promise((resolve) => {
-        const chapterNode = this.dataSource.data.find(n => 
-            n.level === 0 && n.chapter === chapterCode
-        );
-        
-        if (!chapterNode) {
-            console.log('Chapter node not found:', chapterCode);
-            resolve();
-            return;
-        }
+    /**
+     * ✅ Expand chapter và đợi children load
+     */
+    private expandChapter(chapterCode: string): Promise<void> {
+        return new Promise((resolve) => {
+            const chapterNode = this.dataSource.data.find(n =>
+                n.level === 0 && n.chapter === chapterCode
+            );
 
-        if (this.treeControl.isExpanded(chapterNode)) {
-            console.log('Chapter already expanded:', chapterCode);
-            resolve();
-            return;
-        }
-        console.log('Expanding chapter:', chapterCode, chapterNode);
+            if (!chapterNode) {
+                console.log('Chapter node not found:', chapterCode);
+                resolve();
+                return;
+            }
 
-        // Subscribe để biết khi nào children được load
-        let hasResolved = false;
+            if (this.treeControl.isExpanded(chapterNode)) {
+                console.log('Chapter already expanded:', chapterCode);
+                resolve();
+                return;
+            }
+            console.log('Expanding chapter:', chapterCode, chapterNode);
 
-        // Subscribe để biết khi nào children được load
-        const subscription = this.dataSource.dataChange.subscribe(() => {
-            if (hasResolved) return;
-            // Kiểm tra xem children đã được load chưa
-            const index = this.dataSource.data.indexOf(chapterNode);
-            if (index >= 0 && index + 1 < this.dataSource.data.length) {
-                const nextNode = this.dataSource.data[index + 1];
-                if (nextNode.level === 1 && nextNode.code.startsWith(chapterCode)) {
-                    console.log('Chapter children loaded:', chapterCode);
+            // Subscribe để biết khi nào children được load
+            let hasResolved = false;
+
+            // Subscribe để biết khi nào children được load
+            const subscription = this.dataSource.dataChange.subscribe(() => {
+                if (hasResolved) return;
+                // Kiểm tra xem children đã được load chưa
+                const index = this.dataSource.data.indexOf(chapterNode);
+                if (index >= 0 && index + 1 < this.dataSource.data.length) {
+                    const nextNode = this.dataSource.data[index + 1];
+                    if (nextNode.level === 1 && nextNode.code.startsWith(chapterCode)) {
+                        console.log('Chapter children loaded:', chapterCode);
+                        hasResolved = true;
+                        subscription.unsubscribe();
+                        resolve();
+                    }
+                }
+            });
+
+            this.treeControl.expand(chapterNode);
+
+            // Timeout để tránh treo
+            setTimeout(() => {
+                if (!hasResolved) {
+                    console.log('Chapter expand timeout:', chapterCode);
                     hasResolved = true;
                     subscription.unsubscribe();
                     resolve();
                 }
-            }
+            }, 2000);
         });
+    }
 
-        this.treeControl.expand(chapterNode);
-        
-        // Timeout để tránh treo
-        setTimeout(() => {
-            if (!hasResolved) {
-                console.log('Chapter expand timeout:', chapterCode);
-                hasResolved = true;
-                subscription.unsubscribe();
+    /**
+     * ✅ Expand block và đợi children load
+     */
+    private expandBlock(blockCode: string): Promise<void> {
+        return new Promise((resolve) => {
+            const blockNode = this.dataSource.data.find(n =>
+                n.level === 1 && n.code === blockCode
+            );
+
+            if (!blockNode) {
+                console.log('Block node not found:', blockCode);
                 resolve();
+                return;
             }
-        }, 2000);
-    });
-}
 
-/**
- * ✅ Expand block và đợi children load
- */
-private expandBlock(blockCode: string): Promise<void> {
-    return new Promise((resolve) => {
-        const blockNode = this.dataSource.data.find(n => 
-            n.level === 1 && n.code === blockCode
-        );
-        
-        if (!blockNode) {
-            console.log('Block node not found:', blockCode);
-            resolve();
-            return;
-        }
+            if (this.treeControl.isExpanded(blockNode)) {
+                console.log('Block already expanded:', blockCode);
+                resolve();
+                return;
+            }
+            console.log('Expanding block:', blockCode, blockNode);
 
-        if (this.treeControl.isExpanded(blockNode)) {
-            console.log('Block already expanded:', blockCode);
-            resolve();
-            return;
-        }
-        console.log('Expanding block:', blockCode, blockNode);
+            // Subscribe để biết khi nào children được load
+            let hasResolved = false;
 
-        // Subscribe để biết khi nào children được load
-        let hasResolved = false;
+            const subscription = this.dataSource.dataChange.subscribe(() => {
+                if (hasResolved) return;
+                const index = this.dataSource.data.indexOf(blockNode);
+                if (index >= 0 && index + 1 < this.dataSource.data.length) {
+                    const nextNode = this.dataSource.data[index + 1];
+                    if (nextNode.level === 2) {
+                        console.log('Block children loaded:', blockCode);
+                        hasResolved = true;
+                        subscription.unsubscribe();
+                        resolve();
+                    }
+                }
+            });
 
-        const subscription = this.dataSource.dataChange.subscribe(() => {
-            if (hasResolved) return;
-            const index = this.dataSource.data.indexOf(blockNode);
-            if (index >= 0 && index + 1 < this.dataSource.data.length) {
-                const nextNode = this.dataSource.data[index + 1];
-                if (nextNode.level === 2) {
-                    console.log('Block children loaded:', blockCode);
+            this.treeControl.expand(blockNode);
+
+            setTimeout(() => {
+                if (!hasResolved) {
+                    console.log('Block expand timeout:', blockCode);
                     hasResolved = true;
                     subscription.unsubscribe();
                     resolve();
                 }
-            }
+            }, 2000);
         });
-
-        this.treeControl.expand(blockNode);
-        
-        setTimeout(() => {
-            if (!hasResolved) {
-                console.log('Block expand timeout:', blockCode);
-                hasResolved = true;
-                subscription.unsubscribe();
-                resolve();
-            }
-        }, 2000);
-    });
-}
+    }
 
     /**
      * ✅ Expand disease và đợi children load
      */
     private expandDisease(diseaseCode: string): Promise<void> {
         return new Promise((resolve) => {
-            const diseaseNode = this.dataSource.data.find(n => 
+            const diseaseNode = this.dataSource.data.find(n =>
                 n.level === 2 && n.code === diseaseCode
             );
-            
+
             if (!diseaseNode) {
                 console.log('Disease node not found:', diseaseCode);
                 resolve();
@@ -460,15 +465,15 @@ private expandBlock(blockCode: string): Promise<void> {
             });
 
             this.treeControl.expand(diseaseNode);
-            
+
             setTimeout(() => {
-            if (!hasResolved) {
-                console.log('Disease expand timeout:', diseaseCode);
-                hasResolved = true;
-                subscription.unsubscribe();
-                resolve();
-            }
-        }, 2000);
+                if (!hasResolved) {
+                    console.log('Disease expand timeout:', diseaseCode);
+                    hasResolved = true;
+                    subscription.unsubscribe();
+                    resolve();
+                }
+            }, 2000);
         });
     }
 
@@ -484,13 +489,13 @@ private expandBlock(blockCode: string): Promise<void> {
         if (this.selected?.disease_parent?.block?.code) {
             return this.selected.disease_parent.block.code;
         }
-        
+
         // Tìm trong listBlock đã load
         const block = this.listBlock.find(b => {
             const [start, end] = b.code.split('-');
             return diseaseCode >= start && diseaseCode <= end;
         });
-        
+
         return block?.code || null;
     }
 
@@ -500,16 +505,16 @@ private expandBlock(blockCode: string): Promise<void> {
      */
     private scrollToNode(code: string, level: number): void {
         // Tìm element trong DOM
-        const selector = level === 0 
+        const selector = level === 0
             ? `.mat-tree-node[data-chapter="${code}"]`
             : `.mat-tree-node[data-code="${code}"][data-level="${level}"]`;
-        
+
         const element = document.querySelector(selector);
-        
+
         if (element) {
-            element.scrollIntoView({ 
-                behavior: 'smooth', 
-                block: 'center' 
+            element.scrollIntoView({
+                behavior: 'smooth',
+                block: 'center'
             });
         }
     }
@@ -623,8 +628,7 @@ private expandBlock(blockCode: string): Promise<void> {
     /**
     * Sign in
      */
-    signIn(): void
-    {
+    signIn(): void {
         this._router.navigate(['/sign-in']);
     }
 
@@ -671,30 +675,30 @@ private expandBlock(blockCode: string): Promise<void> {
     submitFeedback() {
         if (!this.feedBack.reason || this.feedBack.reason.trim() === '') {
             this._alertService.showAlert({
-                    title: "Thất bại",
-                    message: "Vui lòng nhập lý do góp ý.",
-                    type: 'error'
-                });
+                title: "Thất bại",
+                message: "Vui lòng nhập lý do góp ý.",
+                type: 'error'
+            });
             return;
         }
         if (this.feedBack.chapter && !this.feedBack.block) {
             console.log('this.feedBack', this.feedBack);
             this._feedbackService.submitFeedbackChapter(this.feedBack).subscribe(
                 (res) => {
-                this._alertService.showAlert({
+                    this._alertService.showAlert({
                         title: "Thàng công",
                         message: "Gửi góp ý thành công!",
                         type: 'success'
                     });
-                this.closeFeedbackPopup();
-            },
-            (error) => {
-                this._alertService.showAlert({
+                    this.closeFeedbackPopup();
+                },
+                (error) => {
+                    this._alertService.showAlert({
                         title: "Thất bại",
                         message: "Gửi góp ý thất bại. Vui lòng thử lại.",
                         type: 'error'
                     });
-            });
+                });
         } else if (this.feedBack.block && !this.feedBack.disease) {
             const payload = {
                 block: this.feedBack.block,
@@ -706,20 +710,20 @@ private expandBlock(blockCode: string): Promise<void> {
             console.log('payload', payload);
             this._feedbackService.submitFeedbackBlock(payload).subscribe(
                 (res) => {
-                this._alertService.showAlert({
+                    this._alertService.showAlert({
                         title: "Thàng công",
                         message: "Gửi góp ý thành công!",
                         type: 'success'
                     });
-                this.closeFeedbackPopup();
-            },
-            (error) => {
-                this._alertService.showAlert({
+                    this.closeFeedbackPopup();
+                },
+                (error) => {
+                    this._alertService.showAlert({
                         title: "Thất bại",
                         message: "Gửi góp ý thất bại. Vui lòng thử lại.",
                         type: 'error'
                     });
-            });
+                });
         } else if (this.feedBack.disease) {
             let disease_parent = null;
             if (!this.feedBack.new_disease_parent) {
@@ -740,20 +744,20 @@ private expandBlock(blockCode: string): Promise<void> {
             console.log('payload', payload);
             this._feedbackService.submitFeedbackDisease(payload).subscribe(
                 (res) => {
-                this._alertService.showAlert({
+                    this._alertService.showAlert({
                         title: "Thàng công",
                         message: "Gửi góp ý thành công!",
                         type: 'success'
                     });
-                this.closeFeedbackPopup();
-            },
-            (error) => {
-                this._alertService.showAlert({
+                    this.closeFeedbackPopup();
+                },
+                (error) => {
+                    this._alertService.showAlert({
                         title: "Thất bại",
                         message: "Gửi góp ý thất bại. Vui lòng thử lại.",
                         type: 'error'
                     });
-            });
+                });
         }
     }
 }

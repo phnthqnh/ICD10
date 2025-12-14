@@ -1,5 +1,5 @@
 .icd-tree {
-    max-height: calc(100vh - 210px);
+    max-height: calc(100vh - 180px);
     min-height: 50%;
     overflow-y: auto;
     border: 1px solid #ccc;
@@ -35,7 +35,7 @@
 }
 
 .detail {
-    max-height: calc(100vh - 130px);
+    max-height: calc(100vh - 120px);
     min-height: 80%;
     overflow-y: auto;
     background-color: white;

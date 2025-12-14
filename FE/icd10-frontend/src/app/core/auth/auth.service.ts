@@ -45,12 +45,12 @@ export class AuthService
      * Setter & getter for role
      * 
      */
-    set role(role: number) {
-        localStorage.setItem('role', role.toString());
-    }
-    get role(): number {
-        return parseInt(localStorage.getItem('role') ?? '0');
-    }
+    // set role(role: number) {
+    //     this.role = role;
+    // }
+    // get role(): number {
+    //     return this._userService.user?.role ?? 0;
+    // }
 
     // -----------------------------------------------------------------------------------------------------
     // @ Public methods
@@ -120,8 +120,8 @@ export class AuthService
             {
                 // Store the access token in the local storage
                 this.accessToken = response.data.token;
-                this.role = response.data.user.role;
-                console.log('role', this.role);
+                // this.role = response.data.user.role;
+                // console.log('role', this.role);
 
                 if (this._remMe)
                     this.refreshToken = response.data.refresh_token;
@@ -147,12 +147,14 @@ export class AuthService
             switchMap((response: any) => {
                 this._authenticated = true;
                 this._userService.user = response.data;
+                console.log('response', response.data);
+                // this.role = response.data.user.role;
                 return of(true);
             }),
             catchError(() => {
                 localStorage.removeItem('accessToken');
                 localStorage.removeItem('refreshToken');
-                localStorage.removeItem('role');
+                // localStorage.removeItem('role');
                 this._authenticated = false;
                 return of(false);
             })
@@ -167,7 +169,7 @@ export class AuthService
         // Remove the access token from the local storage
         localStorage.removeItem('accessToken');
         localStorage.removeItem('refreshToken');
-        localStorage.removeItem('role');
+        // localStorage.removeItem('role');
 
         // Set the authenticated flag to false
         this._authenticated = false;
@@ -243,7 +245,7 @@ export class AuthService
      * Get role
      * 
      */
-    getRole(): number {
-        return this.role;
-    }
+    // getRole(): number {
+    //     return this.role;
+    // }
 }

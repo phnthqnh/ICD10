@@ -13,6 +13,7 @@ from utils.utils import Utils
 from django.conf import settings
 from channels.layers import get_channel_layer
 from asgiref.sync import async_to_sync
+from django.utils import timezone
 
 @admin.register(User)
 class UserAdmin(ModelAdmin):
@@ -25,12 +26,12 @@ class UserAdmin(ModelAdmin):
     list_filter = ("status", "is_staff", "is_superuser", "role")
     search_fields = ("email", "username")
     ordering = ("-created_at",)
-    readonly_fields = ("created_at", "last_login")
+    readonly_fields = ("created_at", "last_login", "verification_image_tag", "avatar_tag")
 
     fieldsets = (
-        (None, {"fields": ("username", "email", "password")}),
+        (None, {"fields": ("username", "email", "password", "first_name", "last_name", "avatar", "avatar_tag")}),
         ("Status", {"fields": ("status", "email_verified")}),
-        ("Role", {"fields": ("role", "is_verified_doctor", "license_number", "hospital", "verification_file")}),
+        ("Role", {"fields": ("role", "is_verified_doctor", "license_number", "hospital", "verification_file", "verification_image_tag")}),
         ("Permissions", {"fields": ("is_staff", "is_superuser")}),
         ("Important dates", {"fields": ("created_at", "last_login")}),
     )
@@ -89,7 +90,8 @@ class UserAdmin(ModelAdmin):
                 recipient=obj,
                 title="Xác nhận bác sĩ thành công",
                 message=f"Chúc mừng! Tài khoản bác sĩ của bạn đã được xác thực",
-                notif_type='system'
+                notif_type='admin_doctor',
+                url=f"http://localhost:4200/profile"
             )
             channel_layer = get_channel_layer()
             async_to_sync(channel_layer.group_send)(
@@ -99,6 +101,7 @@ class UserAdmin(ModelAdmin):
                     "event": "verification_doctor",
                     "message": f"Chúc mừng! Tài khoản bác sĩ của bạn đã được xác thực ✅",
                     "role": obj.role,
+                    "url": f"http://localhost:4200/profile",
                 },
             )
 
@@ -142,14 +145,14 @@ class ICDDiseaseAdmin(ModelAdmin):
     readonly_fields = ("updated_at",)
     
     inlines = [DiseaseExtraInfoInline]
-    def save_model(self, request, obj, form, change):
-        super().save_model(request, obj, form, change)
-        if not change:  # Nếu tạo mới bệnh
-            try:
-                Utils.add_new_disease_embedding(obj.code)
-                self.message_user(request, f"Đã thêm embedding cho bệnh {obj.code} thành công")
-            except Exception as e:
-                self.message_user(request, f"Lỗi khi thêm embedding: {str(e)}", level='ERROR')
+    # def save_model(self, request, obj, form, change):
+    #     super().save_model(request, obj, form, change)
+    #     if not change:  # Nếu tạo mới bệnh
+    #         try:
+    #             Utils.add_new_disease_embedding(obj.code)
+    #             self.message_user(request, f"Đã thêm embedding cho bệnh {obj.code} thành công")
+    #         except Exception as e:
+    #             self.message_user(request, f"Lỗi khi thêm embedding: {str(e)}", level='ERROR')
 
     
 @admin.register(DiseaseExtraInfo)
@@ -159,13 +162,13 @@ class DiseaseExtraInfoAdmin(ModelAdmin):
     ordering = ("disease__code",)
     list_per_page = 20
     
-    def save_model(self, request, obj, form, change):
-        super().save_model(request, obj, form, change)
-        try:
-            Utils.reembed_disease(obj.disease.code)
-            self.message_user(request, f"Đã cập nhật embedding cho bệnh {obj.disease.code} thành công")
-        except Exception as e:
-            self.message_user(request, f"Lỗi khi cập nhật embedding: {str(e)}", level='ERROR')
+    # def save_model(self, request, obj, form, change):
+    #     super().save_model(request, obj, form, change)
+    #     try:
+    #         Utils.reembed_disease(obj.disease.code)
+    #         self.message_user(request, f"Đã cập nhật embedding cho bệnh {obj.disease.code} thành công")
+    #     except Exception as e:
+    #         self.message_user(request, f"Lỗi khi cập nhật embedding: {str(e)}", level='ERROR')
 
 
 @admin.register(ChatSession)
@@ -184,7 +187,10 @@ class ChatMessageAdmin(ModelAdmin):
     ordering = ("-created_at",)
     list_filter = ("role", "session__user__username")
     list_per_page = 20
-    readonly_fields = ("created_at",)
+    fieldsets = (
+        (None, {"fields": ("session", "role", "content", "image", "image_tag", "created_at")}),
+    )
+    readonly_fields = ("created_at", "image_tag")
     
 @admin.register(Feedback_Chapter)
 class FeedbackChapterAdmin(ModelAdmin):
@@ -207,7 +213,8 @@ class FeedbackChapterAdmin(ModelAdmin):
                 recipient=obj.user,
                 title="Phản hồi ICD-10 được chấp nhận",
                 message=f"Phản hồi về chương {obj.chapter.code} đã được chấp nhận",
-                notif_type='system'
+                notif_type='admin_feedback_icd',
+                url=f"http://localhost:4200/icd-10#/0#{obj.chapter.chapter}",
             )
             async_to_sync(channel_layer.group_send)(
                 f"user_{obj.user.id}",
@@ -216,6 +223,7 @@ class FeedbackChapterAdmin(ModelAdmin):
                     "event": "feedback_update",
                     "message": f"Phản hồi về chương {obj.chapter.code} đã được chấp nhận ✅",
                     "feedback_id": obj.id,
+                    "url": f"http://localhost:4200/icd-10#/0#{obj.chapter.chapter}",
                 },
             )
             
@@ -233,7 +241,8 @@ class FeedbackChapterAdmin(ModelAdmin):
                 recipient=obj.user,
                 title="Phản hồi ICD-10 bị từ chối",
                 message=f"Phản hồi về chương {obj.chapter.code} đã bị từ chối",
-                notif_type='system'
+                notif_type='admin_feedback_icd',
+                url=f"http://localhost:4200/icd-10#/0#{obj.chapter.chapter}",
             )
             async_to_sync(channel_layer.group_send)(
                 f"user_{obj.user.id}",
@@ -242,6 +251,7 @@ class FeedbackChapterAdmin(ModelAdmin):
                     "event": "feedback_update",
                     "message": f"Phản hồi về chương {obj.chapter.code} đã bị từ chối ❌",
                     "feedback_id": obj.id,
+                    "url": f"http://localhost:4200/icd-10#/0#{obj.chapter.chapter}",
                 },
             )
         
@@ -267,7 +277,8 @@ class FeedbackBlockAdmin(ModelAdmin):
                 recipient=obj.user,
                 title="Phản hồi ICD-10 được chấp nhận",
                 message=f"Phản hồi về nhóm {obj.block.code} đã được chấp nhận",
-                notif_type='system'
+                notif_type='admin_feedback_icd',
+                url=f"http://localhost:4200/icd-10#/1#{obj.block.code}",
             )
             async_to_sync(channel_layer.group_send)(
                 f"user_{obj.user.id}",
@@ -276,6 +287,7 @@ class FeedbackBlockAdmin(ModelAdmin):
                     "event": "feedback_update",
                     "message": f"Phản hồi về nhóm {obj.block.code} đã được chấp nhận ✅",
                     "feedback_id": obj.id,
+                    "url": f"http://localhost:4200/icd-10#/1#{obj.block.code}",
                 },
             )
             
@@ -295,7 +307,8 @@ class FeedbackBlockAdmin(ModelAdmin):
                 recipient=obj.user,
                 title="Phản hồi ICD-10 bị từ chối",
                 message=f"Phản hồi về nhóm {obj.block.code} đã bị từ chối",
-                notif_type='system'
+                notif_type='admin_feedback_icd',
+                url=f"http://localhost:4200/icd-10#/1#{obj.block.code}",
             )
             async_to_sync(channel_layer.group_send)(
                 f"user_{obj.user.id}",
@@ -304,6 +317,7 @@ class FeedbackBlockAdmin(ModelAdmin):
                     "event": "feedback_update",
                     "message": f"Phản hồi về nhóm {obj.block.code} đã bị từ chối ❌",
                     "feedback_id": obj.id,
+                    "url": f"http://localhost:4200/icd-10#/1#{obj.block.code}",
                 },
             )
 
@@ -323,12 +337,14 @@ class FeedbackDiseaseAdmin(ModelAdmin):
             return
         
         if obj.status == 1:
+            level = obj.disease.level
             # Thông báo cho người dùng
             Notification.objects.create(
                 recipient=obj.user,
                 title="Phản hồi ICD-10 được chấp nhận",
                 message=f"Phản hồi về bệnh {obj.disease.code} đã được chấp nhận",
-                notif_type='system'
+                notif_type='admin_feedback_icd',
+                url=f"http://localhost:4200/icd-10#/{level}#{obj.disease.code}",
             )
             async_to_sync(channel_layer.group_send)(
                 f"user_{obj.user.id}",
@@ -337,6 +353,7 @@ class FeedbackDiseaseAdmin(ModelAdmin):
                     "event": "feedback_update",
                     "message": f"Phản hồi về bệnh {obj.disease.code} đã được chấp nhận ✅",
                     "feedback_id": obj.id,
+                    "url": f"http://localhost:4200/icd-10#/{level}#{obj.disease.code}",
                 },
             )
             
@@ -355,12 +372,14 @@ class FeedbackDiseaseAdmin(ModelAdmin):
             self.message_user(request, f"Đã cập nhật lại bệnh {disease.code} theo phản hồi")
         
         if obj.status == 2:
+            level = obj.disease.level
             # Thông báo cho người dùng
             Notification.objects.create(
                 recipient=obj.user,
                 title="Phản hồi ICD-10 bị từ chối",
                 message=f"Phản hồi về bệnh {obj.disease.code} đã bị từ chối",
-                notif_type='system'
+                notif_type='admin_feedback_icd',
+                url=f"http://localhost:4200/icd-10#/{level}#{obj.disease.code}",
             )
             async_to_sync(channel_layer.group_send)(
                 f"user_{obj.user.id}",
@@ -369,18 +388,59 @@ class FeedbackDiseaseAdmin(ModelAdmin):
                     "event": "feedback_update",
                     "message": f"Phản hồi về bệnh {obj.disease.code} đã bị từ chối ❌",
                     "feedback_id": obj.id,
+                    "url": f"http://localhost:4200/icd-10#/{level}#{obj.disease.code}",
                 },
             )
 
 
 @admin.register(Feedback_Chatbot)
 class FeedbackChatbotAdmin(ModelAdmin):
-    list_display = ("chat_message", "get_user", "status", "created_at")
+    list_display = ("chat_message", "get_user", "status", "created_at", "replied_at")
     search_fields = ("chat_message__id", "chat_message__session__user__username", "chat_message__session__user__email")
     ordering = ("-created_at",)
     list_filter = ("status", "created_at")
     list_per_page = 20
-    readonly_fields = ("created_at",)
+    readonly_fields = ("created_at", "replied_at")
+    
+    fieldsets = (
+        ("User Feedback", {"fields": ("chat_message", "rating", "comments", "created_at", "status")}),
+        ("Admin Reply", {"fields": ("admin_reply", "replied_at",)}),
+    )
+    
+    def save_model(self, request, obj, form, change):
+        # Nếu admin nhập admin_reply → set replied_at
+        if "admin_reply" in form.changed_data:
+            obj.replied_at = timezone.now()
+
+            # Gửi thông báo realtime cho user
+            self.notify_user(obj)
+
+        super().save_model(request, obj, form, change)
+
+    def notify_user(self, feedback):
+        """Gửi noti đến user khi admin phản hồi"""
+        user = feedback.chat_message.session.user
+        message = f"Admin đã phản hồi feedback của bạn: {feedback.admin_reply}"
+
+        # Lưu thông báo
+        Notification.objects.create(
+            recipient=user,
+            title="Phản hồi từ Admin",
+            message=message,
+            notif_type="admin_feedback_chatbot",
+        )
+
+        # Realtime bằng websocket
+        channel_layer = get_channel_layer()
+        async_to_sync(channel_layer.group_send)(
+            f"user_{user.id}",
+            {
+                "type": "send_notification",
+                "event": "feedback_reply",
+                "message": message,
+                "feedback_id": feedback.id
+            }
+        )
     
     def get_user(self, obj):
         return obj.chat_message.session.user.username

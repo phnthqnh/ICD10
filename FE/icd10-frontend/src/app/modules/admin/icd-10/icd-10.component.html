@@ -3,13 +3,13 @@
     <!-- LEFT: Tree -->
     <div class="w-full border-r p-4 relative">
         <div *ngIf="isExpandingTree" 
-            class="absolute inset-0 bg-white bg-opacity-80 z-50 flex flex-col items-center justify-center">
-            <img src="assets/images/logo/loading.gif" alt="Loading..." class="h-1/2">
+            class="absolute inset-0 bg-white bg-opacity-100 z-50 flex flex-col items-center justify-center">
+            <img src="assets/images/logo/loading.gif" alt="Loading..." class="w-auto h-full">
             <p class="mt-3 text-gray-600 font-medium">Đang mở rộng cây phân loại...</p>
         </div>
         <div class="relative w-full mb-4 icd-search">
             <div class="flex items-center w-full h-full bg-white">
-                <mat-icon class="me-2" [svgIcon]="'heroicons_solid:magnifying-glass'"></mat-icon>
+                <mat-icon class="me-2" [svgIcon]="'heroicons_outline:magnifying-glass'"></mat-icon>
                 <input type="text"
                     class="flex-1 border-0 outline-none bg-transparent text-gray-700 text-base placeholder-gray-400"
                     placeholder="Nhập từ khóa để tìm kiếm..." [(ngModel)]="searchTerm"
@@ -166,7 +166,7 @@
                         bg-gray-100 opacity-25 rounded-full p-3 
                         shadow-lg hover:bg-gray-200 hover:opacity-100 transition"
                         (click)="openFeedbackPopup(selected)">
-                        <mat-icon class="scale-125" svgIcon="heroicons_solid:chat-bubble-bottom-center-text"></mat-icon>
+                        <mat-icon class="scale-125" svgIcon="heroicons_outline:chat-bubble-bottom-center-text"></mat-icon>
                     </button>
                     <!-- Tooltip FEEDBACK -->
                     <div class="absolute left-1/2 -translate-x-1/2 bottom-full mb-2
@@ -238,7 +238,7 @@
                     <!-- Code -->
                     <div>
                         <label class="font-medium flex items-center gap-1 mb-1">
-                            <mat-icon svgIcon="heroicons_solid:code-bracket-square"></mat-icon> Mã
+                            <mat-icon svgIcon="heroicons_outline:code-bracket-square"></mat-icon> Mã
                         </label>
                         <input class="w-full border rounded px-3 py-2 mb-3" placeholder="Góp ý về mã bệnh"
                             [(ngModel)]="feedBack.code">
@@ -247,7 +247,7 @@
                     <!-- Title -->
                     <div>
                         <label class="font-medium flex items-center gap-1 mb-1">
-                            <mat-icon svgIcon="heroicons_solid:tag"></mat-icon> Tiêu đề
+                            <mat-icon svgIcon="heroicons_outline:tag"></mat-icon> Tiêu đề
                         </label>
                         <input class="w-full border rounded px-3 py-2 mb-3" placeholder="Góp ý về tiêu đề"
                             [(ngModel)]="feedBack.title_vi">
@@ -256,7 +256,7 @@
                 <!-- Chapter -->
                 <div *ngIf="feedBack.block && !feedBack.disease" class="relative">
                     <label class="font-medium flex items-center gap-1 mb-1">
-                        <mat-icon svgIcon="heroicons_solid:document"></mat-icon> Chương
+                        <mat-icon svgIcon="heroicons_outline:document"></mat-icon> Chương
                     </label>
                     <!-- Dropdown Trigger -->
                     <button type="button"
@@ -289,7 +289,7 @@
                 <!-- Block -->
                 <div *ngIf="feedBack.disease" class="relative">
                     <label class="font-medium flex items-center gap-1 mb-1">
-                        <mat-icon svgIcon="heroicons_solid:book-open"></mat-icon> Nhóm
+                        <mat-icon svgIcon="heroicons_outline:book-open"></mat-icon> Nhóm
                     </label>
                     <!-- Dropdown Trigger -->
                     <button type="button"
@@ -322,7 +322,7 @@
                 <!-- Disease Parent -->
                 <div *ngIf="feedBack.disease && feedBack.disease_parent" class="relative">
                     <label class="font-medium flex items-center gap-1 mb-1">
-                        <mat-icon svgIcon="heroicons_solid:cube-transparent"></mat-icon> Bệnh cha
+                        <mat-icon svgIcon="heroicons_outline:cube-transparent"></mat-icon> Bệnh cha
                     </label>
                     <!-- Dropdown Trigger -->
                     <button type="button"
@@ -354,7 +354,7 @@
                 <!-- Reason -->
                 <div>
                     <label class="font-medium flex items-center gap-1 mb-1">
-                        <mat-icon svgIcon="heroicons_solid:chat-bubble-left-right"></mat-icon> Lý do góp ý
+                        <mat-icon svgIcon="heroicons_outline:chat-bubble-left-right"></mat-icon> Lý do góp ý
                     </label>
                     <textarea class="w-full border rounded px-3 py-2 resize-y" rows="4" required
                         placeholder="Nhập lý do góp ý..." [(ngModel)]="feedBack.reason"></textarea>
@@ -383,12 +383,12 @@
         <div *ngIf="isLoggedIn && role === 2" class="flex justify-end gap-3 px-6 py-3 bg-gray-100 rounded-b-lg">
             <button class="px-5 py-2 bg-gray-200 rounded-lg hover:bg-gray-300 flex items-center gap-2"
                 (click)="closeFeedbackPopup()">
-                <mat-icon svgIcon="heroicons_solid:x-mark" class="scale-90"></mat-icon> Hủy
+                <mat-icon svgIcon="heroicons_outline:x-mark" class="scale-90"></mat-icon> Hủy
             </button>
 
             <button class="px-5 py-2 bg-primary-400 text-white rounded-lg hover:bg-primary-600 flex items-center gap-2"
                 (click)="submitFeedback()">
-                <mat-icon svgIcon="heroicons_solid:paper-airplane" class="scale-90 text-white"></mat-icon> Gửi
+                <mat-icon svgIcon="heroicons_outline:paper-airplane" class="scale-90 text-white"></mat-icon> Gửi
             </button>
         </div>
 
