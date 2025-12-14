@@ -60,6 +60,11 @@ export class FeedbackService
         return this._httpClient.post<any>(uriConfig.API_FEEDBACK_DISEASE_SUBMIT, payload)
     }
 
+    submitFeedbackChatbot(payload: any): Observable<any>
+    {
+        return this._httpClient.post<any>(uriConfig.API_FEEDBACK_CHATBOT_SUBMIT, payload)
+    }
+
     getStatus(): Status[] {
         return [
             {

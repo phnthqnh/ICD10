@@ -41,8 +41,8 @@ class FeedbackChatbotSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Feedback_Chatbot
-        fields = ['id', 'chat_message', 'session', 'rating', 'comments', 'status', 'created_at', 'user']
-        read_only_fields = ['id', 'created_at', 'user']
+        fields = ['id', 'chat_message', 'session', 'rating', 'admin_reply', 'replied_at', 'comments', 'status', 'created_at', 'user']
+        read_only_fields = ['id', 'created_at', 'user', 'replied_at']
 
     def get_user(self, obj):
         return obj.chat_message.session.user.id

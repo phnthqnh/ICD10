@@ -1,5 +1,5 @@
 <!-- ...existing code... -->
-<div class="bg-white space-y-4 h-[calc(100vh-120px)] w-full overflow-y-auto">
+<div class="bg-white space-y-4 h-[calc(100vh-70px)] w-full overflow-y-auto">
     <div class="flex items-center justify-between mb-3 p-3">
         <h2 class="text-2xl font-semibold">Góp ý của tôi</h2>
     </div>
@@ -283,4 +283,76 @@
             <button class="px-4 py-2 bg-primary-500 text-white rounded" (click)="viewInICD()">Xem trên ICD</button>
         </div>
     </div>
+</div>
+
+<div *ngIf="showDetailChatbotPopup" class="fixed inset-0 bg-black/40 flex items-center justify-center z-[200]">
+    <div class="w-[650px] bg-white rounded-lg shadow-lg max-h-[85vh]">
+        <!-- Header -->
+        <div class="flex items-center justify-between px-4 py-3 bg-primary-600 text-white rounded-t-lg">
+            <div class="flex items-center gap-2 text-lg font-semibold">
+                <mat-icon svgIcon="heroicons_solid:chat-bubble-left-right" class="text-white"></mat-icon>
+                Chi tiết góp ý Chatbot
+            </div>
+            <button (click)="closeDetailChatbot()">
+                <mat-icon class="cursor-pointer text-white">close</mat-icon>
+            </button>
+        </div>
+
+        <!-- Nội dung -->
+        <div class="p-5 space-y-4 max-h-[70vh] overflow-auto">
+            <!-- Session -->
+            <div class="p-3 bg-primary-50 border rounded-lg">
+                <div class="text-sm font-medium text-primary-800">
+                    Phiên chat: {{ detailItem?.session?.title || "—" }}
+                </div>
+                <div class="text-xs text-primary mt-1">
+                    {{ detailItem?.created_at | date:'dd/MM/yyyy HH:mm' }}
+                </div>
+            </div>
+
+            <!-- Rating -->
+            <div>
+                <label class="font-semibold text-gray-700">Đánh giá:</label>
+                <div class="flex items-center mt-1 gap-1">
+                    <ng-container *ngFor="let star of [1,2,3,4,5]">
+                        <mat-icon
+                            class="text-2xl"
+                            [ngClass]="star <= detailItem.rating ? 'text-yellow-500' : 'text-gray-300'"
+                            svgIcon="heroicons_solid:star">
+                        </mat-icon>
+                    </ng-container>
+                </div>
+            </div>
+
+            <!-- Comment -->
+            <div class="bg-gray-50 p-3 rounded-lg border text-gray-700 text-sm">
+                <span class="font-semibold text-gray-600">Bình luận:</span>
+                <p class="mt-1 whitespace-pre-line">
+                    {{ detailItem?.comments || 'Không có bình luận.' }}
+                </p>
+            </div>
+
+            <!-- Message content -->
+            <div>
+                <span class="font-semibold text-gray-600">Tin nhắn gốc:</span>
+                <div class="border bg-gray-50 p-3 rounded-lg mt-2">
+                    <div class="flex items-start gap-3">
+                        <mat-icon class="text-gray-500" [svgIcon]="'heroicons_outline:cpu-chip'"></mat-icon>
+                        <div class="flex-1 text-sm leading-relaxed"
+                             [innerHTML]="getContentHtml(detailItem, true)">
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+
+        <!-- Footer -->
+        <div class="flex justify-end gap-3 px-4 py-3 bg-gray-100 rounded-b-lg">
+            <button class="px-4 py-2 bg-gray-200 rounded" (click)="closeDetailChatbot()">Đóng</button>
+            <button class="px-4 py-2 bg-primary-500 text-white rounded" (click)="viewChat()">Xem phiên chat</button>
+        </div>
+
+    </div>
+
 </div>

@@ -73,6 +73,9 @@ class Feedback_Chatbot(models.Model):
     comments = models.TextField(null=True, blank=True)  # Bình luận thêm
     created_at = models.DateTimeField(auto_now_add=True)
     
+    admin_reply = models.TextField(null=True, blank=True)
+    replied_at = models.DateTimeField(null=True, blank=True)
+    
     def __str__(self):
         return f"Feedback from {self.chat_message.session.user.username} on message {self.chat_message.id}"
 

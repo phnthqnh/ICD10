@@ -90,7 +90,10 @@ export const appRoutes: Route[] = [
         children: [
 
             // {path: 'icd-10', loadChildren: () => import('app/modules/admin/icd-10/icd-10.routes')},
-            {path: 'feedback', canActivate: [FeedbackGuard], loadChildren: () => import('app/modules/admin/feedback/feedback.routes')},
+            {path: 'feedback', loadChildren: () => import('app/modules/admin/feedback/feedback.routes')},
+            {path: 'profile', loadChildren: () => import('app/modules/admin/user-info/user-info.routes')},
+            {path: 'chat-bot', loadChildren: () => import('app/modules/admin/chat-bot/chat-bot.routes')},
+            {path: 'notif-list', loadChildren: () => import('app/modules/admin/notif-list/notif-list.routes')},
             // Dashboards
             // {path: 'dashboards', children: [
             //     {path: 'project', loadChildren: () => import('app/modules/admin/dashboards/project/project.routes')},

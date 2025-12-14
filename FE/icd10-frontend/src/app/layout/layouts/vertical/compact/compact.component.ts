@@ -2,7 +2,7 @@ import { NgIf } from '@angular/common';
 import { Component, OnDestroy, OnInit, ViewEncapsulation } from '@angular/core';
 import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
-import { ActivatedRoute, Router, RouterOutlet } from '@angular/router';
+import { ActivatedRoute, Router, RouterOutlet, NavigationEnd } from '@angular/router';
 import { FuseFullscreenComponent } from '@fuse/components/fullscreen';
 import { FuseLoadingBarComponent } from '@fuse/components/loading-bar';
 import { FuseNavigationService, FuseVerticalNavigationComponent } from '@fuse/components/navigation';
@@ -16,7 +16,7 @@ import { QuickChatComponent } from 'app/layout/common/quick-chat/quick-chat.comp
 import { SearchComponent } from 'app/layout/common/search/search.component';
 import { ShortcutsComponent } from 'app/layout/common/shortcuts/shortcuts.component';
 import { UserComponent } from 'app/layout/common/user/user.component';
-import { Subject, takeUntil } from 'rxjs';
+import { Subject, takeUntil, Subscription, filter } from 'rxjs';
 import { GlobalAlertComponent } from "../../../common/global-alert/global-alert.component";
 
 @Component({
@@ -31,6 +31,9 @@ export class CompactLayoutComponent implements OnInit, OnDestroy
     isScreenSmall: boolean;
     navigation: Navigation;
     private _unsubscribeAll: Subject<any> = new Subject<any>();
+
+    showLoadingBar = true;
+    private _routerSub: Subscription;
 
     /**
      * Constructor
@@ -82,6 +85,14 @@ export class CompactLayoutComponent implements OnInit, OnDestroy
                 // Check if the screen is small
                 this.isScreenSmall = !matchingAliases.includes('md');
             });
+
+        this._routerSub = this._router.events
+            .pipe(filter(e => e instanceof NavigationEnd))
+            .subscribe((e: NavigationEnd) => {
+                const url = e.urlAfterRedirects || e.url;
+                // hide when route contains 'chat-bot'
+                this.showLoadingBar = !url.includes('/chat-bot');
+            });
     }
 
     /**
@@ -92,6 +103,7 @@ export class CompactLayoutComponent implements OnInit, OnDestroy
         // Unsubscribe from all subscriptions
         this._unsubscribeAll.next(null);
         this._unsubscribeAll.complete();
+        this._routerSub?.unsubscribe();
     }
 
     // -----------------------------------------------------------------------------------------------------

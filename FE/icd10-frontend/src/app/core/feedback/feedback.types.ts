@@ -27,3 +27,12 @@ export interface Status {
     class: string;
     is_list: boolean;
 }
+
+export interface FeedBackChatbot {
+    id: string;
+    chat_message?: number;
+    status?: number;
+    rating?: number;
+    comments?: string;
+    created_at?: string;
+}

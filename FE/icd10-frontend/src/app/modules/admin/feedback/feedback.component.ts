@@ -6,16 +6,9 @@ import { MatButtonModule } from '@angular/material/button';
 import { MatTabsModule } from '@angular/material/tabs';
 import { FormsModule } from '@angular/forms';
 import { MatFormFieldModule } from '@angular/material/form-field';
-import { Icd10Service } from 'app/core/icd-10/icd-10.service';
-import { DynamicFlatNode } from 'app/core/icd-10/icd-10.types';
 import { RouterModule, Router } from '@angular/router';
-import { FlatTreeControl } from '@angular/cdk/tree';
-import { ICD10DataSource } from 'app/core/icd-10/icd10.datasource';
-import { Observable, of, map } from 'rxjs';
 import { MatInputModule } from '@angular/material/input';
-import { FeedBack } from 'app/core/feedback/feedback.types';
 import { FeedbackService } from 'app/core/feedback/feedback.service';
-import { AlertService } from 'app/core/alert/alert.service';
 import { marked } from 'marked';
 
 @Component({
@@ -45,6 +38,7 @@ export class FeedbackComponent implements OnInit{
 
     // popup detail
     showDetailICDPopup: boolean = false;
+    showDetailChatbotPopup: boolean = false;
     detailItem: any = null;
     detailType: 'chapter' | 'block' | 'disease' | 'chatbot' | null = null;
     detailLevel: number | null = null;
@@ -199,21 +193,32 @@ export class FeedbackComponent implements OnInit{
     // open detail popup
     openDetailChatbot(item: any): void {
         this.detailItem = item;
+        this.showDetailChatbotPopup = true;
         console.log('detailItem', this.detailItem);
     }
 
-    getContent(item: any) {
-        // chỉ lấy 50 kí tự đầu tiên
-        if (item?.chat_message?.content.length > 50) {
-            return item?.chat_message?.content.slice(0, 50) + '...';
-        }
-        return item?.chat_message?.content
+    closeDetailChatbot(): void {
+        this.showDetailChatbotPopup = false;
+        this.detailItem = null;
     }
 
-    getContentHtml(item: any) {
-        const raw = this.getContent(item);
+    getContentHtml(item: any, detail: boolean = false) {
+        let raw = '';
+        if (!detail) {
+            if (item?.chat_message?.content.length > 50) {
+                raw = item?.chat_message?.content.slice(0, 50) + '...';
+            }
+        } else {
+            raw = item?.chat_message?.content;
+        }
         if (!raw) return '';
         return marked.parse(raw); // convert markdown → HTML
+    }
+
+    viewChat(): void {
+        if (!this.detailItem) return;
+        const url = `${window.location.origin}/chat-bot/${this.detailItem?.session?.id}`;
+        window.open(url, '_blank');
     }
 
 }
