@@ -1,7 +1,7 @@
-from django.urls import path
-from ICD10.consumers import ChatConsumer, NotificationConsumer
+from django.urls import path, re_path
+from ICD10.consumers import AIStreamConsumer, NotificationConsumer
 
 websocket_urlpatterns = [
-    path("ws/chat/", ChatConsumer.as_asgi()),
+    re_path(r"^ws/ai-stream/?$", AIStreamConsumer.as_asgi()),
     path("ws/notifications/", NotificationConsumer.as_asgi()),
 ]
