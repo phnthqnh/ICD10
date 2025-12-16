@@ -68,12 +68,12 @@ export class NotificationsComponent implements OnInit, OnDestroy
             this._notificationsService.initializeWebSocket();
         }
 
-        this._notificationsService.getAll().subscribe((res) => {
-            this.notifications = res?.data?.notifications;
-            this.unreadCount = res?.data?.unread_count;
-            console.log('fetch', this.notifications, this.unreadCount);
-            this._changeDetectorRef.markForCheck();
-        })
+        // this._notificationsService.getAll().subscribe((res) => {
+        //     this.notifications = res?.data?.notifications;
+        //     this.unreadCount = res?.data?.unread_count;
+        //     console.log('fetch', this.notifications, this.unreadCount);
+        //     this._changeDetectorRef.markForCheck();
+        // })
         
         // ✅ Subscribe to notifications changes từ WebSocket
         this._notificationsService.notifications$
@@ -175,30 +175,38 @@ export class NotificationsComponent implements OnInit, OnDestroy
      */
     toggleRead(notification: any): void
     {
-        // // Toggle the read status
-        // notification.read = !notification.read;
+        // const previousState = notification.is_read;
+        // const newState = !previousState;
 
-        // // Update the notification
-        // this._notificationsService.update(notification.id, notification).subscribe();
-        const previousState = notification.is_read;
-        const newState = !previousState;
+        // notification.is_read = newState;
 
-        notification.is_read = newState;
+        // // Cập nhật số lượng unread
+        // this.unreadCount += newState ? -1 : 1;
+        // if (this.unreadCount < 0) this.unreadCount = 0;
 
-        // Cập nhật số lượng unread
-        this.unreadCount += newState ? -1 : 1;
-        if (this.unreadCount < 0) this.unreadCount = 0;
+        // this._changeDetectorRef.markForCheck();
+        // this._notificationsService.markAsRead(notification.id, {is_read: newState}).subscribe({
+        //     error: (err) => {
+        //         // Nếu lỗi, rollback lại
+        //         notification.is_read = previousState;
+        //         this.unreadCount += previousState ? 1 : -1;
+        //         if (this.unreadCount < 0) this.unreadCount = 0;
 
+        //         this._changeDetectorRef.markForCheck();
+        //         console.error('Error toggling read status:', err);
+        //     }
+        // });
+
+        const prev = notification.is_read;
+        const next = !prev;
+        notification.is_read = next; // optimistic
         this._changeDetectorRef.markForCheck();
-        this._notificationsService.markAsRead(notification.id, {is_read: newState}).subscribe({
-            error: (err) => {
-                // Nếu lỗi, rollback lại
-                notification.is_read = previousState;
-                this.unreadCount += previousState ? 1 : -1;
-                if (this.unreadCount < 0) this.unreadCount = 0;
 
+        this._notificationsService.markAsRead(notification.id, {is_read: next}).subscribe({
+            next: () => { /* server đã ok; service nên đã emit cập nhật */ },
+            error: () => {
+                notification.is_read = prev; // rollback
                 this._changeDetectorRef.markForCheck();
-                console.error('Error toggling read status:', err);
             }
         });
     }

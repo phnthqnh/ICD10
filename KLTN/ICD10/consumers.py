@@ -271,7 +271,7 @@ class NotificationConsumer(AsyncWebsocketConsumer):
             'id': notif.id,
             'title': notif.title,
             'message': notif.message,
-            # 'created_at': notif.created_at.strftime("%d/%m/%Y %H:%M"),
+            'url': notif.url,
             'created_at': localtime(notif.created_at).strftime("%d/%m/%Y %H:%M"),
             'is_read': notif.is_read
         } for notif in Notification.objects.filter(

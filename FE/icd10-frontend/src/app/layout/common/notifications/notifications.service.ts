@@ -153,7 +153,8 @@ export class NotificationsService
             unread_count: notif.unread_count,
             is_read: notif.is_read,
             created_at: notif.created_at,
-            message: notif.message
+            message: notif.message,
+            url: notif.url
         }));
     }
 
@@ -306,9 +307,29 @@ export class NotificationsService
     //     );
     // }
 
-    markAsRead(id: number, body: any): Observable<boolean>
-    {
-        return this._httpClient.post<boolean>(uriConfig.API_MARK_NOTIFICATION_AS_READ(id), body);
+    // markAsRead(id: number, body: any): Observable<boolean>
+    // {
+    //     return this._httpClient.post<boolean>(uriConfig.API_MARK_NOTIFICATION_AS_READ(id), body);
+    // }
+
+    markAsRead(id: number, body: any): Observable<any> {
+        return this._httpClient.post(uriConfig.API_MARK_NOTIFICATION_AS_READ(id), body).pipe(
+            tap((res) => {
+            // lấy danh sách hiện tại 1 lần
+            this.notifications$.pipe(take(1)).subscribe(list => {
+                const items = [...list];
+                const idx = items.findIndex(i => i.id == String(id));
+                if (idx !== -1) {
+                items[idx] = {...items[idx], is_read: body.is_read};
+                }
+                this._notifications.next(items);
+
+                // cập nhật unread count (đếm lại)
+                const unread = items.filter(i => !i.is_read).length;
+                this._unreadCount.next(unread);
+            });
+            })
+        );
     }
 
     markAllAsRead(): Observable<boolean>
