@@ -1,0 +1,138 @@
+<div class="relative flex flex-col flex-auto min-w-0 bg-gray-50 h-[calc(100vh-70px)] w-full overflow-y-auto">
+
+    <!-- Main -->
+    <div class="flex flex-col flex-auto px-6 py-10 sm:px-16 sm:pt-18 sm:pb-20">
+
+        <!-- Activity feed -->
+        <div class="w-full max-w-3xl">
+
+            <!-- Title -->
+            <div class="text-4xl font-extrabold tracking-tight leading-none">Tất cả thông báo</div>
+            <div class="mt-1.5 text-lg text-secondary">Bạn có tất cả {{ notifications?.length || 0 }}</div>
+
+            <ng-container *ngIf="notifications">
+                <ng-container *ngIf="notifications.length; else noNotif">
+                    <div class="mt-8">
+                        <ol>
+                            <!-- Activities -->
+                            <ng-container *ngFor="let notif of notifications; let i = index; let first = first; let last = last; trackBy: trackByFn">
+
+                                <!-- Date separator -->
+                                <ng-container *ngIf="first || !isSameDay(notif.created_at, notifications[i - 1].created_at)">
+                                    <li class="relative flex py-7">
+                                        <div class="relative py-2 px-8 text-md font-medium leading-5 rounded-full bg-primary text-on-primary">
+                                            {{getRelativeFormat(notif.created_at) | titlecase}}
+                                        </div>
+                                    </li>
+                                </ng-container>
+
+                                <!-- Activity -->
+                                <li class="relative flex py-7 rounded-lg">
+                                    <!-- Line -->
+                                    <ng-container *ngIf="!last && isSameDay(notif.created_at, notifications[i + 1].created_at)">
+                                        <div class="absolute top-7 left-5 w-0.5 h-full -ml-px bg-gray-300 dark:bg-gray-600"></div>
+                                    </ng-container>
+
+                                    <div class="relative group flex flex-auto">
+                                        <!-- Icon -->
+                                        <ng-container *ngIf="notif.notif_type === 'admin_doctor'">
+                                            <div class="flex shrink-0 items-center justify-center w-10 h-10 mr-4 rounded-full bg-primary-500">
+                                                <mat-icon
+                                                    class="icon-size-5 text-white"
+                                                    [svgIcon]="'heroicons_solid:user-circle'">
+                                                </mat-icon>
+                                            </div>
+                                        </ng-container>
+
+                                        <ng-container *ngIf="notif.notif_type === 'admin_feedback_icd'">
+                                            <div class="flex shrink-0 items-center justify-center w-10 h-10 mr-4 rounded-full bg-primary-500">
+                                                <mat-icon
+                                                    class="icon-size-5 text-white"
+                                                    [svgIcon]="'heroicons_solid:chat-bubble-left-right'">
+                                                </mat-icon>
+                                            </div>
+                                        </ng-container>
+
+                                        <ng-container *ngIf="notif.notif_type === 'admin_feedback_chatbot'">
+                                            <div class="flex shrink-0 items-center justify-center w-10 h-10 mr-4 rounded-full bg-primary-500">
+                                                <mat-icon
+                                                    class="icon-size-5 text-white"
+                                                    [svgIcon]="'heroicons_solid:chat-bubble-oval-left-ellipsis'">
+                                                </mat-icon>
+                                            </div>
+                                        </ng-container>
+
+                                        <!-- Content -->
+                                        <div class="flex flex-col flex-auto items-start">
+                                            <!-- Description -->
+                                            <ng-container *ngIf="notif.title">
+                                                <a
+                                                    class="cursor-pointer text-primary"
+                                                    *ngIf="notif.url"
+                                                    [href]="notif.url" (click)="toggleRead(notif)">
+                                                    <div class="hover:underline font-bold" [innerHTML]="notif.title"></div>
+                                                </a>
+                                            </ng-container>
+                                            <div class="flex flex-col sm:flex-row sm:items-center mt-2 sm:mt-1 sm:space-x-2 text-md leading-5">
+                                                <!-- Date -->
+                                                <div class="text-secondary">
+                                                    {{notif.created_at | date:'dd/MM/yyyy HH:mm'}}
+                                                </div>
+                                                <!-- Linked content -->
+                                                <!-- <ng-container *ngIf="notif.url">
+                                                    <div class="hidden sm:block">&bull;</div>
+                                                    <a
+                                                        class="cursor-pointer text-primary"
+                                                        [routerLink]="notif.url">
+                                                        {{notif.url}}
+                                                    </a>
+                                                </ng-container> -->
+                                            </div>
+                                            <!-- Extra content -->
+                                            <ng-container *ngIf="notif.message">
+                                                <div
+                                                    class="mt-4 py-4 px-5 rounded-lg bg-gray-200 dark:bg-gray-800"
+                                                    [innerHTML]="notif.message"></div>
+                                            </ng-container>
+                                        </div>
+
+                                        <!-- Actions -->
+                                        <div class="relative flex flex-col my-5 mr-6 ml-2">
+                                            <!-- Indicator -->
+                                            <button
+                                                class="w-6 h-6 min-h-6"
+                                                mat-icon-button
+                                                (click)="toggleRead(notif)"
+                                                [matTooltip]="notif.is_read ? 'Đánh dấu chưa đọc' : 'Đánh dấu đã đọc'">
+                                                <span
+                                                    class="w-3 h-3 rounded-full"
+                                                    [ngClass]="{'bg-gray-400 dark:bg-gray-500 sm:opacity-0 sm:group-hover:opacity-100': notif.is_read,
+                                                                'bg-primary-500': !notif.is_read}"></span>
+                                            </button>
+                                            <!-- Remove -->
+                                            <button
+                                                class="w-6 h-6 min-h-6 sm:opacity-0 sm:group-hover:opacity-100"
+                                                mat-icon-button
+                                                [matTooltip]="'Xóa'">
+                                                <mat-icon
+                                                    class="icon-size-4"
+                                                    [svgIcon]="'heroicons_solid:x-mark'"></mat-icon>
+                                            </button>
+                                        </div>
+                                    </div>
+                                </li>
+                            </ng-container>
+                        </ol>
+                    </div>
+                </ng-container>
+            </ng-container>
+
+            <!-- Loading template -->
+            <!-- <ng-template #loading>
+                Loading...
+            </ng-template> -->
+
+        </div>
+    </div>
+
+</div>
