@@ -43,6 +43,8 @@ export class FeedbackComponent implements OnInit{
     detailType: 'chapter' | 'block' | 'disease' | 'chatbot' | null = null;
     detailLevel: number | null = null;
 
+    // Track selected tab index
+    selectedTabIndex: number = 0;
 
     constructor(
         private _feedbackService: FeedbackService,
@@ -54,11 +56,110 @@ export class FeedbackComponent implements OnInit{
             this.feedbackChapter = res.chapter_feedbacks;
             this.feedbackBlock = res.block_feedbacks;
             this.feedbackDisease = res.disease_feedbacks;
+
+            // Parse hash after data is loaded
+            this.parseHashAndNavigate();
         });
         this._feedbackService.getUserFeedbackChatbotList().subscribe(res => {
             console.log('res', res);
             this.feedbackChatbot = res;
+
+            // Parse hash after data is loaded
+            this.parseHashAndNavigate();
         })
+
+        // Listen to hash changes
+        window.addEventListener('hashchange', () => this.parseHashAndNavigate());
+    }
+
+    ngOnDestroy() {
+        window.removeEventListener('hashchange', () => this.parseHashAndNavigate());
+    }
+
+    private parseHashAndNavigate(): void {
+        const hash = window.location.hash;
+        if (!hash || hash === '#') return;
+
+        // Remove the leading '#' and split by '#'
+        const parts = hash.substring(1).split('#');
+        
+        if (parts.length === 0) return;
+
+        const tabIdentifier = parts[0];
+        const itemId = parts.length > 1 ? parts[1] : null;
+
+        // Map tab identifier to index
+        let tabIndex = 0;
+        let type: 'chapter' | 'block' | 'disease' | 'chatbot' | null = null;
+
+        switch (tabIdentifier) {
+            case '0':
+                tabIndex = 0;
+                type = 'chapter';
+                break;
+            case '1':
+                tabIndex = 1;
+                type = 'block';
+                break;
+            case '2':
+                tabIndex = 2;
+                type = 'disease';
+                break;
+            case 'c':
+                tabIndex = 3;
+                type = 'chatbot';
+                break;
+            default:
+                return;
+        }
+
+        // Set the tab index
+        this.selectedTabIndex = tabIndex;
+
+        // If there's an item ID, open the detail popup
+        if (itemId && type) {
+            const item = this.findItemById(type, itemId);
+            if (item) {
+                if (type === 'chatbot') {
+                    this.openDetailChatbot(item, false);
+                } else {
+                    this.openDetailICD(item, type, false);
+                }
+            }
+        }
+    }
+
+    private findItemById(type: 'chapter' | 'block' | 'disease' | 'chatbot', id: string): any {
+        const numId = parseInt(id, 10);
+        
+        switch (type) {
+            case 'chapter':
+                return this.feedbackChapter.find(item => item.id === numId);
+            case 'block':
+                return this.feedbackBlock.find(item => item.id === numId);
+            case 'disease':
+                return this.feedbackDisease.find(item => item.id === numId);
+            case 'chatbot':
+                return this.feedbackChatbot.find(item => item.id === numId);
+            default:
+                return null;
+        }
+    }
+
+    onTabChange(index: number): void {
+        // Update hash when tab changes
+        // const tabMap = ['0', '1', '2', 'c'];
+        // window.location.hash = `#${tabMap[index]}`;
+        const tabMap = ['0', '1', '2', 'c'];
+        const currentHash = window.location.hash;
+        const parts = currentHash.substring(1).split('#');
+        
+        // If there's an item ID in current hash, preserve it
+        if (parts.length > 1 && parts[1]) {
+            window.location.hash = `#${tabMap[index]}#${parts[1]}`;
+        } else {
+            window.location.hash = `#${tabMap[index]}`;
+        }
     }
 
     private _normalize(item: any, type: 'chapter'|'block'|'disease') {
@@ -150,9 +251,10 @@ export class FeedbackComponent implements OnInit{
     }
 
     // open detail popup
-    openDetailICD(item: any, type: 'chapter'|'block'|'disease'): void {
+    openDetailICD(item: any, type: 'chapter'|'block'|'disease', updateHash: boolean = true): void {
         this.detailItem = item;
         this.detailType = type;
+
         if (type === 'chapter') {
             this.detailLevel = 0;
         } else if (type === 'block') {
@@ -166,12 +268,35 @@ export class FeedbackComponent implements OnInit{
         console.log('detailType', this.detailType);
         console.log('detailLevel', this.detailLevel);
         this.showDetailICDPopup = true;
+
+        // Update hash with item ID
+        if (updateHash) {
+            const tabMap: {[key: string]: string} = {
+                'chapter': '0',
+                'block': '1',
+                'disease': '2'
+            };
+            const currentHash = window.location.hash;
+            const expectedHash = `#${tabMap[type]}#${item.id}`;
+            
+            // Only update if current hash is different
+            if (currentHash !== expectedHash) {
+                window.location.hash = expectedHash;
+            }
+        }
     }
 
     closeDetailPopup(): void {
         this.showDetailICDPopup = false;
         this.detailItem = null;
         this.detailType = null;
+
+        // Remove item ID from hash, keep tab
+        const hash = window.location.hash;
+        if (hash && hash.includes('#')) {
+            const tabIdentifier = hash.substring(1).split('#')[0];
+            window.location.hash = `#${tabIdentifier}`;
+        }
     }
 
     // optional: navigate to icd view (adjust route/query params as your app expects)
@@ -191,15 +316,29 @@ export class FeedbackComponent implements OnInit{
     }
 
     // open detail popup
-    openDetailChatbot(item: any): void {
+    openDetailChatbot(item: any, updateHash: boolean = true): void {
         this.detailItem = item;
         this.showDetailChatbotPopup = true;
         console.log('detailItem', this.detailItem);
+
+        // Update hash with item ID
+        if (updateHash) {
+            const currentHash = window.location.hash;
+            const expectedHash = `#c#${item.id}`;
+            
+            // Only update if current hash is different
+            if (currentHash !== expectedHash) {
+                window.location.hash = expectedHash;
+            }
+        }
     }
 
     closeDetailChatbot(): void {
         this.showDetailChatbotPopup = false;
         this.detailItem = null;
+
+        // Remove item ID from hash, keep tab
+        window.location.hash = `#c`;
     }
 
     getContentHtml(item: any, detail: boolean = false) {
