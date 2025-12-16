@@ -363,12 +363,12 @@ export class ChatMessageComponent implements OnInit
         console.log('payload', payload);
         this._feedbackService.submitFeedbackChatbot(payload).subscribe(
             (res) => {
+                this.closeFeedbackPopup();
                 this._alertService.showAlert({
                     title: "Thàng công",
                     message: "Gửi góp ý thành công!",
                     type: 'success'
                 });
-                this.closeFeedbackPopup();
             },
             (error) => {
                 this._alertService.showAlert({
