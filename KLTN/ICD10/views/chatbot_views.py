@@ -24,11 +24,11 @@ import uuid
 import base64
 from django.urls import reverse
 from django.conf import settings
-from ICD10.services.chat_services import GeminiChatService
 from django.db import transaction
 from icd10_agent.agent import root_agent
 from ICD10.serializers.chatbot_serializers import ChatSessionSerializer, ChatMessageSerializer
 from ICD10.models.user import User
+from ICD10.models.token_usage import TokenUsage
 
 # Khởi tạo logger
 logger = logging.getLogger(__name__)
@@ -45,6 +45,12 @@ async def create_session(app_name, user_id):
         state= {"initial_key": "initial_value"}
     )
     
+async def get_session(app_name, user_id, session_id):
+    return await SESSION_SERVICE.get_session(
+        app_name=app_name,
+        user_id=user_id,
+        session_id=session_id
+    )
     
 @api_view(['POST']) 
 @permission_classes([IsAuthenticated]) 
@@ -95,14 +101,28 @@ def chat_with_ai(request):
     parts.append(types.Part(text=text_query)) 
     # Khoi tao session 
     # adk_session_id = str(session.id) 
-    bot_content = "" 
+    bot_content = ""
+    input_tokens = 0
+    output_tokens = 0
+    total_tokens = 0
+        
     try: 
         if not session.adk_session_id:
             adk_session = asyncio.run(create_session("ICD-10", str(user.id)))
             session.adk_session_id = adk_session.id
             session.save()
-        # adk_session_id = "session_1" 
-        # logger.info(f"Running agent with session_id: {adk_session_id}") 
+        
+        else:
+            try:
+                existing = asyncio.run(get_session("ICD-10", str(user.id), session.adk_session_id))
+                logger.info(f"Đã tìm thấy session hiện có: {existing.id}")
+            except Exception:
+                adk_session = asyncio.run(create_session("ICD-10", str(user.id)))
+                session.adk_session_id = adk_session.id
+                logger.info(f"Khoi tao session moi: {adk_session.id}")
+                session.save()
+        
+        
         content = types.Content(role='user', parts=parts) 
         async def run_agent(): 
             async_events = AGENT_RUNNER.run_async( 
@@ -118,11 +138,18 @@ def chat_with_ai(request):
         events = asyncio.run(run_agent())
         for event in events: 
             logger.info(f"\nEvent: {event}\n") 
-            if event.is_final_response() and event.content: 
-                for part in event.content.parts: 
-                    if getattr(part, "text", None):
-                        bot_content += part.text 
-                break 
+            if event.is_final_response():
+                if hasattr(event, "usage_metadata") and event.usage_metadata:
+                    meta = event.usage_metadata
+                    input_tokens = meta.prompt_token_count  or 0
+                    output_tokens = meta.candidates_token_count  or 0
+                    total_tokens = meta.total_token_count  or 0
+                    
+                if event.content:
+                    for part in event.content.parts: 
+                        if getattr(part, "text", None):
+                            bot_content += part.text 
+                    break
             
         bot_content = bot_content.strip()
     except Exception as e:
@@ -131,6 +158,15 @@ def chat_with_ai(request):
     
     if not bot_content: 
         return Response({"error": "Không đủ thông tin chính xác, vui lòng cung cấp mô tả chi tiết hơn hoặc ảnh rõ hơn."}, status=400) 
+    
+    TokenUsage.objects.create(
+        user=user, 
+        session=session, 
+        input_tokens=input_tokens, 
+        output_tokens=output_tokens, 
+        total_tokens=total_tokens,
+        model="gemini-2.5-flash"
+    )
     
     if image_file: 
         # Lưu ảnh lên S3 
@@ -145,7 +181,7 @@ def chat_with_ai(request):
         image=user_image 
     ) 
     # Lưu phản hồi của bot 
-    ChatMessage.objects.create(
+    bot_message = ChatMessage.objects.create(
         session=session, 
         role="bot", 
         content=bot_content 
@@ -158,6 +194,7 @@ def chat_with_ai(request):
     async_to_sync(stream_to_ws)(session.id, bot_content) 
     return Response({
         "session_id": session.id,
+        "message_id": bot_message.id,
         "intent": "AI",
         "user_message": { 
             "content": text_query, 
