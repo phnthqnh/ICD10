@@ -34,6 +34,7 @@ UNFOLD = {
     "LOGIN": {
         "image": lambda request: static("logo_bg.png"),
     },
+    "DASHBOARD_CALLBACK" : "ICD10.views.dashboard_callback.dashboard_callback" ,
     "BORDER_RADIUS": "8px",
     "STYLES": [
         lambda request: static("css/styles.css"),
@@ -81,7 +82,17 @@ UNFOLD = {
         "show_all_applications": False,
         "navigation": [
             {
-                "title": _("Navigation"),
+                "title": _("Dashboard"),
+                "items": [
+                    {
+                        "title": _("Dashboard"),
+                        "icon": "dashboard",
+                        "link": reverse_lazy("admin:index"),
+                    },
+                ],
+            },
+            {
+                "title": _("Phản hồi & Thông báo"),
                 "items": [
                     {
                         "title": _("Phản hồi về chương ICD10"),
@@ -104,15 +115,14 @@ UNFOLD = {
                         "link": reverse_lazy("admin:ICD10_feedback_chatbot_changelist"),
                     },
                     {
-                        "title": _("Thông báo"),
+                        "title": _("Thông báo hệ thống"),
                         "icon": "notifications",
                         "link": reverse_lazy("admin:ICD10_notification_changelist"),
-                        # "badge": "ICD10.views.notification_views.notification_badge_callback",
                     },
                 ],
             },
             {
-                "title": _("ICD10 Management"),
+                "title": _("Quản lý ICD10"),
                 "items": [
                     {
                         "title": _("Chương"),
@@ -129,15 +139,10 @@ UNFOLD = {
                         "icon": "coronavirus",
                         "link": reverse_lazy("admin:ICD10_icddisease_changelist"),
                     },
-                    {
-                        "title": _("Thông tin bổ sung"),
-                        "icon": "info",
-                        "link": reverse_lazy("admin:ICD10_diseaseextrainfo_changelist"),
-                    },
                 ],
             },
             {
-                "title": _("User Management"),
+                "title": _("Quản lý người dùng & Chatbot"),
                 "items": [
                     {
                         "title": _("Người dùng"),
@@ -156,6 +161,26 @@ UNFOLD = {
                     },
                 ],
             },
+            {
+                "title": _("Giám sát & Kỹ thuật"),
+                "items": [
+                    {
+                        "title": _("Nhật ký yêu cầu API"),
+                        "icon": "api",
+                        "link": reverse_lazy("admin:ICD10_apirequestlog_changelist"),
+                    },
+                    {
+                        "title": _("Sự kiện đăng nhập"),
+                        "icon": "login",
+                        "link": reverse_lazy("admin:ICD10_loginevent_changelist"),
+                    },
+                    {
+                        "title": _("Token trong Chatbot"),
+                        "icon": "token",
+                        "link": reverse_lazy("admin:ICD10_tokenusage_changelist"),
+                    },
+                ],
+            }
         ],
     },
     
