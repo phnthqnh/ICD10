@@ -1,32 +1,8 @@
 {% load i18n %}
 
-<div class="relative" x-data="{ 
-    openMyButton: false,
-    unreadCount: 0,
-    notifications: [],
-    socket: null,
-    initializeWebSocket() {
-        const protocol = window.location.protocol === 'https:' ? 'wss://' : 'ws://';
-        this.socket = new WebSocket(protocol + window.location.host + '/ws/notifications/');
-        
-        this.socket.onmessage = (event) => {
-            const data = JSON.parse(event.data);
-            if (data.type === 'notifications_data') {
-                this.notifications = data.notifications;
-                this.unreadCount = data.unread_count;
-            } else if (data.type === 'new_notification') {
-                this.notifications = data.notifications;
-                this.unreadCount = data.unread_count;
-                toast_(data.notification.message, 'info', data.notification.title);
-            }
-        };
-
-        this.socket.onclose = () => {
-            // Reconnect after 1s
-            setTimeout(() => this.initializeWebSocket(), 1000);
-        };
-    }
-}" x-init="initializeWebSocket()">
+<div class="relative" 
+    x-data="notificationDropdown()"
+    x-init="initializeWebSocket()">
     <a class="block cursor-pointer h-[18px] hover:text-base-700 dark:hover:text-base-200 relative" 
        @click="openMyButton = !openMyButton">
         <span class="material-symbols-outlined">notifications</span>
@@ -52,7 +28,8 @@
         <div class="max-h-96 overflow-y-auto">
             <template x-if="notifications.length > 0">
                 <template x-for="notif in notifications" :key="notif.id">
-                    <a :href="`/admin/ICD10/notification/${notif.id}/change/`"
+                    <a :href="notif.url"
+                        @click.prevent="markAsRead(notif)"
                         class="block px-4 py-3 hover:bg-gray-50 dark:hover:bg-base-700 no-underline" 
                          :class="{ 'bg-blue-50 dark:bg-base-700': !notif.is_read }">
                         <div class="text-sm font-medium" x-text="notif.title"></div>
@@ -76,4 +53,60 @@
         </div>
     </nav>
 </div>
+
+<script>
+function notificationDropdown() {
+    return {
+        openMyButton: false,
+        unreadCount: 0,
+        notifications: [],
+        socket: null,
+
+        initializeWebSocket() {
+            const protocol = window.location.protocol === 'https:' ? 'wss://' : 'ws://';
+            this.socket = new WebSocket(protocol + window.location.host + '/ws/notifications/');
+
+            this.socket.onmessage = (event) => {
+                const data = JSON.parse(event.data);
+                if (data.type === 'notifications_data') {
+                    this.notifications = data.notifications;
+                    this.unreadCount = data.unread_count;
+                } else if (data.type === 'new_notification') {
+                    this.notifications = data.notifications;
+                    this.unreadCount = data.unread_count;
+                    toast_(data.notification.message, 'info', data.notification.title);
+                }
+            };
+
+            this.socket.onclose = () => {
+                setTimeout(() => this.initializeWebSocket(), 1000);
+            };
+        },
+
+        markAsRead(notif) {
+            if (!notif.is_read) {
+                fetch(`/api/admin/notif/${notif.id}/read/`, {
+                    method: 'POST',
+                    headers: {
+                        'X-CSRFToken': this.getCsrfToken(),
+                    },
+                });
+
+                notif.is_read = true;
+                this.unreadCount = Math.max(0, this.unreadCount - 1);
+            }
+
+            if (notif.url) {
+                window.location.href = notif.url;
+            }
+        },
+
+        getCsrfToken() {
+            const cookie = document.cookie.split('; ')
+                .find(c => c.startsWith('csrftoken='));
+            return cookie ? cookie.split('=')[1] : '';
+        }
+    }
+}
+</script>
 
