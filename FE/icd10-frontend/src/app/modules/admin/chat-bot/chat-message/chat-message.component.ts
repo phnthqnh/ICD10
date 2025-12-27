@@ -121,14 +121,46 @@ export class ChatMessageComponent implements OnInit
             // When route param changes (new chat opened), ensure we scroll to bottom
             setTimeout(() => this.scrollToBottom(), 50);
         });
-        // Chat
+        // Chat - reconcile streaming placeholder with server messages to avoid duplicates
         this._chatService.chat$
             .pipe(takeUntil(this._unsubscribeAll))
-            .subscribe((chat: ChatMessage[]) => {
-                this.chat = chat;
-                // Mark for check
+            .subscribe((serverChat: ChatMessage[]) => {
+                try {
+                    const localStreaming = this.chat && this.chat.length ? this.chat[this.chat.length - 1] : null;
+
+                    if (localStreaming && localStreaming.isStreaming) {
+                        // Try to detect if server has already produced the final bot message that corresponds
+                        const resolved = serverChat.find(m => m.role === 'bot' && m.id && localStreaming.content && m.content && (
+                            m.content.trim().startsWith(localStreaming.content.trim()) ||
+                            localStreaming.content.trim().startsWith(m.content.trim()) ||
+                            m.content.trim() === localStreaming.content.trim()
+                        ));
+
+                        if (resolved) {
+                            // Server has the final message -> use serverChat (authoritative)
+                            this.chat = serverChat;
+                        } else {
+                            // Server hasn't persisted final bot message yet.
+                            // Merge serverChat (authoritative history) and keep local streaming placeholder at the end to avoid duplication.
+                            const merged = serverChat ? serverChat.slice() : [];
+                            // Only append local streaming if its content isn't already present in serverChat
+                            const exists = merged.some(m => m.content && localStreaming.content && m.content.trim() === localStreaming.content.trim());
+                            if (!exists) {
+                                merged.push(localStreaming);
+                            }
+                            this.chat = merged;
+                        }
+                    } else {
+                        // No local streaming placeholder -> replace with server data
+                        this.chat = serverChat;
+                    }
+                } catch (e) {
+                    // fallback to replace
+                    this.chat = serverChat;
+                }
+
+                // Mark for check and scroll
                 this._changeDetectorRef.markForCheck();
-                // Scroll to bottom when chat messages update
                 setTimeout(() => this.scrollToBottom(), 50);
             });
         
@@ -224,7 +256,6 @@ export class ChatMessageComponent implements OnInit
         if (!this.streamingBotMsg.trim()) return;
 
         const last = this.chat[this.chat.length - 1];
-
         // Nếu message cuối cùng là streaming bot → update
         if (last && last.role === 'bot' && last.isStreaming) {
             last.content = this.streamingBotMsg;
@@ -290,7 +321,6 @@ export class ChatMessageComponent implements OnInit
 
         const date = new Date();
         this.chat.push({
-            id: null,
             role: 'user',
             content: message,
             image: this.selectedFile ? URL.createObjectURL(this.selectedFile) : null,
@@ -314,7 +344,12 @@ export class ChatMessageComponent implements OnInit
 
         this._chatService.chatWithAi(formData).subscribe({
             next: (res: any) => {
+                this.isLoading = false;
                 console.log('res', res);
+                console.log('last', this.chat[this.chat.length - 1]);
+                const last = this.chat[this.chat.length - 1];
+                last.id = res.message_id;
+                this._changeDetectorRef.markForCheck();
             },
             error: (err) => {
                 this.isLoading = false;
@@ -330,6 +365,7 @@ export class ChatMessageComponent implements OnInit
     }
 
     openFeedback(message: any) {
+        console.log('openFeedback', message);
         this.feedbackPopUp = true;
         this.selectedMessage = message;
     }
@@ -339,6 +375,8 @@ export class ChatMessageComponent implements OnInit
         this.selectedMessage = null;
         this.feedbackRating = 0;
         this.feedbackComment = '';
+        // Ensure OnPush components update immediately
+        this._changeDetectorRef.markForCheck();
     }
 
     setRating(star: number) {
@@ -350,7 +388,7 @@ export class ChatMessageComponent implements OnInit
         if (!this.feedbackRating) {
             this._alertService.showAlert({
                 title: "Thất bại",
-                message: "Vui lý đánh giá phản hồi và góp ý.",
+                message: "Vui lý chọn số sao đánh giá.",
                 type: 'error'
             });
             return;

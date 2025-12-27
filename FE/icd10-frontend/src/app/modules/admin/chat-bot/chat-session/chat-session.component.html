@@ -47,7 +47,7 @@
                 <ng-template #noChats>
                     <div class="flex flex-auto flex-col items-center justify-center h-full">
                         <mat-icon class="icon-size-24" [svgIcon]="'heroicons_outline:chat-bubble-oval-left-ellipsis'"></mat-icon>
-                        <div class="mt-4 text-2xl font-semibold tracking-tight text-secondary">No chats</div>
+                        <div class="mt-4 text-2xl font-semibold tracking-tight text-secondary">Chưa có đoạn chat nào</div>
                     </div>
                 </ng-template>
             </div>
@@ -63,5 +63,11 @@
                         'hidden md:flex': !selectedChat || !selectedChat.id}">
                 <router-outlet></router-outlet>
             </div>
+    </ng-container>
+    <!-- Ensure empty-message route can render when there are no chats -->
+    <ng-container *ngIf="!chat_session || chat_session.length === 0">
+        <div class="flex-auto border-l md:flex">
+            <router-outlet></router-outlet>
+        </div>
     </ng-container>
 </div>
