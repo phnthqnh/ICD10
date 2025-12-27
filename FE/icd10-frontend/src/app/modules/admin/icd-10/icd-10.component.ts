@@ -523,7 +523,8 @@ export class Icd10Component implements OnInit {
         if (!this.searchTerm) return text;
 
         const term = this.searchTerm.trim().toLowerCase();
-        const regex = new RegExp(`(${term})`, "gi");
+        const escaped = term.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+        const regex = new RegExp(`(${escaped})`, "gi");
 
         return text.replace(regex, `<span class="font-bold text-primary-700">$1</span>`);
     }

@@ -20,21 +20,31 @@
                     <mat-icon [svgIcon]="'heroicons_outline:x-mark'" class="text-primary"></mat-icon>
                 </button>
             </div>
-            <!-- 🔽 GỢI Ý TÌM KIẾM (dropdown) -->
-            <div *ngIf="suggestions.length"
-                class="absolute left-0 right-0 mt-1 top-10 bg-white border rounded shadow-lg z-50 max-h-64 overflow-y-auto">
+            <!-- GỢI Ý TÌM KIẾM (dropdown) -->
+            <div *ngIf="searchTerm"
+                class="absolute left-0 right-0 mt-1 top-10 bg-white border rounded shadow-lg z-50 max-h-64 overflow-y-auto"
+            >
+                <!-- Có kết quả -->
+                <ng-container *ngIf="suggestions.length > 0; else noResult">
+                    <div
+                        *ngFor="let item of suggestions"
+                        class="px-3 py-2 hover:bg-gray-100 cursor-pointer flex gap-2"
+                        (click)="selectSuggestion(item)"
+                    >
+                        <span
+                            class="font-semibold text-primary-700"
+                            [innerHTML]="highlightMatch(item.code)">
+                        </span>
+                        <span [innerHTML]="highlightMatch(item.title_vi)"></span>
+                    </div>
+                </ng-container>
 
-                <div *ngFor="let item of suggestions" class="px-3 py-2 hover:bg-gray-100 cursor-pointer flex gap-2"
-                    (click)="selectSuggestion(item)">
-
-                    <!-- <span class="font-semibold text-primary">{{ item.code }}</span>
-                    <span>{{ item.title_vi }}</span> -->
-                    <!-- highlight code -->
-                    <span class="font-semibold text-primary-700" [innerHTML]="highlightMatch(item.code)"></span>
-
-                    <!-- highlight title_vi -->
-                    <span [innerHTML]="highlightMatch(item.title_vi)"></span>
-                </div>
+                <!-- Không có kết quả -->
+                <ng-template #noResult>
+                    <div class="px-4 py-3 text-sm text-gray-500 italic text-center">
+                        Không tìm thấy kết quả phù hợp
+                    </div>
+                </ng-template>
             </div>
         </div>
         <mat-tree [dataSource]="dataSource" [treeControl]="treeControl" class="icd-tree">
