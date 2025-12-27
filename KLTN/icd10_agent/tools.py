@@ -88,7 +88,7 @@ def search_icd10(query: str, top_k=20) -> list[dict[str, Any]]:
     :return: Một danh sách các từ điển chứa k bản ghi mã ICD phù hợp hàng đầu.
     :rtype: list[dict[str, Any]]
     """
-    client = genai.Client(api_key=os.getenv("GOOGLE_API_KEY"))
+    client = genai.Client(api_key=os.getenv("EMBEDDING_API_KEY"))
     query_emb = client.models.embed_content(
         model="gemini-embedding-001",
         contents=query,
@@ -118,7 +118,7 @@ def predict_icd10(query: str, top_k=20) -> list[dict[str, Any]]:
     :rtype: list[dict[str, Any]]
     
     """
-    client = genai.Client(api_key=os.getenv("GOOGLE_API_KEY"))
+    client = genai.Client(api_key=os.getenv("EMBEDDING_API_KEY"))
     query_emb = client.models.embed_content(
         model="gemini-embedding-001",
         contents=[query],
