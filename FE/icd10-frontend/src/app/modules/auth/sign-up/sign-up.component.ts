@@ -75,6 +75,16 @@ export class AuthSignUpComponent implements OnInit
             return;
         }
 
+        const onlyNumbersRegex = /^[0-9]+$/;
+        if (onlyNumbersRegex.test(this.signUpForm.get('password').value)) {
+            this.showAlert = true;
+            this.alert = {
+                type   : 'error',
+                message: 'Mật khẩu không được chỉ chứa số.',
+            }
+            return;
+        }
+
         // Disable the form
         this.signUpForm.disable();
 

@@ -85,7 +85,7 @@ export class AuthSignInComponent implements OnInit
         const formValue = this.signInForm.value;
         const credentials = {
             email: formValue.email,
-            password: formValue.password,
+            password: formValue.password.trim(),
             rememberMe: formValue.rememberMe || false
         };
 
@@ -107,9 +107,26 @@ export class AuthSignInComponent implements OnInit
                 // Lấy thông tin lỗi từ backend
                 const code = errorResponse?.error?.code;
                 const message = errorResponse?.error?.message;
+                const count_login = errorResponse?.error?.errors[0]?.message;
+                const remaining_time = errorResponse?.error?.remaining_time;
+
+                if (count_login) {
+                    this.showAlert = true;
+                    this.alert = {
+                        type   : 'error',
+                        message: `Số lần đăng nhập còn lại: ${count_login}`,
+                    };
+                }
 
                 // ✅ Mapping lỗi theo mã code
                 switch (code) {
+                    case 'LOGIN_TOO_MANY_ATTEMPTS': // Too many attempts
+                        this.showAlert = true;
+                        this.alert = {
+                            type   : 'error',
+                            message: `Tài khoản tạm thời bị khóa do nhập quá nhiều thông tin sai. Vui lòng thử lại sau ${remaining_time} phút.`,
+                        };
+                        break;
                     case 'AU_E_005': // User not found
                         this.signInForm.get('email')?.setErrors({ serverError: message });
                         this.signInForm.get('email')?.markAsTouched();
