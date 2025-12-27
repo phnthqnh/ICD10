@@ -8,14 +8,14 @@ from constants.constants import Constants
 class Notification(models.Model):
     
     recipient = models.ForeignKey(
-        User, on_delete=models.CASCADE, related_name="notifications"
+        User, on_delete=models.CASCADE, related_name="notifications", verbose_name="Người nhận"
     )
-    title = models.CharField(max_length=255)
-    message = models.TextField()
-    url = models.URLField(max_length=255, null=True, blank=True)
-    notif_type = models.CharField(max_length=20, choices=Constants.NOTIFICATION_TYPE_CHOICES, default='system')
-    is_read = models.BooleanField(default=False)
-    created_at = models.DateTimeField(auto_now_add=True)
+    title = models.CharField(max_length=255, verbose_name="Tiêu đề")
+    message = models.TextField(verbose_name="Nội dung thông báo")
+    url = models.URLField(max_length=255, null=True, blank=True, verbose_name="Liên kết")
+    notif_type = models.CharField(max_length=50, choices=Constants.NOTIFICATION_TYPE_CHOICES, default='system', verbose_name="Loại thông báo")
+    is_read = models.BooleanField(default=False, verbose_name="Đã đọc")
+    created_at = models.DateTimeField(auto_now_add=True, verbose_name="Ngày tạo")
     
     class Meta:
         ordering = ['-created_at']

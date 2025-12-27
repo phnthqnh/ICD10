@@ -171,6 +171,7 @@ MIDDLEWARE = [
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
+    'ICD10.middleware.request_log.ApiRequestLogMiddleware',
     'ICD10.middleware.token_limit.TokenLimitMiddleware',
     'ICD10.middleware.daily_request_limit.DailyRequestLimitMiddleware',
 ]
@@ -244,7 +245,8 @@ AUTH_PASSWORD_VALIDATORS = [
 # Internationalization
 # https://docs.djangoproject.com/en/5.2/topics/i18n/
 
-LANGUAGE_CODE = 'en-us'
+# LANGUAGE_CODE = 'en-us'
+LANGUAGE_CODE = 'vi'
 
 TIME_ZONE = 'Asia/Ho_Chi_Minh'
 

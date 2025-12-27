@@ -1,8 +1,5 @@
-from rest_framework.views import APIView
 from rest_framework.decorators import api_view, permission_classes
-from rest_framework.permissions import IsAuthenticated, IsAdminUser
-from rest_framework.response import Response
-from constants.constants import Constants
+from rest_framework.permissions import IsAuthenticated
 from libs.response_handle import AppResponse
 from ICD10.serializers.notification_serializers import NotificationSerializer
 from rest_framework import status
@@ -11,6 +8,7 @@ from constants.error_codes import ErrorCodes
 from constants.success_codes import SuccessCodes
 from django.http import JsonResponse
 from django.contrib.auth.decorators import login_required
+from django.views.decorators.http import require_POST
 from ICD10.models.notification import Notification
 from django.utils import timezone
 
@@ -121,3 +119,16 @@ def delete_notification(request, pk):
     return AppResponse.success(
         SuccessCodes.DELETE_NOTIFICATION
     )
+    
+    
+@login_required
+@require_POST
+def admin_notification_read(request, notif_id):
+    try:
+        notif = Notification.objects.get(id=notif_id, recipient=request.user)
+        if not notif.is_read:
+            notif.is_read = True
+            notif.save(update_fields=["is_read"])
+        return JsonResponse({"success": True})
+    except Notification.DoesNotExist:
+        return JsonResponse({"success": False}, status=404)

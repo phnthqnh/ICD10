@@ -1,23 +1,27 @@
 class Constants:
     USER_STATUS = (
-        (1, "Active"),
-        (2, "Inactive"),
-        (3, "Waiting"),
+        (1, "Hoạt động"),
+        (2, "Khóa"),
+        (3, "Chưa kích hoạt"),
+    )
+    LOGIN_STATUS_CHOICES = (
+        ("SUCCESS", "Thành công"),
+        ("FAILURE", "Thất bại"),
     )
     FEEDBACK_TYPE = (
-        (1, "Chapter"),
-        (2, "Block"),
-        (3, "Disease"),
+        (1, "Chương"),
+        (2, "Nhóm bệnh"),
+        (3, "Bệnh"),
     )
     FEEDBACK_STATUS = (
-        (1, "Accepted"),
-        (2, "Rejected"),
-        (3, "Pending"),
+        (1, "Chấp nhận"),
+        (2, "Từ chối"),
+        (3, "Chưa xử lý"),
     )
     ROLE = (
-        (1, "GUEST"),
-        (2, "DOCTOR"),
-        (3, "ADMIN")
+        (1, "Người dùng"),
+        (2, "Bác sĩ"),
+        (3, "Quản trị viên"),
     )
     
     ROLE_CHAT = [

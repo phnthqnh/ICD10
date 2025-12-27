@@ -23,11 +23,8 @@ from constants.error_codes import ErrorCodes
 from django.contrib.auth.password_validation import validate_password
 from django.core.exceptions import ValidationError
 from django.db import transaction
-from django.views.decorators.cache import cache_page
 from rest_framework_simplejwt.tokens import RefreshToken
-from django.contrib.auth.tokens import PasswordResetTokenGenerator
-from django.utils.encoding import force_bytes, force_str
-from django.utils.http import urlsafe_base64_encode, urlsafe_base64_decode
+from utils.utils import Utils
 
 @api_view(["POST"])
 @authentication_classes([])
@@ -61,6 +58,12 @@ def login(request):
             return AppResponse.error(ErrorCodes.INCORRECT_UE_OR_PASSWORD)
 
     if not user:
+        Utils.log_login_event(
+            request,
+            user=None,
+            status="FAILURE",
+            identifier=email or username
+        )
         return AppResponse.error(ErrorCodes.USER_NOT_FOUND)
     identifier = str(user.id)
     if not user.is_superuser:
@@ -75,6 +78,12 @@ def login(request):
 
     if not user.password or not user.check_password(password):
         if not user.is_superuser:
+            Utils.log_login_event(
+                request,
+                user=user,
+                status="FAILURE",
+                identifier=email or username
+            )
             attempts = int(RedisWrapper.get(attempt_key) or 0) + 1
             RedisWrapper.save(
                 attempt_key, attempts, expire_time=Constants.ATTEMPT_BLOCK_USER
@@ -94,11 +103,24 @@ def login(request):
             return AppResponse.error(ErrorCodes.INCORRECT_UE_OR_PASSWORD)
 
     if not user.is_superuser and user.status in [2, 3]:
+        Utils.log_login_event(
+            request,
+            user=user,
+            status="FAILURE",
+            identifier=email or username
+        )
         return AppResponse.error(ErrorCodes.USER_INACTIVE, user_status=user.status)
 
     if not user.is_superuser:
         RedisWrapper.remove(attempt_key)
         RedisWrapper.remove(block_key)
+        
+    Utils.log_login_event(
+        request,
+        user=user,
+        status="SUCCESS",
+        identifier=email or username
+    )
 
     user.last_login = Utils.get_current_datetime()
     
@@ -217,7 +239,7 @@ def save_user(user):
 @permission_classes([IsAuthenticated])
 def change_password(request):
     try:
-        new_password:str = request.data.get('new_password')
+        new_password:str = request.data.get('password')
 
         if not new_password:
             return AppResponse.error(error_code=ErrorCodes.NEW_PASSWORD_REQUIRED,e="Password is required")
@@ -227,14 +249,14 @@ def change_password(request):
             validate_password(new_password,request.user)
 
         except ValidationError as e:
-            return AppResponse.error(error_code=ErrorCodes.VALIDATION_NEW_PASSWORD)
+            return AppResponse.error(error_code=ErrorCodes.VALIDATION_NEW_PASSWORD, errors=str(e))
 
         with transaction.atomic():
             user:User = request.user
-            user.password = user.set_password(new_password)
+            user.set_password(new_password)
             user.save()
 
-        return AppResponse.success(success_code=SuccessCodes.CHANGE_PASSWORD)
+        return AppResponse.success(success_code=SuccessCodes.CHANGE_PASSWORD, data={"message": "Password changed successfully"})
     except Exception as e:
         return AppResponse.error(error_code=ErrorCodes.CANNOT_CHANGE_PASSWORD,errors=str(e))
     
@@ -441,7 +463,16 @@ def update_user_profile(request):
         mutable = request.data.copy()
         mutable.pop("email", None)
         request.data = mutable
-    
+        
+    if "file" in request.data and user.verification_file != request.data["file"]:
+        file = request.FILES.get("file")
+        file_name, presigned_url = Utils.save_file_to_s3(file, "verification")
+        if not file_name or not presigned_url:
+            return AppResponse.error(ErrorCodes.INTERNAL_SERVER_ERROR, errors="Failed to upload verification file")
+
+        user.verification_file = presigned_url
+        user.save()
+
     serializer = UserSerializer(request.user, data=request.data, partial=True)
     if serializer.is_valid():
         serializer.save()

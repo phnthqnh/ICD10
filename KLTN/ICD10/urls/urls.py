@@ -11,6 +11,7 @@ urlpatterns = [
     path("logout/", user_views.logout, name="user-logout"),
     path("reset-password/", user_views.request_password_reset, name="reset-password"),
     path("password-confirm/", user_views.reset_password_confirm, name="reset-password"),
+    path("change-password/", user_views.change_password, name="change-password"),
     path("verify-email/", user_views.verify_email, name="verify-email"),
     path("verify-new-email/", user_views.verify_new_email, name="verify-new-email"),
     path("verified_doctor/", user_views.verified_doctor, name="verified-doctor"),
@@ -36,10 +37,6 @@ urlpatterns = [
     path("chat_with_ai/", chatbot_views.chat_with_ai, name="chat-with-ai"),
     path("get_chat_session/", chatbot_views.get_user_chat_sessions, name="get-user-chat-session"),
     path("get_chat_messages/<int:session_id>/", chatbot_views.get_message_chat_session, name="get-message-chat-session"),
-    # path("blocks/<str:block_code>/", icd_views.BlockDetailView.as_view(), name="block-detail"),
-    # path("diseases/<str:disease_code>/", icd_views.DiseaseDetailView.as_view(), name="disease-detail"),
-    # path("diseases/<str:disease_code>/subdiseases/", icd_views.SubDiseaseListView.as_view(), name="subdisease-list"),
-    # path("diseases/search/", icd_views.DiseaseSearchView.as_view(), name="disease-search"),
     # feedback endpoints
     path("feedbacks/chapter/submit/", feedback_views.submit_feedback_chapter, name="submit-feedback-chapter"),
     path("feedbacks/block/submit/", feedback_views.submit_feedback_block, name="submit-feedback-block"),
@@ -54,4 +51,5 @@ urlpatterns = [
     path("notifications/mark_read/<int:pk>/", notification_views.mark_notifications_as_read, name="mark-notifications-as-read"),
     path("notifications/mark_all_read/", notification_views.mark_all_notifications_as_read, name="mark-all-notifications-as-read"),
     path("notifications/delete/<int:pk>/", notification_views.delete_notification, name="delete-notification"),
+    path("admin/notif/<int:notif_id>/read/", notification_views.admin_notification_read, name="admin-notification-read"),
 ]

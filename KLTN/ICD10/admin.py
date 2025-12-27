@@ -3,17 +3,25 @@ from ICD10.models.icd10 import *
 from ICD10.models.user import *
 from ICD10.models.chatbot import *
 from ICD10.models.feedback import Feedback_Chapter, Feedback_Block, Feedback_Disease, Feedback_Chatbot
-from ICD10.models.notification import *
+from ICD10.models.notification import Notification
+from ICD10.models.login_event import LoginEvent
+from ICD10.models.token_usage import TokenUsage
+from ICD10.models.api_request_log import ApiRequestLog
 # Register your models here.
 from django.db import models
 from unfold.admin import ModelAdmin
-from unfold.contrib.forms.widgets import ArrayWidget, WysiwygWidget
 from .forms import UserCreationForm, UserChangeForm, CustomPasswordChangeForm
 from utils.utils import Utils
 from django.conf import settings
 from channels.layers import get_channel_layer
 from asgiref.sync import async_to_sync
 from django.utils import timezone
+from ICD10.services.user.user_service import UserService
+from ICD10.services.notification.notif_service import notify_user_feedback
+from ICD10.services.feedback.disease_fb_service import DiseaseFeedbackService
+from ICD10.services.feedback.block_fb_service import BlockFeedbackService
+from ICD10.services.feedback.chapter_fb_service import ChapterFeedbackService
+from ICD10.services.feedback.chatbot_fb_service import ChatbotFeedbackService
 
 @admin.register(User)
 class UserAdmin(ModelAdmin):
@@ -25,15 +33,17 @@ class UserAdmin(ModelAdmin):
     list_display = ("username", "email", "role", "status", "is_verified_doctor", "is_superuser")
     list_filter = ("status", "is_staff", "is_superuser", "role")
     search_fields = ("email", "username")
-    ordering = ("-created_at",)
     readonly_fields = ("created_at", "last_login", "verification_image_tag", "avatar_tag")
+    
+    list_per_page = 20
+    show_full_result_count = False
 
     fieldsets = (
-        (None, {"fields": ("username", "email", "password", "first_name", "last_name", "avatar", "avatar_tag")}),
-        ("Status", {"fields": ("status", "email_verified")}),
-        ("Role", {"fields": ("role", "is_verified_doctor", "license_number", "hospital", "verification_file", "verification_image_tag")}),
-        ("Permissions", {"fields": ("is_staff", "is_superuser")}),
-        ("Important dates", {"fields": ("created_at", "last_login")}),
+        ("Thông tin cá nhân", {"fields": ("username", "email", "password", "first_name", "last_name", "avatar", "avatar_tag")}),
+        ("Trạng thái", {"fields": ("status", "email_verified")}),
+        ("Vai trò", {"fields": ("role", "is_verified_doctor", "license_number", "hospital", "verification_file", "verification_image_tag")}),
+        ("Quyền", {"fields": ("is_staff", "is_superuser")}),
+        ("Mốc thời gian", {"fields": ("created_at", "last_login")}),
     )
 
     add_fieldsets = (
@@ -69,390 +79,309 @@ class UserAdmin(ModelAdmin):
         return super().get_fieldsets(request, obj)
     
     def save_model(self, request, obj, form, change):
-        # nếu is_verified_doctor = true thì role = 2
-        if obj.is_verified_doctor:
-            obj.role = 2  # doctor
+        UserService.handle_role_by_doctor_status(obj)
+        if change:
+            old_obj = User.objects.get(pk=obj.pk)
+
+            # 🔥 false → true
+            if not old_obj.is_verified_doctor and obj.is_verified_doctor:
+                UserService.notify_doctor_verified(obj)
         super().save_model(request, obj, form, change)
         # Gửi email sau khi admin tạo user
         if not change:
             raw_password = getattr(form, "raw_password", None)
-            if raw_password:
-                token = Utils.generate_verification_token(obj)
-                activation_link = f"{settings.ACTIVATION_URL}?token={token}"
-                Utils.admin_send_activation_email(
-                    user=obj,
-                    password=raw_password,
-                    activation_link=activation_link
-                )
+            UserService.send_activation_email_for_new_user(obj, raw_password)
         
-        if obj.is_verified_doctor:
-            Notification.objects.create(
-                recipient=obj,
-                title="Xác nhận bác sĩ thành công",
-                message=f"Chúc mừng! Tài khoản bác sĩ của bạn đã được xác thực",
-                notif_type='admin_doctor',
-                url=f"http://localhost:4200/profile"
-            )
-            channel_layer = get_channel_layer()
-            async_to_sync(channel_layer.group_send)(
-                f"user_{obj.id}",
-                {
-                    "type": "send_notification",
-                    "event": "verification_doctor",
-                    "message": f"Chúc mừng! Tài khoản bác sĩ của bạn đã được xác thực ✅",
-                    "role": obj.role,
-                    "url": f"http://localhost:4200/profile",
-                },
-            )
+        # if obj.is_verified_doctor:
+        #     UserService.notify_doctor_verified(obj)
 
 @admin.register(ICDChapter)
 class ICDChapterAdmin(ModelAdmin):
     list_display = ("chapter", "code", "title_vi")
     search_fields = ("chapter", "code", "title_vi")
-    ordering = ("chapter",)
     list_per_page = 20
+    show_full_result_count = False
+    
+    fieldsets = (
+        ("Thông tin chương", {"fields": ("chapter", "code", "title_vi", "description")}),
+    )
     
 @admin.register(ICDBlock)
 class ICDBlockAdmin(ModelAdmin):
     list_display = ("code", "title_vi", "chapter")
     search_fields = ("code", "title_vi", "chapter__code", "chapter__title_vi")
-    ordering = ("code",)
     list_filter = ("chapter",)
+    autocomplete_fields= ('chapter',)
     list_per_page = 20
-    
-    
-class DiseaseExtraInfoInline(admin.StackedInline):
-    model = DiseaseExtraInfo
-    extra = 0  # không tạo thêm dòng trống
-    can_delete = False
-    classes = ["unfold-card", "collapse"]  # 👈 Thêm class để hiển thị đẹp hơn
-    show_change_link = False
-    # fieldsets = (
-    #     ("Thông tin thêm", {
-    #         "fields": ("description", "symptoms", "wikipedia_url", "image_url"),
-    #     }),
-    # )
-    fields = ("description", "symptoms", "wikipedia_url", "image_url")
+    show_full_result_count = False
+
+    fieldsets = (
+        ("Thông tin nhóm bệnh", {"fields": ("code", "title_vi", "description")}),
+        ("Thuộc chương", {"fields": ("chapter",)}),
+    )
     
 @admin.register(ICDDisease)
 class ICDDiseaseAdmin(ModelAdmin):
     list_display = ("code", "code_no_sign", "title_vi", "block", "parent")
     search_fields = ("code", "code_no_sign", "title_vi", "block__code", "block__title_vi")
-    ordering = ("code",)
-    list_filter = ("block", "parent")
+    list_filter = ("block",)
     list_per_page = 20
-    autocomplete_fields= ('parent',)
+    show_full_result_count = False
+    autocomplete_fields= ('parent', 'block',)
     readonly_fields = ("updated_at",)
     
-    inlines = [DiseaseExtraInfoInline]
-    # def save_model(self, request, obj, form, change):
-    #     super().save_model(request, obj, form, change)
-    #     if not change:  # Nếu tạo mới bệnh
-    #         try:
-    #             Utils.add_new_disease_embedding(obj.code)
-    #             self.message_user(request, f"Đã thêm embedding cho bệnh {obj.code} thành công")
-    #         except Exception as e:
-    #             self.message_user(request, f"Lỗi khi thêm embedding: {str(e)}", level='ERROR')
-
+    fieldsets = (
+        ("Thông tin bệnh", {"fields": ("code", "code_no_sign", "title_vi", "parent", "updated_at")}),
+        ("Thuộc nhóm bệnh", {"fields": ("block",)}),
+    )
     
-@admin.register(DiseaseExtraInfo)
-class DiseaseExtraInfoAdmin(ModelAdmin):
-    list_display = ("disease", "wikipedia_url",)
-    search_fields = ("disease__code", "disease__title_vi", "image_url")
-    ordering = ("disease__code",)
-    list_per_page = 20
     
-    # def save_model(self, request, obj, form, change):
-    #     super().save_model(request, obj, form, change)
-    #     try:
-    #         Utils.reembed_disease(obj.disease.code)
-    #         self.message_user(request, f"Đã cập nhật embedding cho bệnh {obj.disease.code} thành công")
-    #     except Exception as e:
-    #         self.message_user(request, f"Lỗi khi cập nhật embedding: {str(e)}", level='ERROR')
-
-
 @admin.register(ChatSession)
 class ChatSessionAdmin(ModelAdmin):
     list_display = ("user", "title", "created_at", "updated_at")
     search_fields = ("user__username", "user__email", "title")
-    ordering = ("-created_at",)
     list_filter = ("user__username",)
     list_per_page = 20
+    show_full_result_count = False
     readonly_fields = ("created_at", "updated_at")
+    
+    fieldsets = (
+        ("Thông tin phiên chat", {"fields": ("title", "user", "adk_session_id", "summary_count", "created_at", "updated_at")}),
+    )
+    
     
 @admin.register(ChatMessage)
 class ChatMessageAdmin(ModelAdmin):
     list_display = ("session", "role", "created_at")
     search_fields = ("session__title", "session__user__username", "session__user__email", "content")
-    ordering = ("-created_at",)
     list_filter = ("role", "session__user__username")
     list_per_page = 20
+    show_full_result_count = False
     fieldsets = (
         (None, {"fields": ("session", "role", "content", "image", "image_tag", "created_at")}),
     )
     readonly_fields = ("created_at", "image_tag")
     
-@admin.register(Feedback_Chapter)
-class FeedbackChapterAdmin(ModelAdmin):
-    list_display = ("code", "title_vi", "user", "status", "created_at")
-    search_fields = ("user__username", "user__email", "chapter__code")
+    
+class BaseFeedbackAdmin(ModelAdmin):
+    """
+    Base admin cho tất cả feedback
+    """
+
+    list_filter = ("status", "created_at")
     ordering = ("-created_at",)
+    list_per_page = 20
+    show_full_result_count = False
+    readonly_fields = ("created_at", "get_user_info")
+
+    def get_queryset(self, request):
+        return (
+            super()
+            .get_queryset(request)
+        )
+
+    # @admin.display(description="Người gửi")
+    # def get_user_info(self, obj):
+    #     return format_html(
+    #         "<b>{}</b><br/>{}",
+    #         obj.user.username,
+    #         obj.user.email,
+    #     )
+
+@admin.register(Feedback_Chapter)
+class FeedbackChapterAdmin(BaseFeedbackAdmin):
+    list_display = (
+        "id",
+        "get_chapter",
+        "user",
+        "status",
+        "created_at",
+    )
+    search_fields = ("user__username", "user__email", "chapter__code", "chapter__title_vi")
     list_filter = ("status", "created_at")
     readonly_fields = ("created_at",)
+    
+    fieldsets = (
+        ("Thuộc chương", {"fields": ("user", "chapter", "status", "created_at")}),
+        ("Nội dung phản hồi", {"fields": ("code", "title_vi", "type_feedback", "reason")}),
+    )
 
+    def get_queryset(self, request):
+        return super().get_queryset(request).select_related("chapter", "user")
+
+    @admin.display(description="Chương")
+    def get_chapter(self, obj):
+        return f"{obj.chapter.code} - {obj.chapter.title_vi}"
+    
     def save_model(self, request, obj, form, change):
+        if change:
+            old_obj = Feedback_Chapter.objects.get(pk=obj.pk)
+
+            # 🔥 false → true
+            if old_obj.status != obj.status:
+                ChapterFeedbackService.handle(obj)
         super().save_model(request, obj, form, change)
-        channel_layer = get_channel_layer()
         
-        if obj.status == 3:
-            return
-        
-        if obj.status == 1:
-            # Thông báo cho người dùng
-            Notification.objects.create(
-                recipient=obj.user,
-                title="Phản hồi ICD-10 được chấp nhận",
-                message=f"Phản hồi về chương {obj.chapter.code} đã được chấp nhận",
-                notif_type='admin_feedback_icd',
-                url=f"http://localhost:4200/icd-10#/0#{obj.chapter.chapter}",
-            )
-            async_to_sync(channel_layer.group_send)(
-                f"user_{obj.user.id}",
-                {
-                    "type": "send_notification",
-                    "event": "feedback_update",
-                    "message": f"Phản hồi về chương {obj.chapter.code} đã được chấp nhận ✅",
-                    "feedback_id": obj.id,
-                    "url": f"http://localhost:4200/icd-10#/0#{obj.chapter.chapter}",
-                },
-            )
-            
-            chapter = obj.chapter
-            if obj.code:
-                chapter.code = obj.code
-            if obj.title_vi:
-                chapter.title_vi = obj.title_vi
-            chapter.save()
-            self.message_user(request, f"Đã cập nhật lại chương {chapter.code} theo phản hồi")
-        
-        if obj.status == 2:
-            # Thông báo cho người dùng
-            Notification.objects.create(
-                recipient=obj.user,
-                title="Phản hồi ICD-10 bị từ chối",
-                message=f"Phản hồi về chương {obj.chapter.code} đã bị từ chối",
-                notif_type='admin_feedback_icd',
-                url=f"http://localhost:4200/icd-10#/0#{obj.chapter.chapter}",
-            )
-            async_to_sync(channel_layer.group_send)(
-                f"user_{obj.user.id}",
-                {
-                    "type": "send_notification",
-                    "event": "feedback_update",
-                    "message": f"Phản hồi về chương {obj.chapter.code} đã bị từ chối ❌",
-                    "feedback_id": obj.id,
-                    "url": f"http://localhost:4200/icd-10#/0#{obj.chapter.chapter}",
-                },
-            )
         
 
 @admin.register(Feedback_Block)
-class FeedbackBlockAdmin(ModelAdmin):
-    list_display = ("code", "title_vi", "user", "status", "created_at")
-    search_fields = ("user__username", "user__email", "block__code")
-    ordering = ("-created_at",)
+class FeedbackBlockAdmin(BaseFeedbackAdmin):
+    list_display = (
+        "id",
+        "get_block",
+        "user",
+        "status",
+        "created_at",
+    )
+    search_fields = ("user__username", "user__email", "block__code", "block__title_vi")
     list_filter = ("status", "created_at")
-    readonly_fields = ("created_at",)
+    readonly_fields = ("created_at", "chapter")
+    
+    fieldsets = (
+        ("Thuộc nhóm bệnh", {"fields": ("user", "block", "chapter", "status", "created_at")}),
+        ("Nội dung phản hồi", {"fields": ("code", "title_vi", "type_feedback", "reason")}),
+    )
 
+    def get_queryset(self, request):
+        return super().get_queryset(request).select_related("block", "user")
+
+    @admin.display(description="Nhóm bệnh")
+    def get_block(self, obj):
+        return f"{obj.block.code} - {obj.block.title_vi}"
+    
     def save_model(self, request, obj, form, change):
+        if change:
+            old_obj = Feedback_Block.objects.get(pk=obj.pk)
+
+            # 🔥 false → true
+            if old_obj.status != obj.status:
+                BlockFeedbackService.handle(obj)
         super().save_model(request, obj, form, change)
-        channel_layer = get_channel_layer()
-        
-        if obj.status == 3:
-            return
-        
-        if obj.status == 1:
-            # Thông báo cho người dùng
-            Notification.objects.create(
-                recipient=obj.user,
-                title="Phản hồi ICD-10 được chấp nhận",
-                message=f"Phản hồi về nhóm {obj.block.code} đã được chấp nhận",
-                notif_type='admin_feedback_icd',
-                url=f"http://localhost:4200/icd-10#/1#{obj.block.code}",
-            )
-            async_to_sync(channel_layer.group_send)(
-                f"user_{obj.user.id}",
-                {
-                    "type": "send_notification",
-                    "event": "feedback_update",
-                    "message": f"Phản hồi về nhóm {obj.block.code} đã được chấp nhận ✅",
-                    "feedback_id": obj.id,
-                    "url": f"http://localhost:4200/icd-10#/1#{obj.block.code}",
-                },
-            )
-            
-            block = obj.block
-            if obj.code:
-                block.code = obj.code
-            if obj.title_vi:
-                block.title_vi = obj.title_vi
-            if obj.chapter:
-                block.chapter = obj.chapter
-            block.save()
-            self.message_user(request, f"Đã cập nhật lại nhóm {block.code} theo phản hồi")
-        
-        if obj.status == 2:
-            # Thông báo cho người dùng
-            Notification.objects.create(
-                recipient=obj.user,
-                title="Phản hồi ICD-10 bị từ chối",
-                message=f"Phản hồi về nhóm {obj.block.code} đã bị từ chối",
-                notif_type='admin_feedback_icd',
-                url=f"http://localhost:4200/icd-10#/1#{obj.block.code}",
-            )
-            async_to_sync(channel_layer.group_send)(
-                f"user_{obj.user.id}",
-                {
-                    "type": "send_notification",
-                    "event": "feedback_update",
-                    "message": f"Phản hồi về nhóm {obj.block.code} đã bị từ chối ❌",
-                    "feedback_id": obj.id,
-                    "url": f"http://localhost:4200/icd-10#/1#{obj.block.code}",
-                },
-            )
+        # BlockFeedbackService.handle(obj)
 
 @admin.register(Feedback_Disease)
-class FeedbackDiseaseAdmin(ModelAdmin):
-    list_display = ("code", "title_vi", "user", "status", "created_at")
-    search_fields = ("user__username", "user__email", "disease__code")
-    ordering = ("-created_at",)
+class FeedbackDiseaseAdmin(BaseFeedbackAdmin):
+    list_display = (
+        "id",
+        "get_disease",
+        "user",
+        "status",
+        "created_at",
+    )
+    search_fields = ("user__username", "user__email", "disease__code", "disease__title_vi")
     list_filter = ("status", "created_at")
-    readonly_fields = ("created_at",)
+    readonly_fields = ("created_at", "disease", "disease_parent", "block")
+    
+    fieldsets = (
+        ("Thuộc mã bệnh", {"fields": ("user", "disease", "disease_parent", "block", "status", "created_at")}),
+        ("Nội dung phản hồi", {"fields": ("code", "title_vi", "type_feedback", "reason")}),
+    )
 
+    def get_queryset(self, request):
+        return super().get_queryset(request).select_related("disease", "user")
+
+    @admin.display(description="Bệnh")
+    def get_disease(self, obj):
+        return f"{obj.disease.code} - {obj.disease.title_vi}"
+    
     def save_model(self, request, obj, form, change):
+        if change:
+            old_obj = Feedback_Disease.objects.get(pk=obj.pk)
+
+            # 🔥 false → true
+            if old_obj.status != obj.status:
+                DiseaseFeedbackService.handle(obj)
         super().save_model(request, obj, form, change)
-        channel_layer = get_channel_layer()
-        
-        if obj.status == 3:
-            return
-        
-        if obj.status == 1:
-            level = obj.disease.level
-            # Thông báo cho người dùng
-            Notification.objects.create(
-                recipient=obj.user,
-                title="Phản hồi ICD-10 được chấp nhận",
-                message=f"Phản hồi về bệnh {obj.disease.code} đã được chấp nhận",
-                notif_type='admin_feedback_icd',
-                url=f"http://localhost:4200/icd-10#/{level}#{obj.disease.code}",
-            )
-            async_to_sync(channel_layer.group_send)(
-                f"user_{obj.user.id}",
-                {
-                    "type": "send_notification",
-                    "event": "feedback_update",
-                    "message": f"Phản hồi về bệnh {obj.disease.code} đã được chấp nhận ✅",
-                    "feedback_id": obj.id,
-                    "url": f"http://localhost:4200/icd-10#/{level}#{obj.disease.code}",
-                },
-            )
-            
-            disease = obj.disease
-            if obj.code:
-                disease.code = obj.code
-            if obj.title_vi:
-                disease.title_vi = obj.title_vi
-            if obj.block:
-                disease.block = obj.block
-            # if obj.chapter:
-            #     disease.chapter = obj.chapter
-            if obj.disease_parent:
-                disease.parent = obj.disease_parent
-            disease.save()
-            self.message_user(request, f"Đã cập nhật lại bệnh {disease.code} theo phản hồi")
-        
-        if obj.status == 2:
-            level = obj.disease.level
-            # Thông báo cho người dùng
-            Notification.objects.create(
-                recipient=obj.user,
-                title="Phản hồi ICD-10 bị từ chối",
-                message=f"Phản hồi về bệnh {obj.disease.code} đã bị từ chối",
-                notif_type='admin_feedback_icd',
-                url=f"http://localhost:4200/icd-10#/{level}#{obj.disease.code}",
-            )
-            async_to_sync(channel_layer.group_send)(
-                f"user_{obj.user.id}",
-                {
-                    "type": "send_notification",
-                    "event": "feedback_update",
-                    "message": f"Phản hồi về bệnh {obj.disease.code} đã bị từ chối ❌",
-                    "feedback_id": obj.id,
-                    "url": f"http://localhost:4200/icd-10#/{level}#{obj.disease.code}",
-                },
-            )
+        # DiseaseFeedbackService.handle(obj)
 
 
 @admin.register(Feedback_Chatbot)
-class FeedbackChatbotAdmin(ModelAdmin):
-    list_display = ("chat_message", "get_user", "status", "created_at", "replied_at")
-    search_fields = ("chat_message__id", "chat_message__session__user__username", "chat_message__session__user__email")
-    ordering = ("-created_at",)
-    list_filter = ("status", "created_at")
+class FeedbackChatbotAdmin(BaseFeedbackAdmin):
+    list_display = (
+        "id",
+        "get_username",
+        "get_message_short",
+        "rating",
+        "created_at",
+    )
+    search_fields = ("chat_message__id", "chat_message__content")
+    list_filter = ("created_at", "rating")
     list_per_page = 20
-    readonly_fields = ("created_at", "replied_at")
+    show_full_result_count = False
+    readonly_fields = (
+        "chat_message",
+        "get_user_info",
+        "created_at", "replied_at")
     
     fieldsets = (
-        ("User Feedback", {"fields": ("chat_message", "rating", "comments", "created_at", "status")}),
-        ("Admin Reply", {"fields": ("admin_reply", "replied_at",)}),
+        ("Tin nhắn", {"fields": ("get_user_info", "chat_message",)}),
+        ("Phản hồi của người dùng", {"fields": ("rating", "comments", "created_at",)}),
+        ("Phản hồi của quản trị viên", {"fields": ("admin_reply", "replied_at",)}),
     )
     
+    @admin.display(description="Người dùng")
+    def get_username(self, obj):
+        user = obj.chat_message.session.user
+        return user.username if user else "-"
+
+    @admin.display(description="Nội dung chat")
+    def get_message_short(self, obj):
+        content = obj.chat_message.content
+        if not content:
+            return "-"
+        return content[:20] + "..." if len(content) > 20 else content
+
+    @admin.display(description="Thông tin người dùng")
+    def get_user_info(self, obj):
+        user = obj.chat_message.session.user
+        if not user:
+            return "-"
+
+        return format_html(
+            """
+            <b>Username:</b> {}<br/>
+            <b>Email:</b> {}<br/>
+            <b>User ID:</b> {}
+            """,
+            user.username,
+            user.email,
+            user.id,
+        )
+
+    def get_queryset(self, request):
+        """
+        Tối ưu query để tránh N+1
+        """
+        return (
+            super()
+            .get_queryset(request)
+            .select_related(
+                "chat_message",
+                "chat_message__session",
+                "chat_message__session__user",
+            )
+        )
+        
     def save_model(self, request, obj, form, change):
-        # Nếu admin nhập admin_reply → set replied_at
         if "admin_reply" in form.changed_data:
-            obj.replied_at = timezone.now()
+            ChatbotFeedbackService.handle_admin_reply(obj, obj.admin_reply)
 
-            # Gửi thông báo realtime cho user
-            self.notify_user(obj)
-
-        super().save_model(request, obj, form, change)
-
-    def notify_user(self, feedback):
-        """Gửi noti đến user khi admin phản hồi"""
-        user = feedback.chat_message.session.user
-        message = f"Admin đã phản hồi feedback của bạn: {feedback.admin_reply}"
-
-        # Lưu thông báo
-        Notification.objects.create(
-            recipient=user,
-            title="Phản hồi từ Admin",
-            message=message,
-            notif_type="admin_feedback_chatbot",
-        )
-
-        # Realtime bằng websocket
-        channel_layer = get_channel_layer()
-        async_to_sync(channel_layer.group_send)(
-            f"user_{user.id}",
-            {
-                "type": "send_notification",
-                "event": "feedback_reply",
-                "message": message,
-                "feedback_id": feedback.id
-            }
-        )
-    
-    def get_user(self, obj):
-        return obj.chat_message.session.user.username
-
-    get_user.short_description = "User"
     
 @admin.register(Notification)
 class NotificationAdmin(ModelAdmin):
     list_display = ("title", "recipient", "notif_type", "is_read", "created_at")
-    list_filter = ("notif_type", "is_read", "created_at")
+    list_filter = ("notif_type", "is_read", "recipient")
     search_fields = ("title", "message", "recipient__username")
     readonly_fields = ("created_at",)
+    
+    list_per_page = 20
+    show_full_result_count = False
+    
+    fieldsets = (
+        ("Người nhận", {"fields": ("recipient",)}),
+        ("Thông tin thông báo", {"fields": ("title", "message", "url", "notif_type", "is_read", "created_at")}),
+    )
+    
     
     # khi mở change form, đánh dấu là đã đọc
     def change_view(self, request, object_id, form_url='', extra_context=None):
@@ -463,3 +392,42 @@ class NotificationAdmin(ModelAdmin):
                 notification.is_read = True
                 notification.save()
         return super().change_view(request, object_id, form_url, extra_context)
+    
+@admin.register(LoginEvent)
+class LoginEventAdmin(ModelAdmin):
+    list_display = ("user", "status", "ip_adress", "device", "created_at")
+    search_fields = ("user__username", "user__email", "ip_adress", "device", "identifier")
+    list_filter = ("status", "created_at")
+    readonly_fields = ("created_at",)
+    list_per_page = 20
+    show_full_result_count = False
+    
+    fieldsets = (
+        ("Thông tin sự kiện đăng nhập", {"fields": ("user", "status", "ip_adress", "user_agent", "device", "identifier", "created_at")}),
+    )
+    
+@admin.register(TokenUsage)
+class TokenUsageAdmin(ModelAdmin):
+    list_display = ("user", "session", "input_tokens", "created_at")
+    search_fields = ("user__username", "user__email", "session__title", "model")
+    list_filter = ("model", "date", "created_at")
+    readonly_fields = ("created_at",)
+    list_per_page = 20
+    show_full_result_count = False
+    
+    fieldsets = (
+        ("Thông tin sử dụng token", {"fields": ("user", "session", "model", "input_tokens", "output_tokens", "total_tokens", "created_at")}),
+    )
+    
+@admin.register(ApiRequestLog)
+class ApiRequestLogAdmin(ModelAdmin):
+    list_display = ("user", "path", "method", "status_code", "created_at")
+    search_fields = ("user__username", "user__email", "path", "method", "status_code")
+    list_filter = ("method", "status_code", "created_at")
+    readonly_fields = ("created_at",)
+    list_per_page = 20
+    show_full_result_count = False
+    
+    fieldsets = (
+        ("Thông tin log API", {"fields": ("user", "path", "method", "status_code", "response_time_ms", "ip_address", "user_agent", "created_at")}),
+    )

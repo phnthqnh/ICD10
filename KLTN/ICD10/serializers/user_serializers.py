@@ -6,6 +6,8 @@ from ICD10.models.user import User
 from constants.constants import Constants
 from validators.validator import Validator
 
+import re
+
 
 class UserSerializer(serializers.ModelSerializer):
 
@@ -156,3 +158,23 @@ class PasswordResetConfirmSerializer(serializers.Serializer):
     email = serializers.EmailField()
     otp = serializers.CharField(max_length=6)
     new_password = serializers.CharField(min_length=8, write_only=True)
+    
+    def validate_email(self, value):
+        if not User.objects.filter(email=value).exists():
+            raise serializers.ValidationError("Không tìm thấy người dùng với email này.")
+        return value
+    
+    def validate_otp(self, value):
+        if not value.isdigit():
+            raise serializers.ValidationError("OTP phải bằng số.")
+        return value
+    
+    def validate_new_password(self, value):
+        if len(value) < 8:
+            raise serializers.ValidationError("Mật khẩu phải nhiều hơn 8 ký tự.")
+        
+        # mật khẩu phải chứa cả chữ cái
+        if not re.search("[a-zA-Z]", value):
+            raise serializers.ValidationError("Mật khẻ phải chứa cả chữ cái.")
+            
+        return value

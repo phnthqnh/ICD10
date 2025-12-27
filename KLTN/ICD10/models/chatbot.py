@@ -7,12 +7,12 @@ class ChatSession(models.Model):
     """
     Một session đại diện cho một chuỗi hội thoại giữa người dùng và chatbot.
     """
-    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name="chat_sessions")
-    title = models.CharField(max_length=255, default="Cuộc hội thoại mới")
-    adk_session_id = models.CharField(max_length=255, null=True, blank=True)
-    created_at = models.DateTimeField(auto_now_add=True)
-    updated_at = models.DateTimeField(auto_now=True)
-    summary_count = models.IntegerField(default=0)  # số lần đã tóm tắt
+    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name="chat_sessions", verbose_name="Người dùng")
+    title = models.CharField(max_length=255, default="Cuộc hội thoại mới", verbose_name="Tiêu đề")
+    adk_session_id = models.CharField(max_length=255, null=True, blank=True, verbose_name="ADK Session ID")
+    created_at = models.DateTimeField(auto_now_add=True, verbose_name="Thời gian tạo")
+    updated_at = models.DateTimeField(auto_now=True, verbose_name="Thời gian cập nhật")
+    summary_count = models.IntegerField(default=0, verbose_name="Số lần tóm tắt")  # số lần đã tóm tắt
 
     def __str__(self):
         return f"ChatSession({self.id}) - {self.title}"
@@ -31,12 +31,12 @@ class ChatMessage(models.Model):
     Một tin nhắn trong cuộc hội thoại.
     """
 
-    session = models.ForeignKey(ChatSession, on_delete=models.CASCADE, related_name="messages")
-    role = models.CharField(max_length=10, choices=Constants.ROLE_CHAT)
-    content = models.TextField()
-    image = models.URLField(null=True, blank=True)
-    created_at = models.DateTimeField(auto_now_add=True)
-    timestamp = models.DateTimeField(auto_now_add=True)
+    session = models.ForeignKey(ChatSession, on_delete=models.CASCADE, related_name="messages", verbose_name="Phiên chat")
+    role = models.CharField(max_length=10, choices=Constants.ROLE_CHAT, verbose_name="Vai trò")
+    content = models.TextField(verbose_name="Nội dung")
+    image = models.URLField(null=True, blank=True, verbose_name="Hình ảnh")
+    created_at = models.DateTimeField(auto_now_add=True, verbose_name="Thời gian tạo")
+    timestamp = models.DateTimeField(auto_now_add=True, verbose_name="Thời gian")
 
     def __str__(self):
         return f"{self.role}: {self.content[:40]}"
@@ -44,9 +44,9 @@ class ChatMessage(models.Model):
     class Meta:
         verbose_name = 'Tin nhắn'
         verbose_name_plural = 'Tin nhắn'
-        ordering = ['timestamp']
+        ordering = ['created_at']
         indexes = [
-            models.Index(fields=['session', 'timestamp'], name='gemini_msg_session_time_idx'),
+            models.Index(fields=['session', 'created_at'], name='gemini_msg_session_time_idx'),
         ]
         
     def image_tag(self):
