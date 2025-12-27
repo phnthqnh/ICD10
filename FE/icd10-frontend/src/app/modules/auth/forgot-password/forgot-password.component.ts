@@ -103,15 +103,16 @@ export class AuthForgotPasswordComponent implements OnInit
                         type   : 'success',
                         message: 'Password reset sent! You\'ll receive an email if you are registered on our system.',
                     };
-                    // Navigate to the confirmation required page
-                    this._router.navigateByUrl('/confirm-password');
+                    // Navigate to the confirmation page and pass the email so
+                    // the user doesn't need to re-enter it.
+                    this._router.navigate(['/confirm-password'], { queryParams: { email: this.forgotPasswordForm.get('email').value } });
                 },
                 (response) =>
                 {
                     // Set the alert
                     this.alert = {
                         type   : 'error',
-                        message: 'Email does not found! Are you sure you are already a member?',
+                        message: 'Email không tồn tại! Bạn có chắc bạn đã có tài khoản?',
                     };
                 },
             );

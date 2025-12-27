@@ -11,7 +11,7 @@ import { fuseAnimations } from '@fuse/animations';
 import { FuseAlertComponent, FuseAlertType } from '@fuse/components/alert';
 import { AuthService } from 'app/core/auth/auth.service';
 import { finalize } from 'rxjs';
-import { Router } from '@angular/router';
+import { Router, ActivatedRoute } from '@angular/router';
 
 @Component({
     selector     : 'auth-confirm-password',
@@ -34,6 +34,7 @@ export class AuthConfirmPasswordComponent implements OnInit
     constructor(
         private _formBuilder: FormBuilder,
         private _router: Router,
+        private _route: ActivatedRoute,
         private _authService: AuthService
     ) { }
 
@@ -57,6 +58,12 @@ export class AuthConfirmPasswordComponent implements OnInit
             otp4: ['', [Validators.required, Validators.pattern('[0-9]')]],
             otp5: ['', [Validators.required, Validators.pattern('[0-9]')]],
         });
+
+        // If the user came from the forgot-password flow, prefill the email
+        const emailFromQuery = this._route.snapshot.queryParamMap.get('email');
+        if (emailFromQuery) {
+            this.confirmPasswordForm.patchValue({ email: emailFromQuery });
+        }
     }
 
     // -----------------------------------------------------------------------------------------------------
@@ -83,11 +90,36 @@ export class AuthConfirmPasswordComponent implements OnInit
         }
     }
 
+    isOtpTouched(): boolean {
+        for (let i = 0; i < 6; i++) {
+            if (this.confirmPasswordForm.get('otp' + i)?.touched) {
+                return true;
+            }
+        }
+        return false;
+    }
 
-    test(event: Event) {
-        event.preventDefault();
-        event.stopPropagation();
-        console.log('test');
+    isOtpEmpty(): boolean {
+        if (!this.isOtpTouched()) return false;
+
+        for (let i = 0; i < 6; i++) {
+            if (!this.confirmPasswordForm.get('otp' + i)?.value) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    isOtpInvalidNumber(): boolean {
+        if (!this.isOtpTouched()) return false;
+
+        for (let i = 0; i < 6; i++) {
+            const control = this.confirmPasswordForm.get('otp' + i);
+            if (control?.hasError('pattern')) {
+                return true;
+            }
+        }
+        return false;
     }
 
     /**
@@ -95,11 +127,9 @@ export class AuthConfirmPasswordComponent implements OnInit
      */
     confirmReset(event: Event): void
     {
-        debugger //1
         event.preventDefault();
-        event.stopPropagation(); // 🔥 thêm dòng này để chặn hoàn toàn submit mặc định
-        console.log('confirmReset triggered');
-        debugger //2
+        event.stopPropagation();
+        
         if (this.confirmPasswordForm.invalid) {
             this.alert = {
                 type   : 'error',
@@ -112,6 +142,28 @@ export class AuthConfirmPasswordComponent implements OnInit
 
         // Lấy giá trị từ form và tạo credentials object
         const formValue = this.confirmPasswordForm.value;
+
+        // mật khẩu không được là chỉ số
+        const onlyNumbersRegex = /^[0-9]+$/;
+        if (onlyNumbersRegex.test(formValue.newPassword)) {
+            this.showAlert = true;
+            this.alert = {
+                type   : 'error',
+                message: 'Mật khẩu không được là chỉ số.',
+            };
+            return;
+        }
+
+        if (formValue.newPassword.length < 8) {
+            // Show the alert
+            this.showAlert = true;
+            // Set the alert
+            this.alert = {
+                type   : 'error',
+                message: 'Mật khẩu phải có ít nhất 8 ký tự.',
+            };
+            return;
+        }
 
         // Gộp 6 ký tự OTP
         const otp = this.otpArray
@@ -129,21 +181,17 @@ export class AuthConfirmPasswordComponent implements OnInit
 
         // Hide the alert
         this.showAlert = false;
-        debugger //3
         // Forgot password
         this._authService.confirmPassword(payload)
             .pipe(
                 finalize(() => {
-                    debugger //4
                     this.confirmPasswordForm.enable();
             }))    
             .subscribe({
                 next: (res) => {
-                    debugger //5
                     this._router.navigate(['/sign-in']);
                 },
                 error: (err) => {
-                    debugger //6
                     console.error('❌ Lỗi xác nhận OTP:', err);
 
                     // Nếu backend trả về message → hiển thị
@@ -154,36 +202,23 @@ export class AuthConfirmPasswordComponent implements OnInit
                     // Xóa lỗi cũ (nếu có)
 
                     // Lấy thông tin lỗi từ backend
-                    debugger //7
                     const code = err?.error?.code;
-                    debugger //8
                     const message = err?.error?.errors[0]?.message;
-                    debugger //9
                     console.log(code, message);
-                    debugger //10
                     // ✅ Mapping lỗi theo mã code
                     switch (code) {
                         case 'OTP_EXPIRED': // OTP hết hạn
-                            debugger //11
-                            this.alert = { type: 'error', message: message }; // Hiển thị lỗi alert
+                            this.alert = { type: 'error', message: "Mã OTP đã hết hạn" }; // Hiển thị lỗi alert
                             this.showAlert = true;
                             break;
 
                         case 'OTP_INVALID': // OTP sai
-                            debugger //12
                             this.alert = { type: 'error', message: message }; // Hiển thị lỗi alert
-                            this.showAlert = true;
-                            break;
-
-                        case "VALIDATION_ERROR": // Mật khâu không hợp lệ
-                            debugger //13
-                            this.alert = { type: 'error', message: "Mật khẩu phải có ít nhất 8 ký tự" }; // Hiển thị lỗi alert
                             this.showAlert = true;
                             break;
 
                         default:
                             // Nếu lỗi khác (server, network, v.v.)
-                            debugger //14
                             this.alert = { type: 'error', message: 'Đổi mật khâu thất bại, vui lòng thử lại!' }; // Hiển thị lỗi alert
                             this.showAlert = true;
                             break;
