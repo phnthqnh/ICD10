@@ -1,0 +1,464 @@
+<div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+
+    <!-- Tổng request hôm nay -->
+    <div class="bg-gradient-to-r from-blue-500 to-blue-600 text-white p-5 rounded-xl shadow">
+        <div class="flex items-center justify-between">
+            <div>
+                <p class="text-sm opacity-90">Tổng request hôm nay</p>
+                <p class="text-3xl font-bold">{{ total_requests_today }}</p>
+            </div>
+
+            <div class="bg-white/20 rounded-full p-3 w-12 h-12">
+                <span class="material-icons-outlined text-3xl">
+                    stacked_line_chart
+                </span>
+            </div>
+        </div>
+        <p class="text-xs mt-2 opacity-80">Tổng số request API trong ngày</p>
+    </div>
+
+    <!-- Tỷ lệ lỗi -->
+    <div class="bg-gradient-to-r from-red-400 to-red-500 text-white p-5 rounded-xl shadow">
+        <div class="flex items-center justify-between">
+            <div>
+                <p class="text-sm opacity-90">Tỷ lệ lỗi</p>
+                <p class="text-3xl font-bold">{{ error_rate }}%</p>
+            </div>
+            <div class="bg-white/20 rounded-full p-3 w-12 h-12">
+                <span class="material-icons-outlined text-3xl">
+                    warning
+                </span>
+            </div>
+        </div>
+        <p class="text-xs mt-2 opacity-80">Bao gồm lỗi 4xx & 5xx</p>
+    </div>
+
+    <!-- Lỗi server -->
+    {% comment %} <div class="bg-gradient-to-r from-red-500 to-red-600 text-white p-5 rounded-xl shadow">
+        <div class="flex items-center justify-between">
+            <div>
+                <p class="text-sm opacity-90">Lỗi server (5xx)</p>
+                <p class="text-3xl font-bold">{{ server_errors_5xx }}</p>
+            </div>
+            <div class="bg-white/20 rounded-full p-3 w-12 h-12">
+                <span class="material-icons-outlined text-3xl">
+                    error
+                </span>
+            </div>
+        </div>
+        <p class="text-xs mt-2 opacity-80">Lỗi nghiêm trọng phía backend</p>
+    </div> {% endcomment %}
+
+    <!-- Thời gian phản hồi -->
+    <div class="bg-gradient-to-r from-emerald-500 to-emerald-600 text-white p-5 rounded-xl shadow">
+        <div class="flex items-center justify-between">
+            <div>
+                <p class="text-sm opacity-90">Thời gian phản hồi TB</p>
+                <p class="text-3xl font-bold">{{ avg_response_time }} ms</p>
+            </div>
+            <div class="bg-white/20 rounded-full p-3 w-12 h-12">
+                <span class="material-icons-outlined text-3xl">
+                    timer
+                </span>
+            </div>
+        </div>
+        <p class="text-xs mt-2 opacity-80">Thời gian xử lý trung bình</p>
+    </div>
+
+    <!-- Tổng token sử dụng -->
+    <div class="bg-gradient-to-r from-orange-400 to-orange-500 text-white p-5 rounded-xl shadow">
+        <div class="flex items-center justify-between">
+            <div>
+                <p class="text-sm opacity-90">Tổng token sử dụng hôm nay</p>
+                <p class="text-3xl font-bold">{{ total_token_usage }}</p>
+            </div>
+            <div class="bg-white/20 rounded-full p-3 w-12 h-12">
+                <span class="material-icons-outlined text-3xl">
+                    memory
+                </span>
+            </div>
+        </div>
+        <p class="text-xs mt-2 opacity-80">Tổng số token đã sử dụng trong ngày</p>
+    </div>
+</div>
+
+<!-- Charts -->
+<div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
+
+    <!-- Request Volume -->
+    <div class="bg-white p-6 rounded shadow">
+        <h3 class="text-lg font-semibold mb-4">
+            Khối lượng yêu cầu (7 ngày gần đây)
+        </h3>
+        <div style="position: relative; height: 300px; width: 100%;">
+            <canvas id="requestVolumeChart"></canvas>
+        </div>
+    </div>
+
+    <!-- Error Trend -->
+    <div class="bg-white p-6 rounded shadow">
+        <h3 class="text-lg font-semibold mb-4">
+            Xu hướng lỗi (4xx + 5xx) (7 ngày gần đây)
+        </h3>
+        <div style="position: relative; height: 300px; width: 100%;">
+            <canvas id="errorTrendChart"></canvas>
+        </div>
+    </div>
+
+</div>
+
+<div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
+    <!-- Status Code Distribution -->
+    <div class="bg-white p-6 rounded shadow">
+        <h3 class="text-lg font-semibold mb-4">
+            Phân phối trạng thái Code
+        </h3>
+        <div style="position: relative; height: 300px; width: 100%;">
+            <canvas id="statusDistributionChart"></canvas>
+        </div>
+    </div>
+
+    <!-- Token Usage -->
+    <div class="bg-white p-6 rounded shadow">
+        <h3 class="text-lg font-semibold mb-4">
+            Số token sử dụng (7 ngày gần đây)
+        </h3>
+        <div style="position: relative; height: 300px; width: 100%;">
+            <canvas id="tokenUsageChart"></canvas>
+        </div>
+    </div>
+</div>
+
+<!-- Tables Section -->
+<div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+
+    <!-- Top Failing APIs -->
+    <div class="bg-white p-6 rounded-xl shadow">
+        <h3 class="flex items-center gap-2 text-lg font-semibold mb-4 text-gray-800">
+            <span class="material-symbols-outlined text-gray-500">
+                siren
+            </span> 
+            Top API hay xảy ra lỗi
+        </h3>
+
+        <div class="overflow-x-auto">
+            <table class="min-w-full text-sm">
+                <thead class="bg-gray-100 text-gray-600 uppercase text-xs">
+                    <tr>
+                        <th class="px-4 py-3 text-left">API</th>
+                        <th class="px-4 py-3">Method</th>
+                        <th class="px-4 py-3">Số lỗi</th>
+                        <th class="px-4 py-3">Status gần nhất</th>
+                    </tr>
+                </thead>
+                <tbody class="divide-y">
+                    {% for api in top_failing_apis %}
+                    <tr class="hover:bg-red-50">
+                        <td class="px-4 py-3 font-mono">{{ api.path }}</td>
+                        <td class="px-4 py-3 text-center">{{ api.method }}</td>
+                        <td class="px-4 py-3 text-center font-bold text-red-600">
+                            {{ api.error_count }}
+                        </td>
+                        <td class="px-4 py-3 text-center">
+                            <span class="px-2 py-1 rounded bg-red-100 text-red-700 text-xs">
+                                {{ api.last_error }}
+                            </span>
+                        </td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="4" class="text-center py-6 text-gray-500">
+                            Không có API lỗi
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <!-- Slowest APIs -->
+    <div class="bg-white p-6 rounded-xl shadow">
+        <h3 class="flex items-center gap-2 text-lg font-semibold mb-4 text-gray-800">
+            <span class="material-icons-outlined text-gray-500">
+                speed
+            </span> 
+            API phản hồi chậm nhất
+        </h3>
+
+        <div class="overflow-x-auto">
+            <table class="min-w-full text-sm">
+                <thead class="bg-gray-100 text-gray-600 uppercase text-xs">
+                    <tr>
+                        <th class="px-4 py-3 text-left">API</th>
+                        <th class="px-4 py-3">Method</th>
+                        <th class="px-4 py-3">TB (ms)</th>
+                        <th class="px-4 py-3">Max (ms)</th>
+                    </tr>
+                </thead>
+                <tbody class="divide-y">
+                    {% for api in slowest_apis %}
+                    <tr class="hover:bg-orange-50">
+                        <td class="px-4 py-3 font-mono">{{ api.path }}</td>
+                        <td class="px-4 py-3 text-center">{{ api.method }}</td>
+                        <td class="px-4 py-3 text-center font-semibold text-orange-600">
+                            {{ api.avg_time|floatformat:0 }}
+                        </td>
+                        <td class="px-4 py-3 text-center font-semibold text-red-600">
+                            {{ api.max_time|floatformat:0 }}
+                        </td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="4" class="text-center py-6 text-gray-500">
+                            Không có API chậm
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <!-- Recent Errors -->
+    <div class="bg-white p-6 rounded-xl shadow">
+        <h3 class="flex items-center gap-2 text-lg font-semibold mb-4 text-gray-800">
+            <span class="material-icons-outlined text-gray-500">
+                bug_report
+            </span>
+            Lỗi gần đây
+        </h3>
+
+        <div class="overflow-x-auto">
+            <table class="min-w-full text-sm">
+                <thead class="bg-gray-100 text-gray-600 uppercase text-xs">
+                    <tr>
+                        <th class="px-4 py-3">Thời gian</th>
+                        <th class="px-4 py-3 text-left">API</th>
+                        <th class="px-4 py-3">Method</th>
+                        <th class="px-4 py-3">Status</th>
+                        <th class="px-4 py-3">User</th>
+                    </tr>
+                </thead>
+                <tbody class="divide-y">
+                    {% for log in recent_errors %}
+                    <tr class="hover:bg-gray-50">
+                        <td class="px-4 py-3 text-xs text-gray-500">
+                            {{ log.created_at|date:"H:i:s d/m/Y" }}
+                        </td>
+                        <td class="px-4 py-3 font-mono">{{ log.path }}</td>
+                        <td class="px-4 py-3 text-center">{{ log.method }}</td>
+                        <td class="px-4 py-3 text-center font-bold
+                            {% if log.status_code >= 500 %}
+                                text-red-600
+                            {% else %}
+                                text-orange-600
+                            {% endif %}
+                        ">
+                            {{ log.status_code }}
+                        </td>
+                        <td class="px-4 py-3 text-center">
+                            {{ log.user|default:"Ẩn danh" }}
+                        </td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="5" class="text-center py-6 text-gray-500">
+                            Không có lỗi gần đây
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+</div>
+
+<!-- Chart.js -->
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+
+    const requestVolumeData = JSON.parse('{{ request_volume|escapejs }}');
+    const errorTrendData = JSON.parse('{{ error_trend|escapejs }}');
+    const statusDistributionData = JSON.parse('{{ status_distribution|escapejs }}');
+    const tokenUsageData = JSON.parse('{{ token_usage_data|escapejs }}');
+
+    /* =======================
+       1. Request Volume
+    ======================= */
+    new Chart(
+        document.getElementById('requestVolumeChart'),
+        {
+            type: 'line',
+            data: {
+                labels: requestVolumeData.map(d => d.date),
+                datasets: [{
+                    label: 'Requests',
+                    data: requestVolumeData.map(d => d.count),
+                    borderColor: 'rgb(59, 130, 246)',
+                    backgroundColor: 'rgba(59, 130, 246, 0.1)',
+                    tension: 0.4,
+                    fill: true
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                scales: {
+                    y: { beginAtZero: true }
+                },
+                plugins: {
+                    legend: { display: true }
+                }
+            }
+        }
+    );
+
+    /* =======================
+       2. Error Trend
+    ======================= */
+    new Chart(
+        document.getElementById('errorTrendChart'),
+        {
+            type: 'bar',
+            data: {
+                labels: errorTrendData.map(d => d.date),
+                datasets: [{
+                    label: 'Errors',
+                    data: errorTrendData.map(d => d.count),
+                    backgroundColor: 'rgba(239, 68, 68, 0.7)',
+                    borderColor: 'rgb(239, 68, 68)',
+                    borderWidth: 1
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                scales: {
+                    y: { beginAtZero: true }
+                },
+                plugins: {
+                    legend: { display: false }
+                }
+            }
+        }
+    );
+
+    /* =======================
+       3. Status Code Distribution
+    ======================= */
+    const totalStatusRequests = statusDistributionData
+        .reduce((sum, item) => sum + item.value, 0);
+
+    const centerTextPlugin = {
+        id: 'centerText',
+        beforeDraw(chart) {
+            const { ctx, width, height } = chart;
+            ctx.save();
+
+            const textMain = totalStatusRequests.toLocaleString();
+
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'middle';
+
+            // Text chính
+            ctx.font = 'bold 22px Inter, sans-serif';
+            ctx.fillStyle = '#183856';
+            ctx.fillText(textMain, width / 2, height / 2 - 10);
+
+            ctx.restore();
+        }
+    };
+
+    new Chart(
+        document.getElementById('statusDistributionChart'),
+        {
+            type: 'doughnut',
+            data: {
+                labels: statusDistributionData.map(d => d.name),
+                datasets: [{
+                    data: statusDistributionData.map(d => d.value),
+                    backgroundColor: [
+                        'rgba(16, 185, 129, 0.7)',  // 2xx
+                        'rgba(59, 130, 246, 0.7)',  // 3xx
+                        'rgba(234, 179, 8, 0.7)',   // 4xx
+                        'rgba(239, 68, 68, 0.7)'    // 5xx
+                    ],
+                    borderWidth: 1
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: {
+                        position: 'bottom'
+                    }
+                }
+            },
+            plugins: [centerTextPlugin]
+        }
+    );
+
+    /* =======================
+       4. Token Usage
+    ======================= */
+
+    const tokenCtx = document.getElementById('tokenUsageChart').getContext('2d');
+
+    new Chart(tokenCtx, {
+        type: 'line',
+        data: {
+            labels: tokenUsageData.map(d => d.date),
+            datasets: [
+                {
+                    label: 'Input Tokens',
+                    data: tokenUsageData.map(d => d.input_tokens),
+                    borderColor: 'rgb(59, 130, 246)',
+                    backgroundColor: 'rgba(59, 130, 246, 0.1)',
+                    tension: 0.4,
+                    fill: true
+                },
+                {
+                    label: 'Output Tokens',
+                    data: tokenUsageData.map(d => d.output_tokens),
+                    borderColor: 'rgb(16, 185, 129)',
+                    backgroundColor: 'rgba(16, 185, 129, 0.1)',
+                    tension: 0.4,
+                    fill: true
+                }
+            ]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            scales: {
+                x: {
+                    display: true,
+                    ticks: {
+                        maxTicksLimit: 10,
+                        autoSkip: true
+                    }
+                },
+                y: {
+                    beginAtZero: true,
+                    ticks: {
+                        stepSize: 1,
+                        precision: 0
+                    }
+                }
+            },
+            plugins: {
+                legend: {
+                    display: true,
+                    position: 'top'
+                }
+            }
+        }
+    });
+
+});
+</script>

@@ -1,0 +1,39 @@
+{% extends 'admin/base.html' %}
+
+
+{% block title %}
+    {% if subtitle %}
+        {{ subtitle }} |
+    {% endif %}
+
+    {{ 'Dashboard' }} | {{ site_title|default:_('Django site admin') }}
+{% endblock %}
+
+{% block branding %}
+    {% include "unfold/helpers/site_branding.html" %}
+{% endblock %}
+
+{% block content %}
+
+<!-- TABS -->
+<div class="border-b mb-6 flex gap-6 text-sm font-medium">
+    <a href="?tab=business"
+       class="{% if active_tab == 'business' %}border-b-2 border-primary text-primary{% endif %} pb-2">
+        Nghiệp vụ
+    </a>
+
+    <a href="?tab=technical"
+       class="{% if active_tab == 'technical' %}border-b-2 border-primary text-primary{% endif %} pb-2">
+        Kỹ thuật
+    </a>
+</div>
+
+<!-- TAB CONTENT -->
+{% if active_tab == "technical" %}
+    {% include "admin/dashboard/technical.html" %}
+{% else %}
+    {% include "admin/dashboard/business.html" %}
+{% endif %}
+
+{% endblock %}
+

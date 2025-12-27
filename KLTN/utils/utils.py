@@ -7,25 +7,21 @@ import pytz
 import importlib
 from django.utils.encoding import force_str
 from django.utils.http import urlsafe_base64_decode
-import re
-from django.contrib.contenttypes.models import ContentType
 import logging
 from constants.error_codes import ErrorCodes
-import difflib
-from ICD10.models.chatbot import ChatMessage, ChatSession
+from ICD10.models.chatbot import ChatMessage
 import requests
 from constants.constants import Constants
 from libs.Redis import RedisWrapper
 from libs.response_handle import AppResponse
 import os
 import boto3, uuid
-from django.core import signing, mail
+from django.core import signing
 from django.core.mail import EmailMultiAlternatives
 from django.template.loader import render_to_string
 from django.utils.html import strip_tags
 from email.mime.image import MIMEImage
-import numpy as np
-from ICD10.models.icd10 import ICDDisease, DiseaseExtraInfo
+from ICD10.models.login_event import LoginEvent
 
 
 class Utils:
@@ -293,113 +289,24 @@ class Utils:
 
         msg.send()
         
+    @staticmethod
+    def get_client_ip(request):
+        x_forwarded_for = request.META.get("HTTP_X_FORWARDED_FOR")
+        if x_forwarded_for:
+            return x_forwarded_for.split(",")[0]
+        return request.META.get("REMOTE_ADDR")
     
-    # @staticmethod
-    # def add_new_disease_embedding(disease_code):
-    #     """
-    #     Thêm embedding cho bệnh mới (nếu chưa tồn tại trong FAISS index).
-    #     """
-    #     try:
-    #         index = faiss.read_index("icd10_index_vi.faiss")
-    #         texts = np.load("icd10_texts_vi.npy", allow_pickle=True)
-    #         codes = np.load("icd10_codes.npy", allow_pickle=True)
+    @staticmethod
+    def log_login_event(request, *, user=None, status, identifier=None):
+        ip_address = Utils.get_client_ip(request)
+        user_agent = request.META.get("HTTP_USER_AGENT", "")
+        device = request.META.get("HTTP_DEVICE", "")
 
-    #         if disease_code in codes:
-    #             print(f"⚠️ Mã bệnh {disease_code} đã tồn tại trong index, dùng reembed_disease thay vì thêm mới.")
-    #             return
-
-    #         # --- Lấy dữ liệu mới từ DB ---
-    #         try:
-    #             d = ICDDisease.objects.get(code=disease_code)
-    #         except ICDDisease.DoesNotExist:
-    #             print(f"❌ Không tìm thấy mã bệnh {disease_code} trong database.")
-    #             return
-
-    #         extra_info = DiseaseExtraInfo.objects.filter(disease=d).first()
-    #         if extra_info:
-    #             new_text = f"{d.code} - {d.title_vi} - {extra_info.description or ''} - {extra_info.symptoms or ''}"
-    #         else:
-    #             new_text = f"{d.code} - {d.title_vi}"
-
-    #         # --- Encode text mới ---
-    #         model = Utils.get_model()
-    #         new_vector = model.encode(
-    #             [f"query: {new_text}"],
-    #             convert_to_numpy=True,
-    #             normalize_embeddings=True
-    #         )
-
-    #         # --- Thêm vào FAISS ---
-    #         index.add(new_vector)
-
-    #         # --- Append vào danh sách ---
-    #         texts = np.append(texts, new_text)
-    #         codes = np.append(codes, disease_code)
-
-    #         # --- Ghi lại ---
-    #         faiss.write_index(index, "icd10_index_vi.faiss")
-    #         np.save("icd10_texts_vi.npy", texts)
-    #         np.save("icd10_codes.npy", codes)
-
-    #         print(f"✅ Đã thêm embedding cho bệnh mới {disease_code}.")
-            
-    #         return True
-    #     except Exception as e:
-    #         Utils.logger().error(f"Lỗi khi thêm embedding cho bệnh mới {disease_code}: {e}")
-    #         raise
-
-    # @staticmethod
-    # def reembed_disease(disease_code):
-    #     """
-    #     Cập nhật lại embedding cho 1 bệnh cụ thể trong FAISS + file .npy
-    #     """
-    #     try:    
-    #         # --- Bước 1: Load dữ liệu gốc ---
-    #         index = faiss.read_index("icd10_index_vi.faiss")
-    #         texts = np.load("icd10_texts_vi.npy", allow_pickle=True)
-    #         codes = np.load("icd10_codes.npy", allow_pickle=True)
-
-    #         if disease_code not in codes:
-    #             print(f"⚠️ Không tìm thấy mã bệnh {disease_code} trong danh sách codes.")
-    #             return
-
-    #         # --- Bước 2: Lấy dữ liệu mới từ DB ---
-    #         d = ICDDisease.objects.get(code=disease_code)
-    #         extra_info = DiseaseExtraInfo.objects.filter(disease=d).first()
-    #         if extra_info:
-    #             new_text = f"{d.code} - {d.title_vi} - {extra_info.description or ''} - {extra_info.symptoms or ''}"
-    #         else:
-    #             new_text = f"{d.code} - {d.title_vi}"
-
-    #         # --- Bước 3: Encode lại ---
-    #         model = Utils.get_model()
-    #         new_vector = model.encode(
-    #             [f"query: {new_text}"],
-    #             convert_to_numpy=True,
-    #             normalize_embeddings=True
-    #         )[0]
-
-    #         # --- Bước 4: Cập nhật vào FAISS ---
-    #         idx = np.where(codes == disease_code)[0][0]  # vị trí trong mảng
-
-    #         # Lấy tất cả vectors từ index hiện tại
-    #         vectors = np.zeros((index.ntotal, index.d), dtype="float32")
-    #         for i in range(index.ntotal):
-    #             vectors[i] = index.reconstruct(i)
-                
-    #         # Cập nhật vector mới vào vị trí tương ứng
-    #         vectors[idx] = new_vector
-    #         # Tạo index mới và thêm tất cả vectors vào
-    #         new_index = faiss.IndexFlatIP(vectors.shape[1])
-    #         new_index.add(vectors)
-
-    #         # --- Bước 5: Ghi lại dữ liệu ---
-    #         texts[idx] = new_text
-    #         faiss.write_index(new_index, "icd10_index_vi.faiss")
-    #         np.save("icd10_texts_vi.npy", texts)
-    #         print(f"✅ Đã re-embed thành công bệnh {disease_code}.")
-            
-    #         return True
-    #     except Exception as e:
-    #         Utils.logger().error(f"Lỗi khi re-embed bệnh {disease_code}: {e}")
-    #         raise
+        LoginEvent.objects.create(
+            user=user,
+            status=status,
+            ip_adress=ip_address,
+            user_agent=user_agent,
+            device=device,
+            identifier=identifier
+        )

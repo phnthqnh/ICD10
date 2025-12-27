@@ -1,0 +1,453 @@
+{% comment %} business.html {% endcomment %}
+<div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
+
+    <div class="bg-gradient-to-r from-blue-500 to-blue-600 text-white p-5 rounded-xl shadow">
+        <div class="flex items-center justify-between">
+            <div>
+                <p class="text-sm opacity-90">Tổng số người dùng</p>
+                <p class="text-3xl font-bold">{{ total_users }}</p>
+            </div>
+            <div class="bg-white/20 rounded-full p-3 w-12 h-12">
+                <span class="material-icons-outlined text-3xl">
+                    people
+                </span>
+            </div>
+        </div>
+    </div>
+
+    <div class="bg-gradient-to-r from-emerald-500 to-emerald-600 text-white p-5 rounded-xl shadow">
+        <div class="flex items-center justify-between">
+            <div>
+                <p class="text-sm opacity-90">Tổng phiên chat hôm nay</p>
+                <p class="text-3xl font-bold">{{ chat_sessions_today }}</p>
+            </div>
+            <div class="bg-white/20 rounded-full p-3 w-12 h-12">
+                <span class="material-icons-outlined text-3xl">
+                    chat_bubble_outline
+                </span>
+            </div>
+        </div>
+    </div>
+
+    <div class="bg-gradient-to-r from-red-400 to-red-500 text-white p-5 rounded-xl shadow">
+        <div class="flex items-center justify-between">
+            <div>
+                <p class="text-sm opacity-90">Số góp ý chưa xử lý</p>
+                <p class="text-3xl font-bold">{{ pending_feedback }}</p>
+            </div>
+            <div class="bg-white/20 rounded-full p-3 w-12 h-12">
+                <span class="material-icons-outlined text-3xl">
+                    feedback
+                </span>
+            </div>
+        </div>
+    </div>
+
+    <div class="bg-gradient-to-r from-orange-500 to-orange-600 text-white p-5 rounded-xl shadow">
+        <div class="flex items-center justify-between">
+            <div>
+                <p class="text-sm opacity-90">Trung bình đánh giá chatbot</p>
+                <p class="text-3xl font-bold">{{ avg_chatbot_rating|default:"-"|floatformat:1 }}</p>
+            </div>
+            <div class="bg-white/20 rounded-full p-3 w-12 h-12">
+                <span class="material-icons-outlined text-3xl">
+                    star_border
+                </span>
+            </div>
+        </div>
+    </div>
+
+</div>
+
+<!-- Charts -->
+<div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
+
+    <!-- Chatbot Usage Over Time -->
+    <div class="bg-white p-6 rounded shadow">
+        <h3 class="text-lg font-semibold mb-4">Mức độ sử dụng Chatbot theo thời gian (7 ngày gần đây)</h3>
+        <div style="position: relative; height: 300px; width: 100%;">
+            <canvas id="usageChart"></canvas>
+        </div>
+    </div>
+
+    <!-- Feedback Trend -->
+    <div class="bg-white p-6 rounded shadow">
+        <h3 class="text-lg font-semibold mb-4">Lượng phản hồi theo thời gian (7 ngày gần đây)</h3>
+        <div style="position: relative; height: 300px; width: 100%;">
+            <canvas id="feedbackChart"></canvas>
+        </div>
+    </div>
+
+</div>
+
+<div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
+    <!-- ICD Feedback Distribution -->
+    <div class="bg-white p-6 rounded shadow">
+        <h3 class="text-lg font-semibold mb-4">Phân phối phản hồi ICD</h3>
+        <div style="position: relative; height: 300px; width: 100%;">
+            <canvas id="distributionChart"></canvas>
+        </div>
+    </div>
+    <!-- Login Events (Last 7 Days) -->
+    <div class="bg-white p-6 rounded shadow">
+        <h3 class="text-lg font-semibold mb-4">Sự kiện đăng nhập (7 ngày gần đây)</h3>
+        <div style="position: relative; height: 300px; width: 100%;">
+            <canvas id="loginEventsChart"></canvas>
+        </div>
+    </div>
+</div>
+
+<!-- Tables Section -->
+<div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+
+    <!-- Latest Feedback -->
+    <div class="bg-white p-6 rounded-xl shadow">
+        <h3 class="flex items-center gap-2 text-lg font-semibold mb-4 text-gray-800">
+            <span class="material-icons-outlined text-gray-500">
+                notifications
+            </span> 
+            Phản hồi mới nhất của người dùng
+        </h3>
+
+        <div class="overflow-x-auto">
+            <table class="min-w-full text-sm">
+                <thead class="bg-gray-100 text-gray-600 uppercase text-xs">
+                    <tr>
+                        <th class="px-4 py-3">Mã</th>
+                        <th class="px-4 py-3">Tiêu đề</th>
+                        <th class="px-4 py-3">Trạng thái</th>
+                        <th class="px-4 py-3">Ngày gửi</th>
+                    </tr>
+                </thead>
+                <tbody class="divide-y">
+                    {% for fb in latest_feedbacks %}
+                    <tr class="hover:bg-red-50">
+                        <td class="px-4 py-3 font-mono">{{ fb.code }}</td>
+                        <td class="px-4 py-3 text-center">{{ fb.title_vi }}</td>
+                        <td class="px-4 py-3 text-center font-bold
+                            {% if fb.status == 2  %}
+                                text-red-600
+                            {% elif fb.status == 1 %}
+                                text-emerald-600
+                            {% else %}
+                                text-gray-600
+                            {% endif %}
+                        ">
+                            {% if fb.status == 2  %}
+                                Từ chối
+                            {% elif fb.status == 1 %}
+                                Chấp nhận
+                            {% else %}
+                                Chưa xử lý
+                            {% endif %}
+                        </td>
+                        <td class="px-4 py-3 text-xs text-gray-500">
+                            {{ fb.created_at|date:"H:i:s d/m/Y" }}
+                        </td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="4" class="text-center py-6 text-gray-500">
+                            Không có phản hồi mới
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <!-- Top Icd Feedbacks -->
+    <div class="bg-white p-6 rounded-xl shadow">
+        <h3 class="flex items-center gap-2 text-lg font-semibold mb-4 text-gray-800">
+            <span class="material-icons-outlined text-gray-500">
+                123
+            </span> 
+            Top ICD-10 có nhiều phản hồi nhất
+        </h3>
+
+        <div class="overflow-x-auto">
+            <table class="min-w-full text-sm">
+                <thead class="bg-gray-100 text-gray-600 uppercase text-xs">
+                    <tr>
+                        <th class="px-4 py-3">Mã</th>
+                        <th class="px-4 py-3">Tiêu đề</th>
+                    </tr>
+                </thead>
+                <tbody class="divide-y">
+                    {% for top in top_icd_feedbacks %}
+                    <tr class="hover:bg-orange-50">
+                        <td class="px-4 py-3 text-center font-mono">{{ top.code_name }}</td>
+                        <td class="px-4 py-3 text-center">{{ top.title }}</td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="4" class="text-center py-6 text-gray-500">
+                            Không có phản hồi ICD-10
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <!-- Worst Rated Chatbots -->
+    <div class="bg-white p-6 rounded-xl shadow">
+        <h3 class="flex items-center gap-2 text-lg font-semibold mb-4 text-gray-800">
+            <span class="material-icons-outlined text-gray-500">
+                mood_bad
+            </span>
+            Phản hồi Chatbot tệ nhất (rating thấp)
+        </h3>
+
+        <div class="overflow-x-auto">
+            <table class="min-w-full text-sm">
+                <thead class="bg-gray-100 text-gray-600 uppercase text-xs">
+                    <tr>
+                        <th class="px-4 py-3">Người gửi</th>
+                        <th class="px-4 py-3">Số sao</th>
+                        <th class="px-4 py-3">Bình luận</th>
+                        <th class="px-4 py-3">Ngày gửi</th>
+                    </tr>
+                </thead>
+                <tbody class="divide-y">
+                    {% for log in worst_chatbot_feedback %}
+                    <tr class="hover:bg-gray-50">
+                        <td class="px-4 py-3 font-mono">{{ log.chat_message__session__user__username }}</td>
+                        <td class="px-4 py-3 text-center">{{ log.rating }}</td>
+                        <td class="px-4 py-3 text-center">{{ log.comments|default:"-" }}</td>
+                        <td class="px-4 py-3 text-xs text-gray-500">
+                            {{ log.created_at|date:"H:i:s d/m/Y" }}
+                        </td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="5" class="text-center py-6 text-gray-500">
+                            Không có phản hồi Chatbot
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+</div>
+
+<!-- Chart.js Script -->
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    
+    // Parse JSON data from Django
+    const usageData = JSON.parse('{{ usage_data|escapejs }}');
+    const feedbackData = JSON.parse('{{ feedback_trend|escapejs }}');
+    const distributionData = JSON.parse('{{ icd_distribution|escapejs }}');
+    const loginEventsData = JSON.parse('{{ login_events|escapejs }}');
+    
+    // 1. Chatbot Usage Over Time
+    const usageCtx = document.getElementById('usageChart').getContext('2d');
+    
+    new Chart(usageCtx, {
+        type: 'line',
+        data: {
+            labels: usageData.map(d => d.date),
+            datasets: [
+                {
+                    label: 'Sessions',
+                    data: usageData.map(d => d.sessions),
+                    borderColor: 'rgb(59, 130, 246)',
+                    backgroundColor: 'rgba(59, 130, 246, 0.1)',
+                    tension: 0.4,
+                    fill: true
+                },
+                {
+                    label: 'Messages',
+                    data: usageData.map(d => d.messages),
+                    borderColor: 'rgb(16, 185, 129)',
+                    backgroundColor: 'rgba(16, 185, 129, 0.1)',
+                    tension: 0.4,
+                    fill: true
+                }
+            ]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            scales: {
+                x: {
+                    display: true,
+                    ticks: {
+                        maxTicksLimit: 10,
+                        autoSkip: true
+                    }
+                },
+                y: {
+                    beginAtZero: true,
+                    ticks: {
+                        stepSize: 1,
+                        precision: 0
+                    }
+                }
+            },
+            plugins: {
+                legend: {
+                    display: true,
+                    position: 'top'
+                }
+            }
+        }
+    });
+
+    // 2. Feedback Trend
+    const feedbackCtx = document.getElementById('feedbackChart').getContext('2d');
+    
+    new Chart(feedbackCtx, {
+        type: 'bar',
+        data: {
+            labels: feedbackData.map(d => d.date),
+            datasets: [{
+                label: 'Feedback Count',
+                data: feedbackData.map(d => d.count),
+                backgroundColor: 'rgba(24, 56, 86, 0.7)',
+                borderColor: 'rgb(24, 56, 86)',
+                borderWidth: 1
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            scales: {
+                x: {
+                    display: true,
+                    ticks: {
+                        maxTicksLimit: 10,
+                        autoSkip: true
+                    }
+                },
+                y: {
+                    beginAtZero: true,
+                    ticks: {
+                        stepSize: 1,
+                        precision: 0
+                    }
+                }
+            },
+            plugins: {
+                legend: {
+                    display: false
+                }
+            }
+        }
+    });
+
+    // 3. ICD Feedback Distribution
+    const totalFBRequests = distributionData
+        .reduce((sum, d) => sum + d.value, 0);
+
+    const centerTextPlugin = {
+        id: 'centerText',
+        afterDraw: function(chart) {
+            const {ctx, width, height} = chart;
+            ctx.save();
+
+            const textMain = totalFBRequests.toLocaleString();
+            ctx.font = 'bold 22px Inter, sans-serif';
+            ctx.fillStyle = '#183856';
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'middle';
+            ctx.fillText(textMain, width / 2, height / 2 - 10);
+
+            ctx.restore();
+        }
+    };
+
+    const distributionCtx = document.getElementById('distributionChart').getContext('2d');
+    
+    new Chart(distributionCtx, {
+        type: 'doughnut',
+        data: {
+            labels: distributionData.map(d => d.name),
+            datasets: [{
+                data: distributionData.map(d => d.value),
+                backgroundColor: [
+                    'rgba(239, 68, 68, 0.7)',
+                    'rgba(59, 130, 246, 0.7)',
+                    'rgba(16, 185, 129, 0.7)'
+                ],
+                borderColor: [
+                    'rgb(239, 68, 68)',
+                    'rgb(59, 130, 246)',
+                    'rgb(16, 185, 129)'
+                ],
+                borderWidth: 1
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: {
+                    display: true,
+                    position: 'bottom'
+                }
+            }
+        },
+        plugins: [centerTextPlugin]
+    });
+
+    // 4. Login Events (Last 7 Days)
+    const loginEventsCtx = document.getElementById('loginEventsChart').getContext('2d');
+    new Chart(loginEventsCtx, {
+        type: 'line',
+        data: {
+            labels: loginEventsData.map(d => d.date),
+            datasets: [
+                {
+                    label: 'Successful Logins',
+                    data: loginEventsData.map(d => d.success_count),
+                    backgroundColor: 'rgba(59, 130, 246, 0.1)',
+                    borderColor: 'rgb(34, 197, 94)',
+                    tension: 0.4,
+                    fill: true
+                },
+                {
+                    label: 'Failed Logins',
+                    data: loginEventsData.map(d => d.failure_count),
+                    backgroundColor: 'rgba(16, 185, 129, 0.1)',
+                    borderColor: 'rgb(239, 68, 68)',
+                    tension: 0.4,
+                    fill: true
+                }
+            ]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            scales: {
+                x: {
+                    display: true,
+                    ticks: {
+                        maxTicksLimit: 10,
+                        autoSkip: true
+                    }
+                },
+                y: {
+                    beginAtZero: true,
+                    ticks: {
+                        stepSize: 1,
+                        precision: 0
+                    }
+                }
+            },
+            plugins: {
+                legend: {
+                    display: true,
+                    position: 'top'
+                }
+            }
+        }
+    });
+});
+</script>
