@@ -11,6 +11,7 @@ export const uriConfig = {
     API_USER_INFOR_UPDATE: baseUrl + '/api/profile/update/',
     API_USER_INFOR_AVATAR: baseUrl + '/api/upload-avatar/',
     API_VERIFY_DOCTOR: baseUrl + '/api/verified_doctor/',
+    API_CHANGE_PASSWORD: baseUrl + '/api/change-password/',
     // ICD-10 endpoint
     API_GET_CHAPTER: baseUrl + '/api/get/chapter/',
     API_GET_BLOCK: baseUrl + '/api/get/block/',

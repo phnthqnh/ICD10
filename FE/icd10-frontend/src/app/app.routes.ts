@@ -36,7 +36,6 @@ export const appRoutes: Route[] = [
             {path: 'not-verify-email', loadChildren: () => import('app/modules/auth/not-verify-email/not-verify-email.routes')},
             {path: 'forgot-password', loadChildren: () => import('app/modules/auth/forgot-password/forgot-password.routes')},
             {path: 'confirm-password', loadChildren: () => import('app/modules/auth/confirm-password/confirm-password.routes')},
-            {path: 'reset-password', loadChildren: () => import('app/modules/auth/reset-password/reset-password.routes')},
             {path: 'sign-in', loadChildren: () => import('app/modules/auth/sign-in/sign-in.routes')},
             {path: 'sign-up', loadChildren: () => import('app/modules/auth/sign-up/sign-up.routes')},
         ]
@@ -94,6 +93,7 @@ export const appRoutes: Route[] = [
             {path: 'profile', loadChildren: () => import('app/modules/admin/user-info/user-info.routes')},
             {path: 'chat-bot', loadChildren: () => import('app/modules/admin/chat-bot/chat-bot.routes')},
             {path: 'notif-list', loadChildren: () => import('app/modules/admin/notif-list/notif-list.routes')},
+            {path: 'reset-password', loadChildren: () => import('app/modules/admin/reset-password/reset-password.routes')},
             // Dashboards
             // {path: 'dashboards', children: [
             //     {path: 'project', loadChildren: () => import('app/modules/admin/dashboards/project/project.routes')},

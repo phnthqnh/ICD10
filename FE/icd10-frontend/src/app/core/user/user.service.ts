@@ -116,6 +116,20 @@ export class UserService
             );
     }
 
+    /**
+     * change password
+     * 
+     */
+    changePassword(payload: any): Observable<any> {
+        return this._httpClient
+            .post<any>(uriConfig.API_CHANGE_PASSWORD, payload)
+            .pipe(
+                catchError((error) => {
+                    console.error('Error change password:', error);
+                    return of(null);
+                })
+            );
+    }
 
 
 }

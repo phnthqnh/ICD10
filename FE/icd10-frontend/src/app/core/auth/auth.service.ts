@@ -76,7 +76,6 @@ export class AuthService
         return this._httpClient.post(uriConfig.API_CONFIRM_PASSWORD, payload)
             .pipe(
             catchError((err: HttpErrorResponse) => {
-                debugger // *
                 // luôn trả về observable lỗi, không throw trực tiếp
                 return throwError(() => err);
             })

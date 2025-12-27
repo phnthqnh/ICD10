@@ -10,7 +10,7 @@ import { RouterLink } from '@angular/router';
 import { fuseAnimations } from '@fuse/animations';
 import { FuseAlertComponent, FuseAlertType } from '@fuse/components/alert';
 import { FuseValidators } from '@fuse/validators';
-import { AuthService } from 'app/core/auth/auth.service';
+import { UserService } from 'app/core/user/user.service';
 import { finalize } from 'rxjs';
 
 @Component({
@@ -36,7 +36,7 @@ export class AuthResetPasswordComponent implements OnInit
      * Constructor
      */
     constructor(
-        private _authService: AuthService,
+        private _userService: UserService,
         private _formBuilder: UntypedFormBuilder,
     )
     {
@@ -78,6 +78,28 @@ export class AuthResetPasswordComponent implements OnInit
             return;
         }
 
+        if (this.resetPasswordForm.get('password').value.length < 8) {
+            // Show the alert
+            this.showAlert = true;
+            // Set the alert
+            this.alert = {
+                type   : 'error',
+                message: 'Mật khẩu phải có ít nhất 8 ký tự.',
+            };
+            return;
+        }
+
+        // mật khẩu không được chỉ chứa số
+        const onlyNumbersRegex = /^[0-9]+$/;
+        if (onlyNumbersRegex.test(this.resetPasswordForm.get('password').value)) {
+            this.showAlert = true;
+            this.alert = {
+                type   : 'error',
+                message: 'Mật khẩu không được chỉ chứa số.',
+            };
+            return;
+        }
+
         // Disable the form
         this.resetPasswordForm.disable();
 
@@ -85,7 +107,10 @@ export class AuthResetPasswordComponent implements OnInit
         this.showAlert = false;
 
         // Send the request to the server
-        this._authService.resetPassword(this.resetPasswordForm.get('password').value)
+        const payload = {
+            password: this.resetPasswordForm.get('password').value.trim(),
+        };
+        this._userService.changePassword(payload)
             .pipe(
                 finalize(() =>
                 {
@@ -105,7 +130,7 @@ export class AuthResetPasswordComponent implements OnInit
                     // Set the alert
                     this.alert = {
                         type   : 'success',
-                        message: 'Your password has been reset.',
+                        message: 'Đổi mật khẩu thành công!',
                     };
                 },
                 (response) =>
@@ -113,7 +138,7 @@ export class AuthResetPasswordComponent implements OnInit
                     // Set the alert
                     this.alert = {
                         type   : 'error',
-                        message: 'Something went wrong, please try again.',
+                        message: 'Có lỗi xảy ra, vui lòng thử lại.',
                     };
                 },
             );
