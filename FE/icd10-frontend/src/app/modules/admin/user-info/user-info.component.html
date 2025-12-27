@@ -140,22 +140,25 @@
 
                         <!-- LICENSE NUMBER -->
                         <tr *ngIf="verified_doctor" class="border-b py-4">
-                            <td class="font-medium py-3">Mã số bác sĩ</td>
+                            <td class="font-medium py-3">Số giấy phép hành nghề</td>
                             <td>{{ user?.license_number }}</td>
                         </tr>
 
                         <!-- HOSPITAL -->
                         <tr *ngIf="verified_doctor" class="border-b py-4">
-                            <td class="font-medium py-3">Bệnh viện</td>
+                            <td class="font-medium py-3">Nơi công tác</td>
                             <td>{{ user?.hospital }}</td>
                         </tr>
 
                         <!-- VERIFICATION FILE -->
                         <tr *ngIf="verified_doctor" class="border-b py-4">
-                            <td class="font-medium py-3">Giấy xác minh</td>
+                            <td class="font-medium py-3">File xác minh bác sĩ</td>
                             <td class="py-3">
-                                <img [src]="previewVerification || user?.verification_file"
+                                <div (click)="openImagePreview()"
+                                    class="cursor-pointer">
+                                    <img [src]="previewVerification || user?.verification_file"
                                     class="border rounded w-36 h-36 object-cover" />
+                                </div>
                             </td>
                         </tr>
                     </tbody>
@@ -189,30 +192,59 @@
             <div>
                 <!-- file -->
                 <div class="relative py-4">
-                    <label class="font-medium flex items-center gap-1 mb-1">
-                        <mat-icon svgIcon="heroicons_outline:document-arrow-up"></mat-icon> File
+                    <label class="font-medium flex items-center gap-1 mb-2">
+                        <mat-icon svgIcon="heroicons_outline:document-arrow-up"></mat-icon>
+                        File xác minh bác sĩ <span class="text-red-500">*</span>
                     </label>
-                    <img *ngIf="previewVerification" [src]="previewVerification" class="border rounded w-36 h-36 object-cover" />
-                    <!-- Hidden Input -->
-                    <input #inputFile type="file" accept="pdf/*, image/*"
-                        (change)="onVerificationFileSelected($event)" />
+
+                    <!-- Preview -->
+                    <div
+                        class="w-36 h-36 border rounded flex items-center justify-center cursor-pointer hover:bg-gray-50"
+                        (click)="inputFile.click()"
+                    >
+                        <ng-container *ngIf="previewVerification; else emptyFile">
+                            <img
+                                [src]="previewVerification"
+                                class="w-full h-full object-cover rounded"
+                            />
+                        </ng-container>
+
+                        <ng-template #emptyFile>
+                            <span class="text-gray-400 text-sm text-center px-2">
+                                Click để tải file<br>(Ảnh)
+                            </span>
+                        </ng-template>
+                    </div>
+
+                    <input
+                        #inputFile
+                        type="file"
+                        accept="image/*"
+                        hidden
+                        (change)="onVerificationFileSelected($event)"
+                    />
+
+                    <!-- Error -->
+                    <span *ngIf="errorFields['file']" class="text-red-500 text-xs mt-1">
+                        {{ errorFields["file"] }}
+                    </span>
                 </div>
 
                 <!-- license_number -->
                 <div class="py-4">
                     <label class="font-medium flex items-center gap-1 mb-1">
-                        <mat-icon svgIcon="heroicons_outline:code-bracket"></mat-icon> Mã số bác sĩ
+                        <mat-icon svgIcon="heroicons_outline:code-bracket"></mat-icon> Số giấy phép hành nghề <span class="text-red-500">*</span>
                     </label>
-                    <input class="w-full border rounded px-3 py-2 mb-3" placeholder="Nhập mã số bác sĩ..."
+                    <input class="w-full border rounded px-3 py-2 mb-3" placeholder="Nhập số giấy phép hành nghề..."
                         [(ngModel)]="licenseNumber">
                 </div>
 
                 <!-- Bệnh viện -->
                 <div class="py-4">
                     <label class="font-medium flex items-center gap-1 mb-1">
-                        <mat-icon svgIcon="heroicons_outline:home-modern"></mat-icon> Bệnh viện
+                        <mat-icon svgIcon="heroicons_outline:home-modern"></mat-icon> Nơi công tác <span class="text-red-500">*</span>
                     </label>
-                    <input class="w-full border rounded px-3 py-2 mb-3" placeholder="Nhập bệnh viện..."
+                    <input class="w-full border rounded px-3 py-2 mb-3" placeholder="Nhập nơi công tác..."
                         [(ngModel)]="hospitalName">
                 </div>
             </div>
@@ -272,4 +304,27 @@
             </button>
         </div>
     </div>
+</div>
+
+<!-- Image Preview Modal -->
+<div
+    *ngIf="popupPreview"
+    class="fixed inset-0 z-[9999] bg-black/80 flex items-center justify-center"
+>
+    <!-- Close button -->
+    <button
+        class="absolute top-6 right-8 text-white text-4xl leading-none hover:text-gray-300"
+        (click)="closeImagePreview()"
+        aria-label="Close"
+    >
+        &times;
+    </button>
+
+    <!-- Image -->
+    <img
+        [src]="previewVerification || user?.verification_file"
+        class="max-w-[90vw] max-h-[90vh] object-contain cursor-zoom-out"
+        (click)="closeImagePreview()"
+        alt="Preview image"
+    />
 </div>

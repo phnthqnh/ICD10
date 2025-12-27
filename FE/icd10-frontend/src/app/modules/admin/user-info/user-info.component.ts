@@ -1,16 +1,12 @@
 import { Component, ViewEncapsulation, OnInit, ViewChild, inject, ElementRef } from '@angular/core';
 import { CommonModule, DatePipe } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { CdkScrollable } from '@angular/cdk/scrolling';
 import { MatTooltipModule } from '@angular/material/tooltip';
 import { MatIconModule } from '@angular/material/icon';
-import { LayoutComponent } from 'app/layout/layout.component';
 import { UserService } from 'app/core/user/user.service';
-import { switchMap } from 'rxjs/operators';
 import { animate, style, transition, trigger } from '@angular/animations';
 import { TranslocoService, TranslocoModule } from '@ngneat/transloco';
 import { AlertService } from 'app/core/alert/alert.service';
-import { NgModel } from '@angular/forms';
 
 @Component({
     selector: 'app-user-info',
@@ -62,6 +58,7 @@ export class UserInfoComponent implements OnInit {
     role: number = 0;
 
     popupEmail: boolean = false;
+    popupPreview: boolean = false;
 
     constructor(
         private _userService: UserService,
@@ -133,6 +130,7 @@ export class UserInfoComponent implements OnInit {
             this.globalErrorMessage = '';
             this.avatarPreviewUrl = '';
             this.isAvatarEditorVisible = false;
+            this.selectedFile = null;
             this.loadUserInfo();
         }
     }
@@ -191,16 +189,44 @@ export class UserInfoComponent implements OnInit {
 
         //     this.openPopUpEmail();
         // }
-
-        if (this.user?.verification_file) {
-            this.user.verification_file = this.cleanS3Url(this.user.verification_file);
+        if (!this.user.username) {
+            this.errorFields['username'] = 'Vui lồn nhập tên đăng nhập';
+            return;
         }
+
+        if (this.user.username.length < 3 || this.user.username.length > 30) {
+            this.errorFields['username'] = 'Tên đăng nhập phải từ 3 đến 30 ký tự';
+            return;
+        }
+
+        if (this.user.username.includes(' ')) {
+            this.errorFields['username'] = 'Tên đăng nhập không được chứa khoảng trắng';
+            return;
+        }
+
+        // tên đăng nhập không được chứa ký tự đặc biệt
+        const usernameRegex = /^[a-zA-Z0-9._-]+$/;
+        if (!usernameRegex.test(this.user.username)) {
+            this.errorFields['username'] = 'Tên đăng nhập không được chứa ký tự đặc biệt';
+            return;
+        }
+
+        // tên đăng nhập không được là chỉ số
+        const onlyNumbersRegex = /^[0-9]+$/;
+        if (onlyNumbersRegex.test(this.user.username)) {
+            this.errorFields['username'] = 'Tên đăng nhập không được là chỉ số';
+            return;
+        }
+
         const payload = {
             username: this.user?.username,
             first_name: this.user?.first_name,
             last_name: this.user?.last_name,
-            email: this.user?.email
         };
+
+        if (this.user?.verification_file) {
+            this.user.verification_file = this.cleanS3Url(this.user.verification_file);
+        }
 
         console.log("USER : ", payload);
 
@@ -228,7 +254,7 @@ export class UserInfoComponent implements OnInit {
                         const msg = e.message?.toLowerCase() || '';
 
                         if (field === 'username') {
-                            if (msg.includes('already exists')) {
+                            if (msg.includes('đã tồn tại')) {
                                 this.errorFields[field] = 'Tên đăng nhập tồn tại';
                             } else if (msg.includes('blank')) {
                                 this.errorFields[field] = 'Vui lồng nhập tên đăng nhập';
@@ -313,6 +339,19 @@ export class UserInfoComponent implements OnInit {
         if (!input.files || input.files.length === 0) return;
 
         const file = input.files[0];
+
+        // Validate size 5MB
+        if (file.size > 5 * 1024 * 1024) {
+            this.errorFields['file'] = 'Ảnh vượt quá dung lượng cho phép (tối đa 5MB).';
+            return;
+        }
+
+        // Validate type
+        if (!file.type.startsWith('image/')) {
+            this.errorFields['file'] = 'File ảnh không hợp lệ. Chỉ hỗ trợ file .jpg, .png, .gif, .bmp, .tiff, .webp';
+            return;
+        }
+
         if (file) {
             this.selectedFile = file;
             const reader = new FileReader();
@@ -331,6 +370,9 @@ export class UserInfoComponent implements OnInit {
 
     closeVerifyPopup() {
         this.verifyPopup = false
+        this.licenseNumber = '';
+        this.hospitalName = '';
+        this.selectedFile = null;
     }
 
     triggerFileEditor() {
@@ -380,5 +422,13 @@ export class UserInfoComponent implements OnInit {
                 });
             },
         });
+    }
+
+    openImagePreview() {
+        this.popupPreview = true;
+    }
+
+    closeImagePreview() {
+        this.popupPreview = false;
     }
 }
