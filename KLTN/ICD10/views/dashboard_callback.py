@@ -18,26 +18,38 @@ from django.db import models
 
 def dashboard_callback(request, context):
     tab = request.GET.get("tab", "business")
-
+    active_range  = request.GET.get("range", 30)
+    print("active_range", active_range)
+    active_range = int(active_range)
     context.update({
         "active_tab": tab,
+        "active_range": active_range,
+        "ranges": [7, 30, 90]
     })
 
     # BUSINESS DASHBOARD
     if tab == "business":
-        data = business()
+        data = business(active_range )
         context.update(data)
 
     # TECHNICAL DASHBOARD
     if tab == "technical":
-        data = technical()
+        data = technical(active_range )
         context.update(data)
 
     return context
 
 
-def business():
+def business(range_days):
     today = timezone.now().date()
+    
+    try:
+        range_days = int(range_days)
+    except ValueError:
+        range_days = 30
+        
+    if range_days not in (7, 30, 90):
+        range_days = 30
     
     # Overview
     # 1. tổng số người dùng
@@ -62,34 +74,36 @@ def business():
     
     # Charts
     # 1. số lượng sử dùng chatbot theo ngày (7 ngày)
-    last_7_days = today - timedelta(days=7)
+    start_date = today - timedelta(days=range_days-1)
     usage_data = []
     
-    for i in range(7):
-        date = last_7_days + timedelta(days=i)
-        sessions = ChatSession.objects.filter(created_at__date=date).count()
-        messages = ChatMessage.objects.filter(created_at__date=date).count()
+    current = start_date
+    while current <= today:
+        sessions = ChatSession.objects.filter(created_at__date=current).count()
+        messages = ChatMessage.objects.filter(created_at__date=current).count()
         usage_data.append({
-            "date": date.strftime("%d-%m-%Y"), 
+            "date": current.strftime("%d-%m-%Y"), 
             "sessions": sessions,
             "messages": messages
         })
+        current += timedelta(days=1)
     
     # 2. feedback trend
     feedback_trend = []
     
-    for i in range(7):
-        date = last_7_days + timedelta(days=i)
+    current = start_date
+    while current <= today:
         count = (
-            Feedback_Chapter.objects.filter(created_at__date=date).count() +
-            Feedback_Block.objects.filter(created_at__date=date).count() +
-            Feedback_Disease.objects.filter(created_at__date=date).count() +
-            Feedback_Chatbot.objects.filter(created_at__date=date).count()
+            Feedback_Chapter.objects.filter(created_at__date=current).count() +
+            Feedback_Block.objects.filter(created_at__date=current).count() +
+            Feedback_Disease.objects.filter(created_at__date=current).count() +
+            Feedback_Chatbot.objects.filter(created_at__date=current).count()
         )
         feedback_trend.append({
-            'date': date.strftime("%d-%m-%Y"),
+            'date': current.strftime("%d-%m-%Y"),
             'count': count
         })
+        current += timedelta(days=1)
         
     # 3. icd feedback distribution
     chapter_feedback = Feedback_Chapter.objects.count()
@@ -113,21 +127,22 @@ def business():
     
     # 4. login events (last 7 days) 
     login_events = []
-    for i in range(7):
-        date = last_7_days + timedelta(days=i)
+    current = start_date
+    while current <= today:
         success_count = LoginEvent.objects.filter(
-            created_at__date=date,
+            created_at__date=current,
             status="SUCCESS"
         ).count()
         failure_count = LoginEvent.objects.filter(
-            created_at__date=date,
+            created_at__date=current,
             status="FAILURE"
         ).count()
         login_events.append({
-            'date': date.strftime("%d-%m-%Y"),
+            'date': current.strftime("%d-%m-%Y"),
             'success_count': success_count,
             'failure_count': failure_count
         })
+        current += timedelta(days=1)
     
     # tables
     # 1. latest_feedbacks
@@ -166,6 +181,7 @@ def business():
         .values(
             code_name=models.F("chapter__code"),
             title=models.F("chapter__title_vi"),
+            count=Count("id"),
         )
         .annotate(
             feedback_count=Count("id"),
@@ -180,6 +196,7 @@ def business():
         .values(
             code_name=models.F("block__code"),
             title=models.F("block__title_vi"),
+            count=Count("id"),
         )
         .annotate(
             feedback_count=Count("id"),
@@ -194,6 +211,7 @@ def business():
         .values(
             code_name=models.F("disease__code"),
             title=models.F("disease__title_vi"),
+            count=Count("id"),
         )
         .annotate(
             feedback_count=Count("id"),
@@ -226,6 +244,7 @@ def business():
     )
     
     data = {
+        "range_days": range_days,
         "total_users": total_users,
         "chat_sessions_today": chat_sessions_today,
         "avg_chatbot_rating": avg_chatbot_rating,
@@ -241,8 +260,16 @@ def business():
     
     return data
 
-def technical():
+def technical(range_days):
     today = timezone.now().date()
+    
+    try:
+        range_days = int(range_days)
+    except ValueError:
+        range_days = 30
+        
+    if range_days not in (7, 30, 90):
+        range_days = 30
     
     total_requests = ApiRequestLog.objects.filter(created_at__date=today).count()
     
@@ -269,16 +296,17 @@ def technical():
     
     # charts
     # 1. request volume (7 days)
-    start_date = today - timedelta(days=7)
+    start_date = today - timedelta(days=range_days-1)
     request_volume = []
     
-    for i in range(7):
-        date = start_date + timedelta(days=i)
-        count = ApiRequestLog.objects.filter(created_at__date=date).count()
+    current = start_date
+    while current <= today:
+        count = ApiRequestLog.objects.filter(created_at__date=current).count()
         request_volume.append({
-            "date": date.strftime("%d-%m-%Y"),
+            "date": current.strftime("%d-%m-%Y"),
             "count": count
         })
+        current += timedelta(days=1)
         
     # 2. status code distribution
     status_distribution = {
@@ -307,32 +335,36 @@ def technical():
     
     # 3. error trend (7 days)
     error_trend = []
-    for i in range(7):
-        date = start_date + timedelta(days=i)
+    current = start_date
+    while current <= today:
         count = ApiRequestLog.objects.filter(
-            created_at__date=date,
+            created_at__date=current,
             status_code__gte=400
         ).count()
         error_trend.append({
-            "date": date.strftime("%d-%m-%Y"),
+            "date": current.strftime("%d-%m-%Y"),
             "count": count
         })
+        current += timedelta(days=1)
         
     # 4. token_usage data
     token_usage_data = []
-    for i in range(7):
-        date = start_date + timedelta(days=i)
+    current = start_date
+    while current <= today:
         input_tokens = TokenUsage.objects.filter(
-            date=date,
+            date=current,
         ).aggregate(total=Sum("input_tokens"))["total"] or 0
+        
         output_tokens = TokenUsage.objects.filter(
-            date=date,
+            date=current,
         ).aggregate(total=Sum("output_tokens"))["total"] or 0
+        
         token_usage_data.append({
-            "date": date.strftime("%d-%m-%Y"),
+            "date": current.strftime("%d-%m-%Y"),
             "input_tokens": input_tokens,
             "output_tokens": output_tokens
         })
+        current += timedelta(days=1)
         
     # Tables
     # 1. top failing apis
@@ -367,6 +399,7 @@ def technical():
     )
 
     data = {
+        "range_days": range_days,
         "total_requests_today": total_requests,
         "error_rate": round(
             (error_requests / total_requests * 100)

@@ -16,16 +16,31 @@
 {% block content %}
 
 <!-- TABS -->
-<div class="border-b mb-6 flex gap-6 text-sm font-medium">
-    <a href="?tab=business"
-       class="{% if active_tab == 'business' %}border-b-2 border-primary text-primary{% endif %} pb-2">
-        Nghiệp vụ
-    </a>
+<div class="border-b mb-6 flex gap-6 text-sm font-medium flex flex-row justify-between">
+    <div>
+        <a href="?tab=business"
+        class="{% if active_tab == 'business' %}border-b-2 me-2 border-primary-700 text-primary-700{% endif %} pb-2">
+            Nghiệp vụ
+        </a>
 
-    <a href="?tab=technical"
-       class="{% if active_tab == 'technical' %}border-b-2 border-primary text-primary{% endif %} pb-2">
-        Kỹ thuật
-    </a>
+        <a href="?tab=technical"
+        class="{% if active_tab == 'technical' %}border-b-2 mx-2 border-primary-700 text-primary-700{% endif %} pb-2">
+            Kỹ thuật
+        </a>
+    </div>
+    <div class="flex gap-2 mb-6">
+        {% for r in ranges %}
+            <a href="?tab={{ active_tab }}&range={{ r }}"
+                class="px-4 py-2 rounded text-sm border
+                {% if active_range == r %}
+                    bg-primary-700 text-white border-primary-700
+                {% else %}
+                    bg-white hover:bg-gray-50
+                {% endif %}">
+                    {{ r }} ngày
+            </a>
+        {% endfor %}
+    </div>
 </div>
 
 <!-- TAB CONTENT -->

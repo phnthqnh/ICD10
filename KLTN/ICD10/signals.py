@@ -182,8 +182,8 @@ def notify_admin_verify_request(sender, instance, created, **kwargs):
         )
     )
 
-    print('previous:', old.verification_file)
-    print('instance:', instance.verification_file)
+    # print('previous:', old.verification_file)
+    # print('instance:', instance.verification_file)
     
     if not (is_first_verify or is_update_verify):
         return

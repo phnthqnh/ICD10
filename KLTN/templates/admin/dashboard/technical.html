@@ -1,7 +1,7 @@
 <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
 
     <!-- Tổng request hôm nay -->
-    <div class="bg-gradient-to-r from-blue-500 to-blue-600 text-white p-5 rounded-xl shadow">
+    <div class="bg-sky-900 text-white p-5 rounded-xl shadow">
         <div class="flex items-center justify-between">
             <div>
                 <p class="text-sm opacity-90">Tổng request hôm nay</p>
@@ -18,7 +18,7 @@
     </div>
 
     <!-- Tỷ lệ lỗi -->
-    <div class="bg-gradient-to-r from-red-400 to-red-500 text-white p-5 rounded-xl shadow">
+    <div class="bg-sky-800 text-white p-5 rounded-xl shadow">
         <div class="flex items-center justify-between">
             <div>
                 <p class="text-sm opacity-90">Tỷ lệ lỗi</p>
@@ -50,7 +50,7 @@
     </div> {% endcomment %}
 
     <!-- Thời gian phản hồi -->
-    <div class="bg-gradient-to-r from-emerald-500 to-emerald-600 text-white p-5 rounded-xl shadow">
+    <div class="bg-sky-700 text-white p-5 rounded-xl shadow">
         <div class="flex items-center justify-between">
             <div>
                 <p class="text-sm opacity-90">Thời gian phản hồi TB</p>
@@ -66,7 +66,7 @@
     </div>
 
     <!-- Tổng token sử dụng -->
-    <div class="bg-gradient-to-r from-orange-400 to-orange-500 text-white p-5 rounded-xl shadow">
+    <div class="bg-sky-600 text-white p-5 rounded-xl shadow">
         <div class="flex items-center justify-between">
             <div>
                 <p class="text-sm opacity-90">Tổng token sử dụng hôm nay</p>
@@ -88,7 +88,7 @@
     <!-- Request Volume -->
     <div class="bg-white p-6 rounded shadow">
         <h3 class="text-lg font-semibold mb-4">
-            Khối lượng yêu cầu (7 ngày gần đây)
+            Khối lượng request ({{ range_days }} ngày gần đây)
         </h3>
         <div style="position: relative; height: 300px; width: 100%;">
             <canvas id="requestVolumeChart"></canvas>
@@ -98,7 +98,7 @@
     <!-- Error Trend -->
     <div class="bg-white p-6 rounded shadow">
         <h3 class="text-lg font-semibold mb-4">
-            Xu hướng lỗi (4xx + 5xx) (7 ngày gần đây)
+            Xu hướng lỗi (4xx + 5xx) ({{ range_days }} ngày gần đây)
         </h3>
         <div style="position: relative; height: 300px; width: 100%;">
             <canvas id="errorTrendChart"></canvas>
@@ -111,7 +111,7 @@
     <!-- Status Code Distribution -->
     <div class="bg-white p-6 rounded shadow">
         <h3 class="text-lg font-semibold mb-4">
-            Phân phối trạng thái Code
+            Phân phối Status Code
         </h3>
         <div style="position: relative; height: 300px; width: 100%;">
             <canvas id="statusDistributionChart"></canvas>
@@ -121,7 +121,7 @@
     <!-- Token Usage -->
     <div class="bg-white p-6 rounded shadow">
         <h3 class="text-lg font-semibold mb-4">
-            Số token sử dụng (7 ngày gần đây)
+            Số token sử dụng ({{ range_days }} ngày gần đây)
         </h3>
         <div style="position: relative; height: 300px; width: 100%;">
             <canvas id="tokenUsageChart"></canvas>
@@ -298,7 +298,7 @@ document.addEventListener('DOMContentLoaded', function () {
                 datasets: [{
                     label: 'Requests',
                     data: requestVolumeData.map(d => d.count),
-                    borderColor: 'rgb(59, 130, 246)',
+                    borderColor: '#183856',
                     backgroundColor: 'rgba(59, 130, 246, 0.1)',
                     tension: 0.4,
                     fill: true
@@ -367,7 +367,7 @@ document.addEventListener('DOMContentLoaded', function () {
             // Text chính
             ctx.font = 'bold 22px Inter, sans-serif';
             ctx.fillStyle = '#183856';
-            ctx.fillText(textMain, width / 2, height / 2 - 10);
+            ctx.fillText(textMain, width / 2, height / 2 - 15);
 
             ctx.restore();
         }
@@ -425,7 +425,7 @@ document.addEventListener('DOMContentLoaded', function () {
                 {
                     label: 'Output Tokens',
                     data: tokenUsageData.map(d => d.output_tokens),
-                    borderColor: 'rgb(16, 185, 129)',
+                    borderColor: '#183856',
                     backgroundColor: 'rgba(16, 185, 129, 0.1)',
                     tension: 0.4,
                     fill: true
