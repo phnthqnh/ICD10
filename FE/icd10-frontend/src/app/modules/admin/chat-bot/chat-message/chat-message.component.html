@@ -1,4 +1,4 @@
-<div class="flex flex-col overflow-y-auto lg:overflow-hidden bg-card dark:bg-default">
+<div class="flex flex-col overflow-y-auto w-full lg:overflow-hidden bg-card dark:bg-default">
 
     <ng-container *ngIf="chat; else selectChatOrStartNew">
         <!-- Header -->
@@ -25,10 +25,14 @@
             <div class="flex flex-col flex-auto flex-shrink p-6 bg-card dark:bg-transparent">
                 <ng-container
                     *ngFor="let message of chat; let i = index; let first = first; let last = last; trackBy: trackByFn">
-                    <div class="flex flex-col" [ngClass]="{'items-end': message.role === 'user',
+                    <div class="flex flex-col" [ngClass]="{
+                                                        'items-end': message.role === 'user',
                                                         'items-start': message.role === 'bot',
                                                         'mt-0.5': i > 0 && chat[i - 1].role === message.role,
-                                                        'mt-3': i > 0 && chat[i - 1].role !== message.role}">
+                                                        'mt-3': i > 0 && chat[i - 1].role !== message.role}"
+                        [attr.id]="message.id ? 'msg-' + message.id : null"
+                        [attr.data-message-id]="message.id"
+                        [@shake]="message.id === highlightMessageId">
                         <!-- Bubble -->
                         <div class="relative max-w-3/4 inline-block px-3 py-2 rounded-lg chat-bubble" 
                             [ngClass]="{'bg-blue-500 text-blue-50': message.role === 'user',
@@ -63,7 +67,7 @@
                             <ng-container *ngIf="message.role === 'bot'">
                                 <button
                                     mat-icon-button
-                                    [matTooltip]="'Góp ý'"
+                                    [matTooltip]="'Phản hồi'"
                                     (click)="openFeedback(message)"
                                     class="w-6 h-6 min-h-6 text-gray-400 hover:text-gray-600 transition"
                                 >
@@ -113,12 +117,18 @@
                         cdkTextareaAutosize
                         [cdkAutosizeMinRows]="1"
                         [cdkAutosizeMaxRows]="5"
-                        placeholder="Type a message"
+                        placeholder="Nhập tin nhắn"
                         class="m-2 px-2 block w-[98%] resize-none"></textarea>
                 </mat-form-field>
 
                 <div class="flex items-center h-11 my-px ml-4">
-                    <button mat-icon-button (click)="sendMessage(messageInput.value)">
+                    <button mat-icon-button (click)="sendMessage(messageInput.value)"
+                        [disabled]="!canSend(messageInput.value)"
+                        class="transition"
+                        [ngClass]="{
+                            'opacity-50 cursor-not-allowed': !canSend(messageInput.value)
+                        }"
+                    >
                         <mat-icon class="transform" [svgIcon]="'heroicons_outline:paper-airplane'"></mat-icon>
                     </button>
                 </div>
@@ -144,7 +154,7 @@
         <div class="flex items-center justify-between px-4 py-3 bg-primary-600 text-white rounded-t-lg">
             <div class="flex items-center gap-2 text-lg font-semibold">
                 <mat-icon svgIcon="heroicons_solid:information-circle" class="text-white"></mat-icon>
-                Góp ý về tin nhắn
+                Phản hồi về tin nhắn
             </div>
             <span class="material-icons cursor-pointer hover:text-gray-300" (click)="closeFeedbackPopup()">close</span>
         </div>

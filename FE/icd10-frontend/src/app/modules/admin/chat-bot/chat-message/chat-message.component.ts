@@ -19,11 +19,14 @@ import { AlertService } from 'app/core/alert/alert.service';
 import { ActivatedRoute } from '@angular/router';
 import { FeedBack } from 'app/core/feedback/feedback.types';
 import { FeedbackService } from 'app/core/feedback/feedback.service';
+import { set } from 'lodash';
+import { fuseAnimations } from '@fuse/animations';
 
 @Component({
     selector       : 'chat-message',
     templateUrl    : './chat-message.component.html',
     encapsulation  : ViewEncapsulation.None,
+    animations   : fuseAnimations,
     changeDetection: ChangeDetectionStrategy.OnPush,
     standalone     : true,
     imports        : [
@@ -59,6 +62,8 @@ export class ChatMessageComponent implements OnInit
     feedbackComment: string = "";    // comment của user
 
     isLoading: boolean = false;
+
+    highlightMessageId: number | null = null;
 
     /**
      * Constructor
@@ -185,7 +190,67 @@ export class ChatMessageComponent implements OnInit
                 });
             });
 
+        // Đọc hash từ URL khi component load
+        this.checkUrlHash();
 
+        // ✅ Lắng nghe thay đổi hash (cho nút back/forward của browser)
+        window.addEventListener('hashchange', () => {
+            this.checkUrlHash();
+        });
+    }
+
+    private checkUrlHash(): void {
+        // Lấy hash từ URL (ví dụ: #id)
+        const hash = window.location.hash;
+        console.log('chat', this.chat);
+        console.log('hash', hash);
+        if (hash && hash.startsWith('#/')) {
+            const id = Number(hash.substring(2));
+            console.log('id', id);
+            setTimeout(() => this.scrollToMessages(id), 100);
+        }
+    }
+
+    /**
+     * Scroll messages container to the message by id.
+     */
+    scrollToMessages(id: number): void {
+        try {
+            if (id === null || id === undefined) return;
+            // Prefer the messages panel as the search root so we only look inside the chat viewport
+            const container: HTMLElement = this._messagesPanel?.nativeElement;
+            const selector = `[data-message-id="${id}"]`;
+            let target: HTMLElement | null = null;
+
+            if (container) {
+                target = container.querySelector(selector) as HTMLElement;
+            }
+
+            // fallback to global id (older browsers or if attribute not present)
+            if (!target) {
+                target = document.getElementById(`msg-${id}`);
+            }
+
+            if (!target) return;
+
+            // If the messages container uses column-reverse, scrollIntoView still works
+            // but we ensure smooth scrolling and center the element for better UX.
+            target.scrollIntoView({ behavior: 'smooth', block: 'center' });
+
+            // Highlight
+            this.highlightMessageId = id;
+            this._changeDetectorRef.markForCheck();
+            console.log('highlightMessageId', this.highlightMessageId);
+
+            // Remove highlight after 1.5s
+            setTimeout(() => {
+                if (this.highlightMessageId === id) {
+                    this.highlightMessageId = null;
+                }
+            }, 1500);
+        } catch (e) {
+            // ignore errors
+        }
     }
 
 
@@ -352,16 +417,30 @@ export class ChatMessageComponent implements OnInit
                 this._changeDetectorRef.markForCheck();
             },
             error: (err) => {
+                console.error('Error creating chat:', err?.error?.error);
                 this.isLoading = false;
                 this.chat.pop();
-                this._alertService.showAlert({
-                    title: "Thất bại",
-                    message: "Đã có lỗi xảy ra, vui lòng thử lại.",
-                    type: 'error'
-                })
+                if (err?.status === 429) {
+                    this._alertService.showAlert({
+                        title: 'Thất bại',
+                        message: err?.error?.error,
+                        type: 'error',
+                    })
+                } else {
+                    this._alertService.showAlert({
+                        title: "Thất bại",
+                        message: "Đã có lỗi xảy ra, vui lòng thử lại sau ít phút.",
+                        type: 'error'
+                    })   
+                }
             }
         });
         this.messageInput.nativeElement.value = '';
+    }
+
+    canSend(message: string): boolean {
+        const hasText = message.trim();
+        return hasText && !this.isLoading;
     }
 
     openFeedback(message: any) {
@@ -388,7 +467,7 @@ export class ChatMessageComponent implements OnInit
         if (!this.feedbackRating) {
             this._alertService.showAlert({
                 title: "Thất bại",
-                message: "Vui lý chọn số sao đánh giá.",
+                message: "Vui lòng chọn số sao đánh giá.",
                 type: 'error'
             });
             return;
@@ -404,14 +483,14 @@ export class ChatMessageComponent implements OnInit
                 this.closeFeedbackPopup();
                 this._alertService.showAlert({
                     title: "Thàng công",
-                    message: "Gửi góp ý thành công!",
+                    message: "Gửi phản hồi thành công!",
                     type: 'success'
                 });
             },
             (error) => {
                 this._alertService.showAlert({
                     title: "Thất bại",
-                    message: "Gửi góp ý thất bại. Vui lòng thử lại.",
+                    message: "Gửi phản hồi thất bại. Vui lòng thử lại.",
                     type: 'error'
                 });
             });

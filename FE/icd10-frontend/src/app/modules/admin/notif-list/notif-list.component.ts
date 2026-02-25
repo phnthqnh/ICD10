@@ -124,7 +124,13 @@ export class NotifListComponent implements OnInit
         this._changeDetectorRef.markForCheck();
 
         this._notificationsService.markAsRead(notification.id, {is_read: next}).subscribe({
-            next: () => { /* server đã ok; service nên đã emit cập nhật */ },
+            next: () => { 
+                this._alertService.showAlert({
+                    title: 'Thành công',
+                    message: 'Cập nhật trạng thái đã đọc thành công',
+                    type: 'success'
+                })
+            },
             error: () => {
                 notification.is_read = prev; // rollback
                 this._changeDetectorRef.markForCheck();

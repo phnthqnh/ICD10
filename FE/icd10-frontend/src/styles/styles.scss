@@ -2,3 +2,21 @@
 /*  @ Import/write your custom styles here.
 /*  @ Styles from this file will override 'vendors.scss' and Fuse's base styles.
 /* ----------------------------------------------------------------------------------------------------- */
+
+@keyframes highlightSafe {
+    0% {
+        box-shadow: 0 0 0 0 rgba(250, 204, 21, 0.9);
+        outline: 2px solid #facc15;
+    }
+    50% {
+        box-shadow: 0 0 0 6px rgba(250, 204, 21, 0.5);
+    }
+    100% {
+        box-shadow: 0 0 0 0 rgba(250, 204, 21, 0);
+        outline: none;
+    }
+}
+
+.chat-bubble.highlight-message {
+    animation: highlightSafe 1.4s ease-out;
+}

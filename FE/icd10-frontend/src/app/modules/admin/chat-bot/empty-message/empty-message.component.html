@@ -55,7 +55,7 @@
         </div>
     </div>
     <!-- Select chat or start new -->
-    <div class="flex flex-col flex-auto items-center justify-center bg-card dark:bg-default">
+    <div *ngIf="!isLoading" class="flex flex-col flex-auto items-center justify-center bg-card dark:bg-default">
         <div class="my-4 text-2xl font-semibold tracking-tight text-secondary">Tôi có thể giúp gì cho bạn?</div>
         <ng-container>
             <!-- Message field -->
@@ -68,7 +68,6 @@
                     <textarea
                         matInput
                         #messageInput
-                        cdkTextareaAutosize
                         class="w-full resize-none outline-none"
                         placeholder="Nhập tin nhắn"
                         [cdkAutosizeMinRows]="1"
@@ -76,7 +75,13 @@
                     ></textarea>
                 </div>
                 <div class="flex items-center h-11 my-px ml-4">
-                    <button mat-icon-button (click)="sendMessage(messageInput.value)">
+                    <button mat-icon-button (click)="sendMessage(messageInput.value)"
+                        [disabled]="!canSend(messageInput.value)"
+                        class="transition"
+                        [ngClass]="{
+                            'opacity-50 cursor-not-allowed': !canSend(messageInput.value)
+                        }"
+                    >
                         <mat-icon class="transform" [svgIcon]="'heroicons_outline:paper-airplane'"></mat-icon>
                     </button>
                 </div>

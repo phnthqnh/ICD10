@@ -1190,8 +1190,8 @@ export const compactNavigation: FuseNavigationItem[] = [
     },
     {
         id      : 'feedback',
-        title   : 'Góp ý',
-        tooltip : 'Góp ý',
+        title   : 'Phản hồi',
+        tooltip : 'Phản hồi',
         type    : 'basic',
         link : '/feedback',
         icon    : 'heroicons_outline:chat-bubble-left-right',

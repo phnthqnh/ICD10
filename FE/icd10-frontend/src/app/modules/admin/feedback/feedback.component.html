@@ -1,7 +1,7 @@
 <!-- ...existing code... -->
 <div class="bg-white space-y-4 h-[calc(100vh-70px)] w-full overflow-y-auto">
     <div class="flex items-center justify-between mb-3 p-3">
-        <h2 class="text-2xl font-semibold">Góp ý của tôi</h2>
+        <h2 class="text-2xl font-semibold">Phản hồi của tôi</h2>
     </div>
     <!-- Tabs -->
     <mat-tab-group
@@ -54,7 +54,7 @@
                     </div>
                 </section>
                 <ng-template #noChapter>
-                    <div class="text-sm text-gray-500 italic">Chưa có góp ý cho Chương.</div>
+                    <div class="text-sm text-gray-500 italic">Chưa có phản hồi cho Chương.</div>
                 </ng-template>
             </ng-template>
         </mat-tab>
@@ -104,7 +104,7 @@
                     </div>
                 </section>
                 <ng-template #noBlock>
-                    <div class="text-sm text-gray-500 italic">Chưa có góp ý cho Nhóm.</div>
+                    <div class="text-sm text-gray-500 italic">Chưa có phản hồi cho Nhóm.</div>
                 </ng-template>
             </ng-template>
         </mat-tab>
@@ -157,7 +157,7 @@
                     </div>
                 </section>
                 <ng-template #noDisease>
-                    <div class="text-sm text-gray-500 italic">Chưa có góp ý cho Mã bệnh.</div>
+                    <div class="text-sm text-gray-500 italic">Chưa có phản hồi cho Mã bệnh.</div>
                 </ng-template>
             </ng-template>
         </mat-tab>
@@ -216,19 +216,19 @@
                     </div>
                 </section>
                 <ng-template #noChatbot>
-                    <div class="text-sm text-gray-500 italic">Chưa có góp ý cho Chatbot.</div>
+                    <div class="text-sm text-gray-500 italic">Chưa có phản hồi cho Chatbot.</div>
                 </ng-template>
             </ng-template>
         </mat-tab>
     </mat-tab-group>
 </div>
 
-<div *ngIf="showDetailICDPopup" class="fixed inset-0 bg-black/40 flex items-center justify-center z-[100]">
+<div *ngIf="showDetailICDPopup" class="fixed inset-0 bg-black/40 flex items-center justify-center z-[201]">
     <div class="w-[720px] bg-white rounded-lg shadow-lg max-h-[80vh] overflow-auto">
         <div class="flex items-center justify-between px-4 py-3 bg-primary-600 text-white rounded-t-lg">
             <div class="flex items-center gap-2 text-lg font-semibold">
                 <mat-icon svgIcon="heroicons_solid:information-circle" class="text-white"></mat-icon>
-                Chi tiết góp ý
+                Chi tiết phản hồi
             </div>
             <span class="material-icons cursor-pointer hover:text-gray-300" (click)="closeDetailPopup()">close</span>
         </div>
@@ -236,7 +236,7 @@
         <div class="p-5 space-y-3">
             <div class="grid grid-cols-2 gap-4">
                 <div>
-                    <div class="text-xs text-gray-500">Loại góp ý</div>
+                    <div class="text-xs text-gray-500">Loại phản hồi</div>
                     <div class="font-medium">{{ detailType | titlecase }}</div>
                 </div>
                 <div>
@@ -293,7 +293,7 @@
         <div class="flex items-center justify-between px-4 py-3 bg-primary-600 text-white rounded-t-lg">
             <div class="flex items-center gap-2 text-lg font-semibold">
                 <mat-icon svgIcon="heroicons_solid:chat-bubble-left-right" class="text-white"></mat-icon>
-                Chi tiết góp ý Chatbot
+                Chi tiết phản hồi Chatbot
             </div>
             <button (click)="closeDetailChatbot()">
                 <mat-icon class="cursor-pointer text-white">close</mat-icon>

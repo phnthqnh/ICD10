@@ -126,7 +126,7 @@
                         </tr>
 
                         <!-- VERIFIED DOCTOR STATUS -->
-                        <tr *ngIf="verified_doctor" class="border-b py-4">
+                        <tr *ngIf="haveVerified()" class="border-b py-4">
                             <td class="font-medium py-3">Được phê duyệt</td>
                             <td>
                                 <span [ngClass]="{
@@ -139,19 +139,19 @@
                         </tr>
 
                         <!-- LICENSE NUMBER -->
-                        <tr *ngIf="verified_doctor" class="border-b py-4">
+                        <tr *ngIf="haveVerified()" class="border-b py-4">
                             <td class="font-medium py-3">Số giấy phép hành nghề</td>
                             <td>{{ user?.license_number }}</td>
                         </tr>
 
                         <!-- HOSPITAL -->
-                        <tr *ngIf="verified_doctor" class="border-b py-4">
+                        <tr *ngIf="haveVerified()" class="border-b py-4">
                             <td class="font-medium py-3">Nơi công tác</td>
                             <td>{{ user?.hospital }}</td>
                         </tr>
 
                         <!-- VERIFICATION FILE -->
-                        <tr *ngIf="verified_doctor" class="border-b py-4">
+                        <tr *ngIf="haveVerified()" class="border-b py-4">
                             <td class="font-medium py-3">File xác minh bác sĩ</td>
                             <td class="py-3">
                                 <div (click)="openImagePreview()"
@@ -174,7 +174,7 @@
     </div>
 </div>
 
-<div *ngIf="verifyPopup" class="fixed inset-0 bg-black/40 flex items-center justify-center z-[100]">
+<div *ngIf="verifyPopup" class="fixed inset-0 bg-black/40 flex items-center justify-center z-[201]">
 
     <div class="w-[800px] bg-white rounded-lg shadow-lg max-h-[90vh] overflow-hidden">
 

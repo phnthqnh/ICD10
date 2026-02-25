@@ -356,7 +356,7 @@ export class FeedbackComponent implements OnInit{
 
     viewChat(): void {
         if (!this.detailItem) return;
-        const url = `${window.location.origin}/chat-bot/${this.detailItem?.session?.id}`;
+        const url = `${window.location.origin}/chat-bot/${this.detailItem?.session?.id}#/${this.detailItem?.chat_message?.id}`;
         window.open(url, '_blank');
     }
 

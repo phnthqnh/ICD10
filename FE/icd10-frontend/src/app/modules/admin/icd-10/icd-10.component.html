@@ -1,19 +1,15 @@
 <div class="grid grid-cols-1 sm:grid-cols-2 sm:h-[calc(100vh-120px)]">
 
     <!-- LEFT: Tree -->
-    <div class="w-full border-r p-4 relative">
-        <div *ngIf="isExpandingTree" 
-            class="absolute inset-0 bg-white bg-opacity-100 z-50 flex flex-col items-center justify-center">
-            <img src="assets/images/logo/loading.gif" alt="Loading..." class="w-auto h-full">
-            <p class="mt-3 text-gray-600 font-medium">Đang mở rộng cây phân loại...</p>
-        </div>
+    <div class="w-full border-r p-4">
         <div class="relative w-full mb-4 icd-search">
             <div class="flex items-center w-full h-full bg-white">
                 <mat-icon class="me-2" [svgIcon]="'heroicons_outline:magnifying-glass'"></mat-icon>
                 <input type="text"
                     class="flex-1 border-0 outline-none bg-transparent text-gray-700 text-base placeholder-gray-400"
                     placeholder="Nhập từ khóa để tìm kiếm..." [(ngModel)]="searchTerm"
-                    (ngModelChange)="onSearchChange()" />
+                    (ngModelChange)="onSearchChange()" 
+                    (focus)="isSearchTouched = true"/>
                 <!-- Nút X -->
                 <button *ngIf="searchTerm" type="button" (click)="searchTerm=''; suggestions=[]"
                     class="p-1 flex items-center justify-center rounded hover:bg-gray-200 transition">
@@ -21,7 +17,7 @@
                 </button>
             </div>
             <!-- GỢI Ý TÌM KIẾM (dropdown) -->
-            <div *ngIf="searchTerm"
+            <div *ngIf="isSearchTouched && searchTerm"
                 class="absolute left-0 right-0 mt-1 top-10 bg-white border rounded shadow-lg z-50 max-h-64 overflow-y-auto"
             >
                 <!-- Có kết quả -->
@@ -47,43 +43,50 @@
                 </ng-template>
             </div>
         </div>
-        <mat-tree [dataSource]="dataSource" [treeControl]="treeControl" class="icd-tree">
-            <!-- Node lá (không có con) -->
-            <mat-tree-node *matTreeNodeDef="let node" matTreeNodePadding
-                [attr.data-code]="node.code"
-                [attr.data-chapter]="node.level === 0 ? node.chapter : null"
-                [attr.data-level]="node.level"
-                [class.selected-node]="isNodeSelected(node)">
-                <!-- <button mat-icon-button disabled></button> -->
-                <span *ngIf="node.level === 0" (click)="showDetail(node.chapter, node.level)" class="cursor-pointer hover:text-primary-400">
-                    {{node.code}}: {{node.title_vi}}
-                </span>
-                <span *ngIf="node.level !== 0" (click)="showDetail(node.code, node.level)" class="cursor-pointer hover:text-primary-400">
-                    {{node.code}}: {{node.title_vi}}
-                </span>
-            </mat-tree-node>
-            <!-- Node có con (expandable) -->
-            <mat-tree-node *matTreeNodeDef="let node; when: hasChild" matTreeNodePadding
-                [attr.data-code]="node.code"
-                [attr.data-chapter]="node.level === 0 ? node.chapter : null"
-                [attr.data-level]="node.level"
-                [class.selected-node]="isNodeSelected(node)">
-                <button *ngIf="!node.is_leaf" mat-icon-button [matTreeNodeToggle]="node.expandable">
-                    <mat-icon>
-                        {{treeControl.isExpanded(node) ? 'expand_more' : 'chevron_right'}}
-                    </mat-icon>
-                </button>
-                <button *ngIf="node.is_leaf" mat-icon-button disabled></button>
-                <span *ngIf="node.level === 0" (click)="showDetail(node.chapter, node.level)"
-                    class="cursor-pointer font-semibold hover:text-primary-400">
-                    {{node.chapter}}: {{node.title_vi}}
-                </span>
-                <span *ngIf="node.level !== 0" (click)="showDetail(node.code, node.level)"
-                    class="cursor-pointer font-semibold hover:text-primary-400">
-                    {{node.code}}: {{node.title_vi}}
-                </span>
-            </mat-tree-node>
-        </mat-tree>
+        <div class="relative">
+            <div *ngIf="isExpandingTree" 
+                class="absolute inset-0 bg-white bg-opacity-100 z-50 flex flex-col items-center justify-center">
+                <img src="assets/images/logo/loading.gif" alt="Loading..." class="w-auto h-1/2">
+                <p class="mt-3 text-gray-600 font-medium">Đang mở rộng cây phân loại...</p>
+            </div>
+            <mat-tree [dataSource]="dataSource" [treeControl]="treeControl" class="icd-tree">
+                <!-- Node lá (không có con) -->
+                <mat-tree-node *matTreeNodeDef="let node" matTreeNodePadding
+                    [attr.data-code]="node.code"
+                    [attr.data-chapter]="node.level === 0 ? node.chapter : null"
+                    [attr.data-level]="node.level"
+                    [class.selected-node]="isNodeSelected(node)">
+                    <!-- <button mat-icon-button disabled></button> -->
+                    <span *ngIf="node.level === 0" (click)="showDetail(node.chapter, node.level)" class="cursor-pointer hover:text-primary-400">
+                        {{node.code}}: {{node.title_vi}}
+                    </span>
+                    <span *ngIf="node.level !== 0" (click)="showDetail(node.code, node.level)" class="cursor-pointer hover:text-primary-400">
+                        {{node.code}}: {{node.title_vi}}
+                    </span>
+                </mat-tree-node>
+                <!-- Node có con (expandable) -->
+                <mat-tree-node *matTreeNodeDef="let node; when: hasChild" matTreeNodePadding
+                    [attr.data-code]="node.code"
+                    [attr.data-chapter]="node.level === 0 ? node.chapter : null"
+                    [attr.data-level]="node.level"
+                    [class.selected-node]="isNodeSelected(node)">
+                    <button *ngIf="!node.is_leaf" mat-icon-button [matTreeNodeToggle]="node.expandable">
+                        <mat-icon>
+                            {{treeControl.isExpanded(node) ? 'expand_more' : 'chevron_right'}}
+                        </mat-icon>
+                    </button>
+                    <button *ngIf="node.is_leaf" mat-icon-button disabled></button>
+                    <span *ngIf="node.level === 0" (click)="showDetail(node.chapter, node.level)"
+                        class="cursor-pointer font-semibold hover:text-primary-400">
+                        {{node.chapter}}: {{node.title_vi}}
+                    </span>
+                    <span *ngIf="node.level !== 0" (click)="showDetail(node.code, node.level)"
+                        class="cursor-pointer font-semibold hover:text-primary-400">
+                        {{node.code}}: {{node.title_vi}}
+                    </span>
+                </mat-tree-node>
+            </mat-tree>
+        </div>
     </div>
 
     <!-- RIGHT: Detail -->
@@ -183,7 +186,7 @@
                             bg-gray-700 text-white text-xs px-2 py-1 rounded 
                             opacity-0 group-hover:opacity-100 
                             transition pointer-events-none whitespace-nowrap">
-                        Góp ý
+                        Phản hồi
                     </div>
                 </div>
             </ng-container>
@@ -208,7 +211,7 @@
     </div>
 </div>
 
-<div *ngIf="showFeedbackPopup" class="fixed inset-0 bg-black/40 flex items-center justify-center z-[100]">
+<div *ngIf="showFeedbackPopup" class="fixed inset-0 bg-black/40 flex items-center justify-center z-[201]">
 
     <div class="w-[800px] bg-white rounded-lg shadow-lg max-h-[90vh] overflow-hidden">
 
@@ -216,7 +219,7 @@
         <div class="flex items-center justify-between px-4 py-3 bg-primary-600 text-white rounded-t-lg">
             <div class="flex items-center gap-2 text-xl font-semibold">
                 <mat-icon svgIcon="heroicons_solid:chat-bubble-bottom-center-text" class="text-white"></mat-icon>
-                Góp ý
+                Phản hồi
             </div>
             <span class="material-icons cursor-pointer hover:text-gray-300" (click)="closeFeedbackPopup()">close</span>
         </div>
@@ -230,7 +233,7 @@
             <div *ngIf="!isLoggedIn" class="text-center py-10">
                 <h2 class="text-xl font-semibold mb-3">Bạn cần đăng nhập</h2>
                 <p class="text-gray-600 mb-5">
-                    Hãy đăng nhập trước khi gửi góp ý về mã bệnh ICD-10.
+                    Hãy đăng nhập trước khi gửi phản hồi về mã bệnh ICD-10.
                 </p>
 
                 <button (click)="signIn()" class="px-6 py-2 bg-primary-500 text-white rounded-lg hover:bg-primary-600">
@@ -250,7 +253,7 @@
                         <label class="font-medium flex items-center gap-1 mb-1">
                             <mat-icon svgIcon="heroicons_outline:code-bracket-square"></mat-icon> Mã
                         </label>
-                        <input class="w-full border rounded px-3 py-2 mb-3" placeholder="Góp ý về mã bệnh"
+                        <input class="w-full border rounded px-3 py-2 mb-3" placeholder="Phản hồi về mã bệnh"
                             [(ngModel)]="feedBack.code">
                     </div>
 
@@ -259,7 +262,7 @@
                         <label class="font-medium flex items-center gap-1 mb-1">
                             <mat-icon svgIcon="heroicons_outline:tag"></mat-icon> Tiêu đề
                         </label>
-                        <input class="w-full border rounded px-3 py-2 mb-3" placeholder="Góp ý về tiêu đề"
+                        <input class="w-full border rounded px-3 py-2 mb-3" placeholder="Phản hồi về tiêu đề"
                             [(ngModel)]="feedBack.title_vi">
                     </div>
                 </div>
@@ -364,10 +367,10 @@
                 <!-- Reason -->
                 <div>
                     <label class="font-medium flex items-center gap-1 mb-1">
-                        <mat-icon svgIcon="heroicons_outline:chat-bubble-left-right"></mat-icon> Lý do góp ý
+                        <mat-icon svgIcon="heroicons_outline:chat-bubble-left-right"></mat-icon> Lý do phản hồi
                     </label>
                     <textarea class="w-full border rounded px-3 py-2 resize-y" rows="4" required
-                        placeholder="Nhập lý do góp ý..." [(ngModel)]="feedBack.reason"></textarea>
+                        placeholder="Nhập lý do phản hồi..." [(ngModel)]="feedBack.reason"></textarea>
 
                 </div>
             </div>
@@ -377,7 +380,7 @@
             <!-- ============================= -->
              
             <div *ngIf="isLoggedIn && role !== 2" class="text-center py-10">
-                <h2 class="text-xl font-semibold mb-3">Chỉ có bác sĩ được góp ý về mã bệnh ICD-10.</h2>
+                <h2 class="text-xl font-semibold mb-3">Chỉ có bác sĩ được phản hồi về mã bệnh ICD-10.</h2>
                 <p class="text-gray-600 mb-5">
                     Nếu bạn là bác sĩ, hãy xác minh tài khoản nhé.
                 </p>

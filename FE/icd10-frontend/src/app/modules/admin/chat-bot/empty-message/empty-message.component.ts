@@ -129,6 +129,7 @@ export class EmptyMessageComponent implements OnInit, OnDestroy
 
                 // ✅ B3: Lấy session_id và tạo title từ 50 ký tự đầu
                 const sessionId = res.session_id;
+                console.log('sessionId', sessionId);
                 const title = message.substring(0, 50);
 
                 const newSession = {
@@ -141,8 +142,8 @@ export class EmptyMessageComponent implements OnInit, OnDestroy
                 this._chatService.addChatSession(newSession);
 
                 // Clear form
-                this.messageInput.nativeElement.value = '';
-                this.removeImage();
+                // this.messageInput.nativeElement.value = '';
+                // this.removeImage();
 
                 this.isLoading = false;
                 this._changeDetectorRef.markForCheck();
@@ -160,10 +161,14 @@ export class EmptyMessageComponent implements OnInit, OnDestroy
                 
                 this._alertService.showAlert({
                     title: 'Thất bại',
-                    message: 'Không thể tạo đoạn chat. Vui lòng thử lại.',
+                    message: 'Không thể tạo đoạn chat. Vui lòng thử lại sau ít phút.',
                     type: 'error'
                 });
             }
         })
+    }
+    canSend(message: string): boolean {
+        const hasText = message.trim();
+        return hasText && !this.isLoading;
     }
 }

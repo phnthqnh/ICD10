@@ -190,7 +190,7 @@ export class UserInfoComponent implements OnInit {
         //     this.openPopUpEmail();
         // }
         if (!this.user.username) {
-            this.errorFields['username'] = 'Vui lồn nhập tên đăng nhập';
+            this.errorFields['username'] = 'Vui lòng nhập tên đăng nhập';
             return;
         }
 
@@ -255,9 +255,9 @@ export class UserInfoComponent implements OnInit {
 
                         if (field === 'username') {
                             if (msg.includes('đã tồn tại')) {
-                                this.errorFields[field] = 'Tên đăng nhập tồn tại';
+                                this.errorFields[field] = 'Tên đăng nhập đã tồn tại';
                             } else if (msg.includes('blank')) {
-                                this.errorFields[field] = 'Vui lồng nhập tên đăng nhập';
+                                this.errorFields[field] = 'Vui lòng nhập tên đăng nhập';
                             }
                         }
                     });
@@ -379,6 +379,14 @@ export class UserInfoComponent implements OnInit {
         this.inputFile.nativeElement.click();
     }
 
+    haveVerified() : boolean {
+        if (!this.user.verified_doctor && this.user.license_number && this.user.hospital && this.user.verification_file) {
+            return true;
+        } else {
+            return false;
+        }
+    }
+
     verifyDoctor(event: Event): void {
         if (!this.selectedFile || !this.licenseNumber || !this.hospitalName) {
             this._alertService.showAlert({
@@ -409,7 +417,7 @@ export class UserInfoComponent implements OnInit {
                 this.user.hospital = this.hospitalName;
                 this.user.verification_file = this.selectedFile.name;
                 console.log('user', this.user);
-                this.verified_doctor = true;
+                this.verified_doctor = false;
                 this.closeVerifyPopup();
             },
             error: (error) => {

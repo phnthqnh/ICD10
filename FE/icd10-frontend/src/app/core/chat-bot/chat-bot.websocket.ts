@@ -41,7 +41,7 @@ export class ChatBotWebSocket {
 
         this.socket.onmessage = (event) => {
             const data = JSON.parse(event.data);
-            console.log("WS message:", data);
+            // console.log("WS message:", data);
             this._handleWebSocketMessage(data);
         };
 
@@ -56,7 +56,7 @@ export class ChatBotWebSocket {
 
     private _handleWebSocketMessage(data: any): void
     {
-        console.log('📨 Received WebSocket message:', data);
+        // console.log('📨 Received WebSocket message:', data);
         if (data.chunk !== undefined && !data.done) {
             this._botChunk.next(data.chunk);
         }

@@ -104,7 +104,7 @@ export class AuthSignUpComponent implements OnInit
                     this.signUpForm.enable();
 
                     // Reset the form
-                    this.signUpNgForm.resetForm();
+                    // this.signUpNgForm.resetForm();
 
                     // xóa lỗi cũ
                     this.signUpForm.get('username').setErrors(null);

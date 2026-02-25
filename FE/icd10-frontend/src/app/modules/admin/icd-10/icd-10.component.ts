@@ -54,6 +54,7 @@ export class Icd10Component implements OnInit {
     searchTerm: string = '';
     suggestions: any[] = [];
     typingTimer: any;
+    isSearchTouched = false;
 
     dataSource!: ICD10DataSource;
     selected: any = null;
@@ -101,7 +102,6 @@ export class Icd10Component implements OnInit {
         this.dataSource = new ICD10DataSource(this.treeControl, this._icdService);
         this.dataSource.initialize();
         this.isLoggedIn = this._authService.isLoggedIn();
-        console.log('isLoggedIn', this.isLoggedIn, 'this.role', this.role);
         this.loadAllData();
 
         // Đọc hash từ URL khi component load
@@ -550,6 +550,7 @@ export class Icd10Component implements OnInit {
     selectSuggestion(item: any) {
         this.searchTerm = `${item.code} ${item.title_vi}`;
         this.suggestions = [];
+        this.isSearchTouched = false;
         this.showDetail(item.code, item.level);
     }
 
@@ -560,6 +561,10 @@ export class Icd10Component implements OnInit {
         this.typingTimer = setTimeout(() => {
             this.generateSuggestions();
         }, 1000);
+    }
+
+    verifyDoctor() {
+        this._router.navigate(['/profile']);
     }
 
     openFeedbackPopup(selected: any) {
@@ -677,7 +682,7 @@ export class Icd10Component implements OnInit {
         if (!this.feedBack.reason || this.feedBack.reason.trim() === '') {
             this._alertService.showAlert({
                 title: "Thất bại",
-                message: "Vui lòng nhập lý do góp ý.",
+                message: "Vui lòng nhập lý do phản hồi.",
                 type: 'error'
             });
             return;
@@ -688,7 +693,7 @@ export class Icd10Component implements OnInit {
                 (res) => {
                     this._alertService.showAlert({
                         title: "Thàng công",
-                        message: "Gửi góp ý thành công!",
+                        message: "Gửi phản hồi thành công!",
                         type: 'success'
                     });
                     this.closeFeedbackPopup();
@@ -696,7 +701,7 @@ export class Icd10Component implements OnInit {
                 (error) => {
                     this._alertService.showAlert({
                         title: "Thất bại",
-                        message: "Gửi góp ý thất bại. Vui lòng thử lại.",
+                        message: "Gửi phản hồi thất bại. Vui lòng thử lại.",
                         type: 'error'
                     });
                 });
@@ -713,7 +718,7 @@ export class Icd10Component implements OnInit {
                 (res) => {
                     this._alertService.showAlert({
                         title: "Thàng công",
-                        message: "Gửi góp ý thành công!",
+                        message: "Gửi phản hồi thành công!",
                         type: 'success'
                     });
                     this.closeFeedbackPopup();
@@ -721,7 +726,7 @@ export class Icd10Component implements OnInit {
                 (error) => {
                     this._alertService.showAlert({
                         title: "Thất bại",
-                        message: "Gửi góp ý thất bại. Vui lòng thử lại.",
+                        message: "Gửi phản hồi thất bại. Vui lòng thử lại.",
                         type: 'error'
                     });
                 });
@@ -747,7 +752,7 @@ export class Icd10Component implements OnInit {
                 (res) => {
                     this._alertService.showAlert({
                         title: "Thàng công",
-                        message: "Gửi góp ý thành công!",
+                        message: "Gửi phản hồi thành công!",
                         type: 'success'
                     });
                     this.closeFeedbackPopup();
@@ -755,7 +760,7 @@ export class Icd10Component implements OnInit {
                 (error) => {
                     this._alertService.showAlert({
                         title: "Thất bại",
-                        message: "Gửi góp ý thất bại. Vui lòng thử lại.",
+                        message: "Gửi phản hồi thất bại. Vui lòng thử lại.",
                         type: 'error'
                     });
                 });
