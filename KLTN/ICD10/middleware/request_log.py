@@ -3,7 +3,8 @@ import logging
 
 from django.utils.deprecation import MiddlewareMixin
 from django.utils import timezone
-
+import json
+from ICD10.models.user import User
 from ICD10.models.api_request_log import ApiRequestLog
 
 logger = logging.getLogger(__name__)
@@ -35,9 +36,12 @@ class ApiRequestLogMiddleware(MiddlewareMixin):
         response_time_ms = (
             time.time() - getattr(request, "_start_time", time.time())
         ) * 1000
+        
+        user = None
 
         # User (nếu đã login)
-        user = request.user if request.user.is_authenticated else None
+        if request.user.is_authenticated:
+            user = request.user 
 
         # IP
         ip_address = self.get_client_ip(request)
