@@ -12,7 +12,7 @@ class ICDChapter(models.Model):
     description = models.TextField(blank=True, null=True, verbose_name="Mô tả")
 
     def __str__(self):
-        return f"{self.chapter} - {self.code} - {self.title_vi}"
+        return f"{self.code}"
 
     class Meta:
         verbose_name = 'Chương'
@@ -36,7 +36,7 @@ class ICDBlock(models.Model):
     chapter = models.ForeignKey(ICDChapter, on_delete=models.CASCADE, related_name="blocks", verbose_name="Chương")
 
     def __str__(self):
-        return f"{self.code} - {self.title_vi}"
+        return f"{self.code}"
 
     class Meta:
         verbose_name = 'Nhóm bệnh'
@@ -63,11 +63,11 @@ class ICDDisease(models.Model):
     parent = models.ForeignKey("self", on_delete=models.SET_NULL, null=True, blank=True, related_name="sub_diseases", verbose_name="Bệnh cha")
 
     def __str__(self):
-        return f"{self.code} - {self.title_vi}"
+        return f"{self.code}"
     
     class Meta:
         verbose_name = 'Bệnh'
-        verbose_name_plural = 'Các bệnh'
+        verbose_name_plural = 'Bệnh'
         app_label = "ICD10"
         db_table = "icd_disease"
         ordering = ["code"]

@@ -14,7 +14,7 @@ class TokenUsage(models.Model):
     created_at = models.DateTimeField(auto_now_add=True, verbose_name="Ngày tạo")
 
     def __str__(self):
-        return f"{self.user.username} used {self.total_tokens} tokens at {self.created_at}"
+        return f"{self.user.username} - {self.created_at}"
     
     class Meta:
         db_table = 'token_usage'

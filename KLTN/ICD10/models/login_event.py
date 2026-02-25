@@ -15,7 +15,7 @@ class LoginEvent(models.Model):
     device = models.CharField(max_length=255, null=True, blank=True, verbose_name="Thiết bị")
     identifier = models.CharField(max_length=255, null=True, blank=True, help_text="Email hoặc username dùng để login", verbose_name="Định danh đăng nhập")
     def __str__(self):
-        return f"{self.user.username} logged in at {self.created_at}"
+        return f"{self.identifier} - {self.created_at}"
     class Meta:
         db_table = 'login_event'
         ordering = ['-created_at']

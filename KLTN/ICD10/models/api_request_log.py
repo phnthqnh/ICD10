@@ -20,6 +20,9 @@ class ApiRequestLog(models.Model):
     user_agent = models.TextField(null=True, blank=True, verbose_name="User Agent")
 
     created_at = models.DateTimeField(auto_now_add=True, verbose_name="Ngày tạo")
+    
+    def __str__(self):
+        return f"{self.path} - {self.created_at}"
 
     class Meta:
         verbose_name="Nhật ký yêu cầu API"

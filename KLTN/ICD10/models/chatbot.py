@@ -15,7 +15,7 @@ class ChatSession(models.Model):
     summary_count = models.IntegerField(default=0, verbose_name="Số lần tóm tắt")  # số lần đã tóm tắt
 
     def __str__(self):
-        return f"ChatSession({self.id}) - {self.title}"
+        return f"{self.title}"
     
     class Meta:
         verbose_name = 'Phiên chat'

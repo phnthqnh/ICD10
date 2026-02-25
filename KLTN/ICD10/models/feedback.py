@@ -25,7 +25,7 @@ class Feedback_Chapter(Feedback_ICD10):
     chapter = models.ForeignKey(ICDChapter, on_delete=models.CASCADE, related_name="feedbacks", verbose_name="Chương")
 
     def __str__(self):
-        return f"Feedback from {self.user.username} on ICD-10 chapter {self.code}"
+        return f"{self.chapter.code}"
     class Meta:
         verbose_name = 'Phản hồi về Chương ICD-10'
         verbose_name_plural = 'Phản hồi về Chương ICD-10'
@@ -39,7 +39,7 @@ class Feedback_Block(Feedback_ICD10):
     chapter = models.ForeignKey(ICDChapter, on_delete=models.CASCADE, related_name="block_feedbacks", null=True, blank=True, verbose_name="Chương")
     
     def __str__(self):
-        return f"Feedback from {self.user.username} on ICD-10 block {self.code}"
+        return f"{self.block.code}"
     class Meta:
         verbose_name = 'Phản hồi về Nhóm ICD-10'
         verbose_name_plural = 'Phản hồi về Nhóm ICD-10'
@@ -54,7 +54,7 @@ class Feedback_Disease(Feedback_ICD10):
     block = models.ForeignKey(ICDBlock, on_delete=models.CASCADE, related_name="disease_feedbacks", null=True, blank=True, verbose_name="Nhóm bệnh")
 
     def __str__(self):
-        return f"Feedback from {self.user.username} on ICD-10 disease {self.code}"
+        return f"{self.disease.code}"
     class Meta:
         verbose_name = 'Phản hồi về Mã bệnh ICD-10'
         verbose_name_plural = 'Phản hồi về Mã bệnh ICD-10'
@@ -77,7 +77,7 @@ class Feedback_Chatbot(models.Model):
     replied_at = models.DateTimeField(null=True, blank=True, verbose_name="Ngày phản hồi")
     
     def __str__(self):
-        return f"Feedback from {self.chat_message.session.user.username} on message {self.chat_message.id}"
+        return f"{self.chat_message.id}"
 
     class Meta:
         verbose_name = 'Phản hồi về Chatbot'
