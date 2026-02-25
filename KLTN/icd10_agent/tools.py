@@ -21,9 +21,30 @@ with open("icd_core_embedding.json", "r", encoding="utf-8") as f:
 
 ICD_EMBEDS = np.array([rec["embedding"] for rec in ICD_RECORDS], dtype=np.float32)
 
-# Tạo map mã bệnh → mô tả để get info
-ICD_MAP = {rec["ma_benh"]: rec for rec in ICD_RECORDS}
-
+ICD_RECORDS_CLEAN = [
+    {
+        "stt_chuong": rec["stt_chuong"],
+        "ma_chuong": rec["ma_chuong"],
+        "chapter_name": rec["chapter_name"],
+        "ten_chuong": rec["ten_chuong"],
+        "ma_nhom_chinh": rec["ma_nhom_chinh"],
+        "main_group_name_i": rec["main_group_name_i"],
+        "ten_nhom_chinh": rec["ten_nhom_chinh"],
+        "ma_nhom_phu_1": rec["ma_nhom_phu_1"],
+        "sub_group_name_i": rec["sub_group_name_i"],
+        "ten_nhom_phu_1": rec["ten_nhom_phu_1"],
+        "ma_nhom_phu_2": rec["ma_nhom_phu_2"],
+        "sub_group_name_ii": rec["sub_group_name_ii"],
+        "ten_nhom_phu_2": rec["ten_nhom_phu_2"],
+        "ma_loai": rec["ma_loai"],
+        "type_name": rec["type_name"],
+        "ten_loai": rec["ten_loai"],
+        "ma_benh": rec["ma_benh"],
+        "disease_name": rec["disease_name"],
+        "ten_benh": rec["ten_benh"],
+    }
+    for rec in ICD_RECORDS
+]
 
 # tool 1: predict_icd10
 # def predict_keyword(text_query: str) -> str:
@@ -73,7 +94,7 @@ def search_icd10(query: str, top_k=20) -> list[dict[str, Any]]:
 
     Chức năng này truy xuất các bản ghi mã ICD phù hợp nhất với chuỗi truy vấn đã cho,
     dựa trên độ tương đồng của embedding. Nó sử dụng một tập hợp các embedding mã ICD được định nghĩa trước (được nhúng với loại tác vụ RETRIEVAL_DOCUMENT) và so sánh chúng với embedding truy vấn (được nhúng với loại tác vụ RETRIEVAL_QUERY),
-    được tạo bằng API Embedding của Gemini. Nó trả về k mã ICD hàng đầu được xếp hạng theo độ tương đồng.
+    được tạo bằng API Embedding của Gemini. Nó trả về top_k mã ICD hàng đầu được xếp hạng theo độ tương đồng.
 
     Bạn nên sử dụng từ khóa làm truy vấn để tối ưu hóa kết quả.
 
@@ -83,9 +104,9 @@ def search_icd10(query: str, top_k=20) -> list[dict[str, Any]]:
 
     :param query: Chuỗi truy vấn để tìm kiếm các mã ICD phù hợp.
     :type query: str
-    :param k: Số lượng kết quả phù hợp hàng đầu cần truy xuất. Mặc định là 20.
-    :type k: int, tùy chọn
-    :return: Một danh sách các từ điển chứa k bản ghi mã ICD phù hợp hàng đầu.
+    :param top_k: Số lượng kết quả phù hợp hàng đầu cần truy xuất. Mặc định là 5.
+    :type top_k: int, tùy chọn
+    :return: Một danh sách các từ điển chứa top_k bản ghi mã ICD phù hợp hàng đầu.
     :rtype: list[dict[str, Any]]
     """
     client = genai.Client(api_key=os.getenv("EMBEDDING_API_KEY"))
@@ -99,22 +120,30 @@ def search_icd10(query: str, top_k=20) -> list[dict[str, Any]]:
     similarities = cosine_similarity([vector], ICD_EMBEDS)[0]
     indices = np.argsort(similarities)[::-1]
 
-    return [ICD_RECORDS[i] for i in indices[:top_k]]
+    return [ICD_RECORDS_CLEAN[i] for i in indices[:top_k]]
 
 
-def predict_icd10(query: str, top_k=20) -> list[dict[str, Any]]:
+def predict_icd10(query: str, top_k=5) -> list[dict[str, Any]]:
     """
-    Phân tích triệu chứng từ query -> trả về top_k ICD-10 liên quan.
+    Tìm kiếm mã ICD dựa trên hình ảnh.
     Lưu ý: Nếu user gửi kèm ảnh, agent sẽ tự phân tích ảnh 
     và tổng hợp thông tin trước khi gọi tool này.
     
-    :param query_emb: Chuỗi truy vấn để tìm kiếm các mã ICD khớp.
+    Chức năng này truy xuất các bản ghi mã ICD phù hợp nhất với hình ảnh và chuỗi truy vấn đã cho,
+    dựa trên độ tương đồng của embedding. Nó sử dụng một tập hợp các embedding mã ICD được định nghĩa trước (được nhúng với loại tác vụ RETRIEVAL_DOCUMENT) và so sánh chúng với embedding truy vấn (được nhúng với loại tác vụ RETRIEVAL_QUERY),
+    được tạo bằng API Embedding của Gemini. Nó trả về top_k mã ICD hàng đầu được xếp hạng theo độ tương đồng.
 
-    :type query_emb: str
+    Bạn nên sử dụng từ khóa làm truy vấn để tối ưu hóa kết quả.
+    
+    Ghi chú:
+    RETRIEVAL_DOCUMENT: Embedding được tối ưu hóa cho tìm kiếm tài liệu.
+    RETRIEVAL_QUERY: Embedding được tối ưu hóa cho các truy vấn tìm kiếm chung. Sử dụng RETRIEVAL_QUERY cho các truy vấn; RETRIEVAL_DOCUMENT cho các tài liệu cần truy xuất.
 
-    :param top_k: Số lượng kết quả khớp hàng đầu cần truy xuất. Mặc định là 20.
+    :param query: Chuỗi truy vấn để tìm kiếm các mã ICD phù hợp.
+    :type query: str
+    :param top_k: Số lượng kết quả phù hợp hàng đầu cần truy xuất. Mặc định là 5.
     :type top_k: int, tùy chọn
-    :return: Danh sách các từ điển chứa top_k bản ghi mã ICD khớp hàng đầu.
+    :return: Một danh sách các từ điển chứa top_k bản ghi mã ICD phù hợp hàng đầu.
     :rtype: list[dict[str, Any]]
     
     """
@@ -124,20 +153,12 @@ def predict_icd10(query: str, top_k=20) -> list[dict[str, Any]]:
         contents=[query],
         config=types.EmbedContentConfig(task_type="RETRIEVAL_QUERY"),
     ).embeddings[0].values
-    query_emb = np.array(query_emb)
-    similarities = cosine_similarity([query_emb], ICD_EMBEDS)[0]
-    top_idx = np.argsort(similarities)[::-1][:top_k]
+    assert query_emb and len(query_emb) > 0
+    vector = np.array(query_emb)
+    similarities = cosine_similarity([vector], ICD_EMBEDS)[0]
+    indices = np.argsort(similarities)[::-1]
 
-    results = []
-    for idx in top_idx:
-        r = ICD_RECORDS[idx]
-        results.append({
-            "code": r["ma_benh"],
-            "name": r["ten_benh"],
-            "score": round(float(similarities[idx] * 100), 2)
-        })
-
-    return results
+    return [ICD_RECORDS_CLEAN[i] for i in indices[:top_k]]
 
 def get_info_icd10(code: str) -> dict[str, Any] | None:
     """
@@ -157,6 +178,7 @@ def get_info_icd10(code: str) -> dict[str, Any] | None:
     """
     for rec in ICD_RECORDS:
         if rec["ma_benh"] == code:
-            rec.pop("embedding", None)
-            return rec
+            return {
+                k: v for k, v in rec.items() if k != "embedding"
+            }
     return None

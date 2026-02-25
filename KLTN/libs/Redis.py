@@ -78,25 +78,12 @@ class RedisWrapper:
         Trả về giá trị sau khi tăng.
         """
         try:
-            # cache.incr chỉ hoạt động nếu key tồn tại và là int
-            value = cache.get(key)
-
-            if value is None:
-                # Nếu key chưa tồn tại → khởi tạo
-                cache.set(key, amount)
-                return amount
-
-            try:
-                # Nếu là số thì tăng
-                new_value = cache.incr(key, amount)
-                return new_value
-            except ValueError:
-                # Nếu value không phải số → ghi đè lại
-                cache.set(key, amount)
-                return amount
-
+            return cache.incr(key, amount)
+        except ValueError:
+            cache.set(key, amount)
+            return amount
         except Exception as e:
-            logger.error(f"Redis incr error for key '{key}': {e}")
+            logger.error(f"Redis incr error: {e}")
             return None
     
     @staticmethod
@@ -107,8 +94,9 @@ class RedisWrapper:
         """
         try:
             client = cache.client.get_client()
-            return client.expire(key, seconds)
+            full_key = cache.make_key(key)
+            return client.expire(full_key, seconds)
         except Exception as e:
-            logger.error(f"Redis expire error for key '{key}': {e}")
+            logger.error(f"Redis expire error: {e}")
             return False
 
