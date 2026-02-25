@@ -13,9 +13,9 @@ class ChatbotFeedbackService(BaseFeedbackService):
         feedback.admin_reply = admin_reply
         feedback.replied_at = timezone.now()
         feedback.save(update_fields=["admin_reply", "replied_at"])
-
+        user = feedback.chat_message.session.user
         notify_user_feedback(
-            user=feedback.user,
+            user=user,
             title="Phản hồi Chatbot đã được trả lời",
             message="Phản hồi của bạn về Chatbot đã được quản trị viên trả lời.",
             notif_type="admin_feedback_chatbot",

@@ -135,6 +135,18 @@ class ICDDiseaseAdmin(ModelAdmin):
         ("Thuộc nhóm bệnh", {"fields": ("block",)}),
     )
     
+class ChatmessageInline(admin.TabularInline):
+    model = ChatMessage
+    extra = 0
+    # classes = ('collapse', "extrapretty", 'unfold-card')
+    show_change_link = True
+    tab = True
+    
+    fields = ("role", "content", "image_tag")
+    readonly_fields = ("image_tag",)
+    
+    def has_add_permission(self, request, obj):
+        return False
     
 @admin.register(ChatSession)
 class ChatSessionAdmin(ModelAdmin):
@@ -149,11 +161,19 @@ class ChatSessionAdmin(ModelAdmin):
         ("Thông tin phiên chat", {"fields": ("title", "user", "adk_session_id", "summary_count", "created_at", "updated_at")}),
     )
     
+    inlines = [ChatmessageInline]
+    
+    def has_add_permission(self, request):
+        return False
+    
+    def has_change_permission(self, request, obj=None):
+        return False
+    
     
 @admin.register(ChatMessage)
 class ChatMessageAdmin(ModelAdmin):
     list_display = ("session", "role", "created_at")
-    search_fields = ("session__title", "session__user__username", "session__user__email", "content")
+    search_fields = ("session__title", "session__user__username", "session__user__email")
     list_filter = ("role", "session__user__username")
     list_per_page = 20
     show_full_result_count = False
@@ -161,6 +181,12 @@ class ChatMessageAdmin(ModelAdmin):
         (None, {"fields": ("session", "role", "content", "image", "image_tag", "created_at")}),
     )
     readonly_fields = ("created_at", "image_tag")
+    
+    def has_add_permission(self, request):
+        return False
+    
+    def has_change_permission(self, request, obj=None):
+        return False
     
     
 class BaseFeedbackAdmin(ModelAdmin):
@@ -179,6 +205,9 @@ class BaseFeedbackAdmin(ModelAdmin):
             super()
             .get_queryset(request)
         )
+        
+    def has_add_permission(self, request):
+        return False
 
     # @admin.display(description="Người gửi")
     # def get_user_info(self, obj):
@@ -311,6 +340,7 @@ class FeedbackChatbotAdmin(BaseFeedbackAdmin):
     readonly_fields = (
         "chat_message",
         "get_user_info",
+        "rating", "comments",
         "created_at", "replied_at")
     
     fieldsets = (
@@ -395,8 +425,8 @@ class NotificationAdmin(ModelAdmin):
     
 @admin.register(LoginEvent)
 class LoginEventAdmin(ModelAdmin):
-    list_display = ("user", "status", "ip_adress", "device", "created_at")
-    search_fields = ("user__username", "user__email", "ip_adress", "device", "identifier")
+    list_display = ("user", "identifier", "status", "ip_adress", "created_at")
+    search_fields = ("user__username", "user__email", "ip_adress", "identifier")
     list_filter = ("status", "created_at")
     readonly_fields = ("created_at",)
     list_per_page = 20
@@ -406,18 +436,26 @@ class LoginEventAdmin(ModelAdmin):
         ("Thông tin sự kiện đăng nhập", {"fields": ("user", "status", "ip_adress", "user_agent", "device", "identifier", "created_at")}),
     )
     
+    def has_add_permission(self, request):
+        return False
+    
 @admin.register(TokenUsage)
 class TokenUsageAdmin(ModelAdmin):
     list_display = ("user", "session", "input_tokens", "created_at")
     search_fields = ("user__username", "user__email", "session__title", "model")
-    list_filter = ("model", "date", "created_at")
+    list_filter = ("model", "created_at")
     readonly_fields = ("created_at",)
     list_per_page = 20
     show_full_result_count = False
+    ordering = ("-created_at",)
     
     fieldsets = (
         ("Thông tin sử dụng token", {"fields": ("user", "session", "model", "input_tokens", "output_tokens", "total_tokens", "created_at")}),
     )
+    
+    def has_add_permission(self, request):
+        return False
+    
     
 @admin.register(ApiRequestLog)
 class ApiRequestLogAdmin(ModelAdmin):
@@ -427,7 +465,11 @@ class ApiRequestLogAdmin(ModelAdmin):
     readonly_fields = ("created_at",)
     list_per_page = 20
     show_full_result_count = False
+    ordering = ("-created_at",)
     
     fieldsets = (
         ("Thông tin log API", {"fields": ("user", "path", "method", "status_code", "response_time_ms", "ip_address", "user_agent", "created_at")}),
     )
+    
+    def has_add_permission(self, request):
+        return False
